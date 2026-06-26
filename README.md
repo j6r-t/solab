@@ -1,96 +1,36 @@
-# SOLab
-Before I build the full PDR (Preliminary Design Review) document, I need a few clarifications to make it accurate and tailored to your exact lab workflow. Please answer as many as you can — I'll make reasonable assumptions for any you skip.
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-❓ Clarification Questions
-1. Lab Type & Terminology
-What kind of lab is this?
+## Getting Started
 
-Medical/clinical analysis lab (blood tests, urine, etc.)
+First, run the development server:
 
-Research/academic lab
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-Industrial quality control lab
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-Other (please specify)
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This affects field names, analysis types, and report formats.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-2. User Roles & Permissions
-Do all 2–5 users have the same access, or do you need roles like:
+## Learn More
 
-Admin (full control)
+To learn more about Next.js, take a look at the following resources:
 
-Technician (create/edit analyses, manage stock)
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-Viewer (read-only)
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-Or just a single role for everyone?
+## Deploy on Vercel
 
-3. Stock Management Details
-Do you track consumables/reagents with expiry dates and lot numbers?
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-Does the app need to alert when stock is low?
-
-Will stock quantities be adjusted automatically when items are used in an analysis or service?
-
-4. Services & Pricing
-Are services fixed packages (e.g., "Complete Blood Count - $20") or customizable?
-
-Do you need a catalog where customers/patients can view services?
-
-Are prices different for different clients/customer types?
-
-5. Invoices
-Who is the invoice issued to — external patients/customers, internal departments, or both?
-
-Do you need invoice templates (logo, lab info, terms)?
-
-Should invoices be exportable as PDF? Printed directly from the app?
-
-Do you need a simple payment status tracking (Paid, Pending, Overdue)?
-
-6. Analysis Module
-What does an "analysis" record represent?
-
-A patient sample, with multiple parameters tested, results entered manually or via device?
-
-A research experiment with notes and outcomes?
-
-Does it link to specific services from the catalog? To stock consumed?
-
-7. Offline Requirements
-Will the lab have unreliable internet? Do you need the app to work offline (local data entry, sync later), or is it acceptable to require a connection at all times?
-
-8. Devices
-Will users use only phones, or also tablets? Do you prefer a phone-only layout or a responsive tablet-friendly UI?
-
-9. Language / Locale
-Is the app in English, or do you need support for other languages (e.g., Arabic, French)?
-
-10. Data Retention & Backup
-Any special requirements for how long data is kept, or manual backup needs? (Supabase includes daily automated backups, but we can design additional export.)
-
-📄 What the PDR Will Include (Once Clarified)
-Executive Summary – Project purpose and scope
-
-System Overview – High-level architecture diagram
-
-Requirements – Functional & non-functional, derived from your answers
-
-Data Model – Supabase table schemas, relationships
-
-System Architecture – Android app layers, Supabase services
-
-UI/UX Design – Wireframe descriptions for each screen
-
-Security – Auth, Row Level Security, data protection
-
-Testing Strategy – Unit, integration, and user acceptance
-
-Deployment Plan – Version control (GitHub), Firebase App Distribution or side‑loading
-
-Cost Analysis – Proof that it remains $0
-
-Risk Management – Potential issues and mitigations
-
-Timeline & Milestones
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
