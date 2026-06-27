@@ -1,0 +1,30 @@
+{
+    "app": {
+        "name": "Sofien Optic"
+    },
+    "nav": {
+        "dashboard": "Tableau de bord",
+        "clients": "Clients",
+        "stock": "Stock",
+        "prescriptions": "Ordonnances",
+        "orders": "Commandes",
+        "repairs": "Réparations",
+        "billing": "Facturation",
+        "reports": "Rapports",
+        "settings": "Paramètres"
+    },
+    "common": {
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "delete": "Supprimer",
+        "edit": "Modifier",
+        "add": "Ajouter",
+        "search": "Rechercher...",
+        "noResults": "Aucun résultat trouvé",
+        "loading": "Chargement...",
+        "back": "Retour",
+        "pending": "En attente",
+        "completed": "Terminé",
+        "cancelled": "Annulé"
+    }
+}

@@ -8,11 +8,11 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 model User {
-  id        String   @id @default(uuid())
+  id        String   @id @default(cuid())
   email     String   @unique
   name      String?
   password  String
@@ -21,8 +21,9 @@ model User {
 }
 
 model Client {
-  id           String         @id @default(uuid())
-  name         String?
+  id           String         @id @default(cuid())
+  name         String
+  familyName   String
   phone        String         @unique
   address      String?
   gender       Gender?
@@ -39,22 +40,22 @@ enum Gender {
 }
 
 model Prescription {
-  id       String @id @default(uuid())
+  id       String @id @default(cuid())
   clientId String
   client   Client @relation(fields: [clientId], references: [id], onDelete: Restrict)
 
   //right eye prescription 
-  sphRight  Decimal @db.Decimal(4, 2)
-  cylRight  Decimal @db.Decimal(4, 2)
+  sphRight  Decimal
+  cylRight  Decimal
   axisRight Int
-  addRight  Decimal @db.Decimal(4, 2)
+  addRight  Decimal
   pdRight   Int
 
   //left eye prescription 
-  sphLeft  Decimal @db.Decimal(4, 2)
-  cylLeft  Decimal @db.Decimal(4, 2)
+  sphLeft  Decimal
+  cylLeft  Decimal
   axisLeft Int
-  addLeft  Decimal @db.Decimal(4, 2)
+  addLeft  Decimal
   pdLeft   Int
 
   doctorName String
@@ -64,12 +65,12 @@ model Prescription {
 }
 
 model Product {
-  id               String            @id @default(uuid())
+  id               String            @id @default(cuid())
   name             String
   brand            String
   model            String
   category         ProductCategory?
-  price            Decimal           @db.Decimal(10, 3)
+  price            Decimal
   quantity         Int               @default(0)
   qrcode           QRCode?
   orderItems       OrderItem[]
@@ -86,7 +87,7 @@ enum ProductCategory {
 }
 
 model QRCode {
-  id        String   @id @default(uuid())
+  id        String   @id @default(cuid())
   productId String   @unique
   code      String   @unique
   product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -94,11 +95,12 @@ model QRCode {
 }
 
 model Order {
-  id          String      @id @default(uuid())
-  orderNumber Int         @unique @default(autoincrement())
+  id          String      @id @default(cuid())
+  orderNumber Int         @unique
   clientId    String
   client      Client      @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  totalAmount Decimal     @db.Decimal(10, 3)
+  totalAmount Decimal
+  orderType   OrderType   @default(standard)
   status      OrderStatus @default(pending)
   items       OrderItem[]
   payments    Payment[]
@@ -108,6 +110,12 @@ model Order {
   updatedAt DateTime @updatedAt
 }
 
+enum OrderType {
+  standard //Standard purchase (eyewear + lenses)
+  remounting //Remounting(client's own frame + new lenses)
+  direct_sale //Direct sale (accessories,lens only or glasses only)
+}
+
 enum OrderStatus {
   pending
   completed
@@ -115,20 +123,20 @@ enum OrderStatus {
 }
 
 model OrderItem {
-  id        String  @id @default(uuid())
+  id        String  @id @default(cuid())
   orderId   String
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
   quantity  Int
-  unitPrice Decimal @db.Decimal(10, 3)
+  unitPrice Decimal
 }
 
 model Payment {
-  id        String      @id @default(uuid())
+  id        String      @id @default(cuid())
   orderId   String
   order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  amount    Decimal     @db.Decimal(10, 3)
+  amount    Decimal
   type      PaymentType
   createdAt DateTime    @default(now())
 }
@@ -140,15 +148,26 @@ enum PaymentType {
 }
 
 model Repair {
-  id                     String       @id @default(uuid())
+  id                     String         @id @default(cuid())
   orderId                String
-  order                  Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order                  Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   type                   String
-  status                 RepairStatus @default(pending)
+  status                 RepairStatus   @default(pending)
   expectedCompletionDate DateTime
-  price                  Decimal      @db.Decimal(10, 3)
-  createdAt              DateTime     @default(now())
-  updatedAt              DateTime     @updatedAt
+  repairServiceId        String?
+  repairService          RepairService? @relation(fields: [repairServiceId], references: [id])
+  price                  Decimal
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+}
+
+model RepairService {
+  id           String   @id @default(cuid())
+  name         String
+  defaultPrice Decimal
+  repairs      Repair[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 enum RepairStatus {
@@ -158,7 +177,7 @@ enum RepairStatus {
 }
 
 model StockAdjustment {
-  id        String                @id @default(uuid())
+  id        String                @id @default(cuid())
   productId String
   product   Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
   quantity  Int
@@ -174,7 +193,7 @@ enum StockAdjustmentReason {
 }
 
 model SmsLog {
-  id        String    @id @default(uuid())
+  id        String    @id @default(cuid())
   clientId  String
   client    Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
   phone     String

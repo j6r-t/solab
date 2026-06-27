@@ -10,9 +10,13 @@
   },
   "dependencies": {
     "@prisma/client": "^7.8.0",
+    "cn": "^0.1.1",
+    "i18n": "^0.15.3",
+    "lucide-react": "^1.21.0",
     "next": "16.2.9",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
