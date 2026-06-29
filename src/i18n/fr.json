@@ -1,30 +1,15 @@
 {
-    "app": {
-        "name": "Sofien Optic"
-    },
-    "nav": {
-        "dashboard": "Tableau de bord",
-        "clients": "Clients",
-        "stock": "Stock",
-        "prescriptions": "Ordonnances",
-        "orders": "Commandes",
-        "repairs": "Réparations",
-        "billing": "Facturation",
-        "reports": "Rapports",
-        "settings": "Paramètres"
-    },
-    "common": {
-        "save": "Enregistrer",
-        "cancel": "Annuler",
-        "delete": "Supprimer",
-        "edit": "Modifier",
-        "add": "Ajouter",
-        "search": "Rechercher...",
-        "noResults": "Aucun résultat trouvé",
-        "loading": "Chargement...",
-        "back": "Retour",
-        "pending": "En attente",
-        "completed": "Terminé",
-        "cancelled": "Annulé"
-    }
+    "app": { "name": "Sofien Optic" },
+    "auth": { "login": "Connectez-vous à votre compte", "email": "Email", "password": "Mot de passe", "loginButton": "Se connecter" },
+    "nav": { "dashboard": "Tableau de bord", "clients": "Clients", "stock": "Stock", "prescriptions": "Ordonnances", "orders": "Commandes", "repairs": "Réparations", "billing": "Facturation", "reports": "Rapports", "settings": "Paramètres" },
+    "dashboard": { "title": "Tableau de bord", "totalRevenue": "Revenu total", "totalClients": "Total clients", "todaySales": "Ventes du jour", "lowStock": "Articles en stock bas", "pendingRepairs": "Réparations en attente", "recentOrders": "Commandes récentes", "readyForPickup": "Prêt à récupérer", "noReadyOrders": "Aucune commande prête" },
+    "clients": { "title": "Clients", "newClient": "Nouveau client", "searchPlaceholder": "Rechercher des clients par nom ou téléphone...", "noClients": "Aucun client trouvé", "name": "Nom", "familyName": "Nom de famille", "phone": "Téléphone", "address": "Adresse", "gender": "Genre", "male": "Masculin", "female": "Féminin", "created": "Client créé avec succès", "updated": "Client modifié avec succès", "deleted": "Client supprimé avec succès" },
+    "stock": { "title": "Stock", "searchPlaceholder": "Rechercher des articles ou scanner un code QR...", "totalValue": "Valeur totale du stock", "lowStockItems": "Articles en stock bas", "qrCode": "Code QR", "addStock": "Ajouter du stock", "newProduct": "Nouveau produit", "noProducts": "Aucun produit trouvé", "eyewear": "Lunettes", "lens": "Lentilles", "accessory": "Accessoires", "name": "Nom", "brand": "Marque", "model": "Modèle", "category": "Catégorie", "price": "Prix", "quantity": "Quantité", "outOfStock": "En rupture de stock", "lowStock": "Stock bas", "inStock": "En stock", "created": "Produit créé avec succès", "updated": "Produit modifié avec succès", "deleted": "Produit supprimé avec succès" },
+    "prescriptions": { "title": "Ordonnances", "newPrescription": "Nouvelle ordonnance", "noPrescriptions": "Aucune ordonnance trouvée", "doctorName": "Nom du médecin", "rightEye": "Œil droit", "leftEye": "Œil gauche", "sph": "SPH", "cyl": "CYL", "axis": "AXE", "add": "ADD", "pd": "DP", "created": "Ordonnance créée avec succès", "updated": "Ordonnance modifiée avec succès", "deleted": "Ordonnance supprimée avec succès" },
+    "orders": { "client": "Client", "noOrders": "Aucune commande pour le moment", "newOrder": "Nouvelle commande", "orderType": "Type de commande", "type_standard": "Monture + Verres", "type_standard_desc": "Vente d'une monture avec verres correcteurs — nécessite une ordonnance et un service de montage", "type_remounting": "Remontage", "type_remounting_desc": "Pose de nouveaux verres sur la monture du client — service + ordonnance requis", "type_direct_sale": "Vente directe", "type_direct_sale_desc": "Vente rapide d'accessoires, lentilles ou lunettes prêtes — paiement intégral", "pending": "En attente", "ready": "Prêt", "completed": "Terminé", "cancelled": "Annulé", "fullyPaid": "Payé", "partiallyPaid": "Partiel", "unpaid": "Impayé", "payment": "Paiement", "total": "Total", "paid": "Payé", "balance": "Solde", "expectedCompletion": "Livraison prévue", "items": "Articles", "full": "Paiement complet", "deposit": "Acompte", "depositAmount": "Montant de l'acompte", "type": "Type", "status": "Statut", "turnaround": "Délai de traitement", "inDays": "En jours", "byDate": "Par date", "turnaroundPlaceholder": "Nombre de jours", "days": "jours", "markReady": "Marquer comme prêt", "markPickedUp": "Marquer comme récupéré", "printInvoice": "Imprimer la facture", "paymentHistory": "Historique des paiements", "balancePayment": "Paiement du solde", "directSalePayment": "Payer en totalité (vente directe)", "readyForPickup": "Prêt à récupérer", "created": "Commande créée avec succès", "deleted": "Commande supprimée avec succès", "statusUpdated": "Statut de la commande mis à jour" },
+    "repairs": { "noRepairs": "Aucune réparation trouvée", "overdue": "En retard", "type": "Type de service", "byCompletionDate": "Par date de fin", "markedComplete": "Réparation terminée — SMS envoyé au client" },
+    "billing": { "noInvoices": "Aucune facture trouvée", "quickSale": "Vente rapide", "print": "Imprimer la facture", "invoiceLabel": "Facture", "date": "Date", "quickSaleSuccess": "Vente rapide effectuée avec succès" },
+    "reports": { "today": "Aujourd'hui", "thisWeek": "Cette semaine", "thisMonth": "Ce mois", "thisYear": "Cette année", "all": "Tout", "revenueByType": "Revenus par type", "ordersByStatus": "Commandes par statut" },
+    "settings": { "language": "Langue", "profile": "Profil", "sms": "Notifications SMS", "smsDescription": "La configuration des notifications SMS sera disponible dans une future mise à jour.", "name": "Nom" },
+    "common": { "save": "Enregistrer", "cancel": "Annuler", "delete": "Supprimer", "edit": "Modifier", "add": "Ajouter", "search": "Rechercher...", "noResults": "Aucun résultat trouvé", "loading": "Chargement...", "back": "Retour", "pending": "En attente", "completed": "Terminé", "cancelled": "Annulé", "all": "Tous", "logout": "Déconnexion", "select": "Sélectionner...", "more": "Plus" }
 }

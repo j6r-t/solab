@@ -1,4 +1,4 @@
-import { useLocaleStore } from '@/stores/local-store'
+import { useLocaleStore } from '@/stores/locale-store'
 import eng from '@/i18n/eng.json'
 import fr from '@/i18n/fr.json'
 

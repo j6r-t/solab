@@ -9,6 +9,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -59,6 +60,7 @@ model Prescription {
   pdLeft   Int
 
   doctorName String
+  orders   Order[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -105,6 +107,9 @@ model Order {
   items       OrderItem[]
   payments    Payment[]
   repairs     Repair[]
+  prescription   Prescription? @relation(fields: [prescriptionId], references: [id])
+  prescriptionId String?
+  turnaroundDays Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -118,6 +123,7 @@ enum OrderType {
 
 enum OrderStatus {
   pending
+  ready
   completed
   cancelled
 }

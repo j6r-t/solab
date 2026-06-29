@@ -10,11 +10,12 @@ import {
     Receipt,
     BarChart3,
     Settings,
-    Glasses
+    Glasses,
+    LogOut,
 } from 'lucide-react'
-import { useTranslation } from '@/hooks/userTranslation'
-import { useLocaleStore } from '@/stores/local-store'
+import { useTranslation } from '@/hooks/useTranslation'
 import { useViewStore, type ViewName } from '@/stores/view-store'
+import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -31,19 +32,19 @@ const navItems = [
 
 export function Sidebar() {
     const { t } = useTranslation()
-    const { locale, setLocale } = useLocaleStore()
     const { currentView, setView } = useViewStore()
+    const { logout } = useAuthStore()
 
     return (
         <aside className="hidden md:flex w-64 flex-col border-r bg-card h-screen sticky top-0">
-            {/* Logo */}
-            <div className="flex items-center gap-2 px-6 py-5 border-b">
-                <Glasses className="h-6 w-6 text-amber-600" />
+            <div className="flex items-center gap-3 px-6 py-5 border-b">
+                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Glasses className="h-5 w-5 text-primary" />
+                </div>
                 <span className="font-semibold text-lg">{t('app.name')}</span>
             </div>
 
-            {/* Navigation */}
-            <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+            <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
                 {navItems.map((item) => {
                     const isActive = currentView === item.view
                     return (
@@ -51,42 +52,34 @@ export function Sidebar() {
                             key={item.view}
                             onClick={() => setView(item.view)}
                             className={cn(
-                                'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                                'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 relative',
                                 isActive
-                                    ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400'
-                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                    ? 'bg-accent text-accent-foreground shadow-sm scale-[1.02]'
+                                    : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground hover:scale-[1.01] active:scale-[0.98]'
                             )}
                         >
-                            <item.icon className="h-5 w-5" />
+                            {isActive && (
+                                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-full bg-primary" />
+                            )}
+                            <item.icon className={cn('h-5 w-5 shrink-0 transition-transform duration-200', isActive && 'text-primary scale-110')} />
                             {t(`nav.${item.labelKey}`)}
                         </button>
                     )
                 })}
             </nav>
 
-            {/* Language toggle */}
-            <div className="p-4 border-t flex gap-2">
+            <div className="p-4 border-t">
                 <button
-                    onClick={() => setLocale('eng')}
-                    className={cn(
-                        'flex-1 py-1.5 rounded-md text-sm font-medium transition-colors',
-                        locale === 'eng'
-                            ? 'bg-amber-600 text-white'
-                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                    )}
+                    onClick={() => {
+                        logout()
+                        window.dispatchEvent(new Event('auth-logout'))
+                        window.location.href = '/login'
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    title={t('common.logout')}
                 >
-                    EN
-                </button>
-                <button
-                    onClick={() => setLocale('fr')}
-                    className={cn(
-                        'flex-1 py-1.5 rounded-md text-sm font-medium transition-colors',
-                        locale === 'fr'
-                            ? 'bg-amber-600 text-white'
-                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                    )}
-                >
-                    FR
+                    <LogOut className="h-5 w-5 shrink-0" />
+                    {t('common.logout')}
                 </button>
             </div>
         </aside>
