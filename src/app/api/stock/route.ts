@@ -51,6 +51,8 @@ export async function POST(request: NextRequest) {
         const product = await db.product.create({
             data: {
                 ...parsed.data,
+                brand: parsed.data.brand || '—',
+                model: parsed.data.model || '—',
                 qrcode: {
                     create: {
                         code: `SOPT-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,

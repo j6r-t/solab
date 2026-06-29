@@ -1,19 +1,198 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useLocaleStore } from '@/stores/locale-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Globe, User, Smartphone } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Globe, User, Smartphone, Wrench, Plus, Pencil, Trash2, Eye } from 'lucide-react'
+import { toast } from 'sonner'
+
+interface RepairService {
+    id: string
+    name: string
+    defaultPrice: string
+}
+
+interface NamedItem {
+    id: string
+    name: string
+}
+
+function NamedItemCard({ title, icon: Icon, description, apiPath, tPrefix }: {
+    title: string
+    icon: typeof Eye
+    description: string
+    apiPath: string
+    tPrefix: string
+}) {
+    const { t } = useTranslation()
+    const [items, setItems] = useState<NamedItem[]>([])
+    const [dialogOpen, setDialogOpen] = useState(false)
+    const [editing, setEditing] = useState<NamedItem | null>(null)
+    const [itemName, setItemName] = useState('')
+    const [deleteTarget, setDeleteTarget] = useState<NamedItem | null>(null)
+    const [saving, setSaving] = useState(false)
+
+    function load() {
+        fetch(apiPath).then((r) => r.ok && r.json()).then((data) => setItems(data || [])).catch(() => {})
+    }
+
+    useEffect(() => { load() }, [])
+
+    function openNew() { setEditing(null); setItemName(''); setDialogOpen(true) }
+
+    function openEdit(item: NamedItem) { setEditing(item); setItemName(item.name); setDialogOpen(true) }
+
+    async function handleSave() {
+        if (!itemName.trim()) return
+        setSaving(true)
+        try {
+            if (editing) {
+                const res = await fetch(`${apiPath}/${editing.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: itemName.trim() }) })
+                if (!res.ok) throw new Error()
+                toast.success(t('settings.itemUpdated'))
+            } else {
+                const res = await fetch(apiPath, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: itemName.trim() }) })
+                if (!res.ok) throw new Error()
+                toast.success(t('settings.itemCreated'))
+            }
+            setDialogOpen(false); load()
+        } catch { toast.error('Failed to save') }
+        finally { setSaving(false) }
+    }
+
+    async function handleDelete() {
+        if (!deleteTarget) return
+        try {
+            const res = await fetch(`${apiPath}/${deleteTarget.id}`, { method: 'DELETE' })
+            if (!res.ok) throw new Error()
+            toast.success(t('settings.itemDeleted'))
+            setDeleteTarget(null); load()
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to delete')
+        }
+    }
+
+    return (
+        <>
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                            <Icon className="h-5 w-5" />
+                            {title}
+                        </CardTitle>
+                        <Button size="sm" onClick={openNew}><Plus className="h-4 w-4 mr-1" />{t('settings.newItem')}</Button>
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    <p className="text-sm text-muted-foreground">{description}</p>
+                    {items.length === 0 ? (
+                        <p className="text-sm text-muted-foreground italic">{t('settings.noItems')}</p>
+                    ) : (
+                        <div className="border rounded-lg divide-y">
+                            {items.map((item) => (
+                                <div key={item.id} className="flex items-center justify-between px-4 py-3">
+                                    <span className="text-sm font-medium">{item.name}</span>
+                                    <div className="flex gap-1">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteTarget(item)}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogContent className="w-full sm:max-w-sm">
+                    <DialogHeader><DialogTitle>{editing ? t('settings.editItem') : t('settings.newItem')}</DialogTitle></DialogHeader>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>{t('settings.itemName')}</Label>
+                            <Input value={itemName} onChange={(e) => setItemName(e.target.value)} />
+                        </div>
+                        <Button onClick={handleSave} disabled={saving || !itemName.trim()} className="w-full">
+                            {saving ? t('common.saving') : t('common.save')}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <ConfirmDialog
+                open={!!deleteTarget}
+                onOpenChange={() => setDeleteTarget(null)}
+                title={t('common.delete')}
+                description={`${t('settings.confirmDelete')} "${deleteTarget?.name}"?`}
+                confirmLabel={t('common.delete')}
+                cancelLabel={t('common.cancel')}
+                onConfirm={handleDelete}
+            />
+        </>
+    )
+}
 
 export function SettingsPage() {
     const { t } = useTranslation()
     const { locale, setLocale } = useLocaleStore()
     const [userName, setUserName] = useState('Sofien')
     const [userEmail, setUserEmail] = useState('')
+    const [services, setServices] = useState<RepairService[]>([])
+    const [serviceDialogOpen, setServiceDialogOpen] = useState(false)
+    const [editingService, setEditingService] = useState<RepairService | null>(null)
+    const [serviceName, setServiceName] = useState('')
+    const [servicePrice, setServicePrice] = useState('')
+    const [deleteTarget, setDeleteTarget] = useState<RepairService | null>(null)
+    const [saving, setSaving] = useState(false)
+
+    function loadServices() {
+        fetch('/api/repair-services').then((r) => r.ok && r.json()).then((data) => setServices(data || [])).catch(() => {})
+    }
+
+    useEffect(() => { loadServices() }, [])
+
+    function openNewService() { setEditingService(null); setServiceName(''); setServicePrice(''); setServiceDialogOpen(true) }
+
+    function openEditService(service: RepairService) { setEditingService(service); setServiceName(service.name); setServicePrice(service.defaultPrice); setServiceDialogOpen(true) }
+
+    async function handleSaveService() {
+        if (!serviceName.trim() || !servicePrice) return
+        setSaving(true)
+        try {
+            if (editingService) {
+                const res = await fetch(`/api/repair-services/${editingService.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: serviceName.trim(), defaultPrice: servicePrice }) })
+                if (!res.ok) throw new Error()
+                toast.success(t('settings.serviceUpdated'))
+            } else {
+                const res = await fetch('/api/repair-services', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: serviceName.trim(), defaultPrice: servicePrice }) })
+                if (!res.ok) throw new Error()
+                toast.success(t('settings.serviceCreated'))
+            }
+            setServiceDialogOpen(false); loadServices()
+        } catch { toast.error('Failed to save service') }
+        finally { setSaving(false) }
+    }
+
+    async function handleDeleteService() {
+        if (!deleteTarget) return
+        try {
+            const res = await fetch(`/api/repair-services/${deleteTarget.id}`, { method: 'DELETE' })
+            if (!res.ok) { const body = await res.json(); throw new Error(body.error || 'Delete failed') }
+            toast.success(t('settings.serviceDeleted')); setDeleteTarget(null); loadServices()
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to delete service')
+        }
+    }
 
     return (
         <div className="space-y-6 max-w-2xl">
@@ -28,18 +207,8 @@ export function SettingsPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="flex gap-2">
-                        <Button
-                            variant={locale === 'eng' ? 'default' : 'outline'}
-                            onClick={() => setLocale('eng')}
-                        >
-                            English
-                        </Button>
-                        <Button
-                            variant={locale === 'fr' ? 'default' : 'outline'}
-                            onClick={() => setLocale('fr')}
-                        >
-                            Français
-                        </Button>
+                        <Button variant={locale === 'eng' ? 'default' : 'outline'} onClick={() => setLocale('eng')}>English</Button>
+                        <Button variant={locale === 'fr' ? 'default' : 'outline'} onClick={() => setLocale('fr')}>Français</Button>
                     </div>
                 </CardContent>
             </Card>
@@ -62,6 +231,85 @@ export function SettingsPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            <NamedItemCard
+                title={t('settings.lensTypes')}
+                icon={Eye}
+                description={t('settings.lensTypesDesc')}
+                apiPath="/api/lens-catalogue"
+                tPrefix="settings"
+            />
+
+            <NamedItemCard
+                title={t('settings.lensBrands')}
+                icon={Eye}
+                description={t('settings.lensBrandsDesc')}
+                apiPath="/api/lens-brands"
+                tPrefix="settings"
+            />
+
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                            <Wrench className="h-5 w-5" />
+                            {t('settings.repairServices')}
+                        </CardTitle>
+                        <Button size="sm" onClick={openNewService}><Plus className="h-4 w-4 mr-1" />{t('settings.newService')}</Button>
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    <p className="text-sm text-muted-foreground">{t('settings.repairServicesDesc')}</p>
+                    {services.length === 0 ? (
+                        <p className="text-sm text-muted-foreground italic">{t('settings.noServices')}</p>
+                    ) : (
+                        <div className="border rounded-lg divide-y">
+                            {services.map((service) => (
+                                <div key={service.id} className="flex items-center justify-between px-4 py-3">
+                                    <div className="flex items-center gap-3">
+                                        <Wrench className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <span className="text-sm font-medium">{service.name}</span>
+                                        <span className="text-sm text-muted-foreground">{parseFloat(service.defaultPrice).toFixed(3)} TND</span>
+                                    </div>
+                                    <div className="flex gap-1">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditService(service)}><Pencil className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteTarget(service)}><Trash2 className="h-4 w-4" /></Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            <Dialog open={serviceDialogOpen} onOpenChange={setServiceDialogOpen}>
+                <DialogContent className="w-full sm:max-w-sm">
+                    <DialogHeader><DialogTitle>{editingService ? t('settings.editService') : t('settings.newService')}</DialogTitle></DialogHeader>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>{t('settings.serviceName')}</Label>
+                            <Input value={serviceName} onChange={(e) => setServiceName(e.target.value)} placeholder="e.g. Frame Adjustment" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>{t('settings.defaultPrice')}</Label>
+                            <Input type="number" step="0.001" value={servicePrice} onChange={(e) => setServicePrice(e.target.value)} placeholder="0.000" />
+                        </div>
+                        <Button onClick={handleSaveService} disabled={saving || !serviceName.trim() || !servicePrice} className="w-full">
+                            {saving ? t('common.saving') : t('common.save')}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <ConfirmDialog
+                open={!!deleteTarget}
+                onOpenChange={() => setDeleteTarget(null)}
+                title={t('common.delete')}
+                description={`${t('settings.confirmDelete')} "${deleteTarget?.name}"?`}
+                confirmLabel={t('common.delete')}
+                cancelLabel={t('common.cancel')}
+                onConfirm={handleDeleteService}
+            />
 
             <Card>
                 <CardHeader>

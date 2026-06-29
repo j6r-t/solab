@@ -18,6 +18,7 @@ import {
     TrendingUp,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { formatCurrency } from '@/lib/currency'
 
 interface DashboardData {
     totalClients: number
@@ -44,10 +45,6 @@ interface ReadyOrder {
     client: { name: string; familyName: string; phone: string }
     totalAmount: string
     createdAt: string
-}
-
-function formatTND(amount: string): string {
-    return parseFloat(amount).toFixed(3) + ' TND'
 }
 
 type KpiKey = 'totalRevenue' | 'totalClients' | 'todaySales' | 'lowStock' | 'pendingRepairs' | 'stockTitle'
@@ -94,7 +91,7 @@ export function DashboardPage() {
     const kpis = useMemo(() => {
         if (!data) return []
         const values: Record<KpiKey, string> = {
-            totalRevenue: formatTND(data.totalRevenue),
+            totalRevenue: formatCurrency(data.totalRevenue),
             totalClients: data.totalClients.toString(),
             todaySales: data.todayOrders.toString(),
             lowStock: data.lowStockCount.toString(),
@@ -177,7 +174,7 @@ export function DashboardPage() {
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-3 shrink-0 ml-3">
-                                        <span className="text-sm font-semibold">{formatTND(order.totalAmount)}</span>
+                                        <span className="text-sm font-semibold">{formatCurrency(order.totalAmount)}</span>
                                         <Button size="sm" variant="outline" className="gap-1.5 h-8">
                                             <Smartphone className="h-3.5 w-3.5" />
                                             SMS

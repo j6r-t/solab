@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useDebounce } from '@/hooks/useDebounce'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import {
     Dialog,
@@ -14,8 +14,9 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Receipt, Search, Printer, ShoppingCart, FileBarChart, Calendar, DollarSign } from 'lucide-react'
+import { Receipt, Search, Printer, ShoppingCart, FileBarChart, Calendar, DollarSign, Download, CheckCircle, Loader2 } from 'lucide-react'
 import { OrderForm, type OrderFormData } from '@/components/orders/OrderForm'
+import { formatCurrency } from '@/lib/currency'
 import { toast } from 'sonner'
 
 interface InvoiceItem {
@@ -69,25 +70,25 @@ export function BillingPage() {
     const [reportPeriod, setReportPeriod] = useState<'today' | 'week' | 'month'>('month')
     const [reportData, setReportData] = useState<BillingRecord[] | null>(null)
     const [reportLoading, setReportLoading] = useState(false)
-    const invoiceRef = useRef<HTMLDivElement>(null)
+    const [loading, setLoading] = useState(true)
+    const [saving, setSaving] = useState(false)
+    const debouncedSearch = useDebounce(search, 300)
 
     useEffect(() => {
         async function load() {
+            setLoading(true)
             const params = new URLSearchParams()
-            if (search) params.set('search', search)
+            if (debouncedSearch) params.set('search', debouncedSearch)
             if (statusFilter) params.set('status', statusFilter)
             const res = await fetch(`/api/billing?${params}`)
             if (res.ok) setRecords(await res.json())
+            setLoading(false)
         }
         load()
-    }, [search, statusFilter])
-
-    function formatTND(amount: string): string {
-        return parseFloat(amount).toFixed(3) + ' TND'
-    }
+    }, [debouncedSearch, statusFilter])
 
     function formatDate(dateStr: string): string {
-        return new Date(dateStr).toLocaleDateString('fr-TN', { day: 'numeric', month: 'short', year: 'numeric' })
+        return new Date(dateStr).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
     }
 
     const typeLabel = (type: string) => {
@@ -152,60 +153,68 @@ export function BillingPage() {
         const { client, items, payments, repairs, totalAmount, totalPaid, balance, paymentStatus, createdAt } = selected
         const isFullyPaid = paymentStatus === 'fullyPaid'
         const itemRows = items.map((i) =>
-            `<tr><td style="padding:6px 10px">${i.productName} (${i.brand})</td><td style="padding:6px 10px;text-align:center">${i.quantity}</td><td style="padding:6px 10px;text-align:right">${formatTND(i.unitPrice)}</td></tr>`
+            `<tr><td style="padding:8px 12px">${i.productName} (${i.brand})</td><td style="padding:8px 12px;text-align:center">${i.quantity}</td><td style="padding:8px 12px;text-align:right">${formatCurrency(i.unitPrice)}</td><td style="padding:8px 12px;text-align:right;font-weight:600">${formatCurrency((parseFloat(i.unitPrice) * i.quantity).toFixed(3))}</td></tr>`
         ).join('')
         const repairRows = repairs.map((r) =>
-            `<tr><td style="padding:6px 10px">${r.type}</td><td style="padding:6px 10px;text-align:center">1</td><td style="padding:6px 10px;text-align:right">${formatTND(r.price)}</td></tr>`
+            `<tr><td style="padding:8px 12px">${r.type}</td><td style="padding:8px 12px;text-align:center">1</td><td style="padding:8px 12px;text-align:right">${formatCurrency(r.price)}</td><td style="padding:8px 12px;text-align:right;font-weight:600">${formatCurrency(r.price)}</td></tr>`
         ).join('')
         const paymentRows = payments.map((p) =>
-            `<tr><td style="padding:6px 10px">${p.type === 'deposit' ? 'Acompte' : p.type === 'balance' ? 'Solde' : 'Paiement complet'}</td><td style="padding:6px 10px;text-align:right">${formatTND(p.amount)}</td><td style="padding:6px 10px">${new Date(p.createdAt).toLocaleDateString('fr-TN')}</td></tr>`
+            `<tr><td style="padding:8px 12px">${p.type === 'deposit' ? 'Deposit' : p.type === 'balance' ? 'Balance' : 'Full Payment'}</td><td style="padding:8px 12px;text-align:right">${formatCurrency(p.amount)}</td><td style="padding:8px 12px">${new Date(p.createdAt).toLocaleDateString('en-US')}</td></tr>`
         ).join('')
-        printWindow.document.write(`<!DOCTYPE html><html><head><title>Facture Sofien Optic</title>
+        const subtotal = items.reduce((s, i) => s + parseFloat(i.unitPrice) * i.quantity, 0)
+        const repairTotal = repairs.reduce((s, r) => s + parseFloat(r.price), 0)
+        const grand = subtotal + repairTotal
+        printWindow.document.write(`<!DOCTYPE html><html><head><title>Invoice - Sofien Optic</title>
             <style>
                 *{margin:0;padding:0;box-sizing:border-box}
-                body{font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;color:#1a1a2e}
-                .header{display:flex;align-items:center;gap:16px;margin-bottom:28px;padding-bottom:20px;border-bottom:3px solid #519651}
-                .logo{width:48px;height:48px;background:#519651;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:bold;flex-shrink:0}
-                .shop-name{font-size:22px;font-weight:700;color:#519651}
-                .shop-sub{font-size:12px;color:#666}
-                .meta{display:flex;justify-content:space-between;margin-bottom:20px;font-size:13px;color:#555}
-                .meta strong{color:#1a1a2e}
-                table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px}
-                th{background:#519651;color:#fff;padding:8px 10px;text-align:left;font-weight:600}
-                td{padding:8px 10px;border-bottom:1px solid #e8e8e8}
-                tr:last-child td{border-bottom:none}
-                .totals-box{margin-top:20px;padding:16px;background:#f0f9f0;border-radius:8px;border:1px solid #c8e6c9}
-                .totals-box .row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}
-                .totals-box .grand-total{font-size:16px;font-weight:700;color:#519651;border-top:2px solid #519651;padding-top:8px;margin-top:8px}
-                .payment-history{margin-top:20px}
-                .payment-history h4{font-size:13px;font-weight:600;margin-bottom:8px;color:#519651}
+                body{font-family:'Segoe UI',Arial,sans-serif;max-width:700px;margin:0 auto;padding:40px 32px;color:#1a1a2e}
+                .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:24px;border-bottom:2px solid #1a1a2e}
+                .shop h1{font-size:22px;font-weight:700;color:#1a1a2e}
+                .shop p{font-size:13px;color:#666;margin-top:2px}
+                .invoice-meta{text-align:right;font-size:13px}
+                .invoice-meta h2{font-size:18px;font-weight:600;margin-bottom:4px}
+                .invoice-meta p{color:#555;line-height:1.6}
+                .bill-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px}
+                .bill-grid .label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:6px}
+                .bill-grid .name{font-size:15px;font-weight:500;color:#1a1a2e;margin-bottom:4px}
+                .bill-grid .detail{font-size:13px;color:#555;line-height:1.6}
+                table{width:100%;border-collapse:collapse;margin-bottom:20px}
+                th{padding:12px;text-align:left;font-size:13px;font-weight:600;color:#555;border-top:1px solid #ddd;border-bottom:1px solid #ddd}
+                th:last-child{text-align:right}
+                td{padding:12px;border-bottom:1px solid #eee;font-size:13px}
+                td:last-child{text-align:right;font-weight:600}
+                .summary{width:300px;margin-left:auto;margin-bottom:24px}
+                .summary .row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px;color:#555}
+                .summary .total{border-top:2px solid #1a1a2e;padding-top:10px;margin-top:4px;font-size:16px;font-weight:600;color:#1a1a2e}
+                .paid-box{display:flex;align-items:center;gap:8px;padding:12px 16px;background:#f0fdf4;border-radius:8px;border-left:3px solid #16a34a;font-size:13px;font-weight:500;color:#166534;margin-bottom:24px}
                 .footer{text-align:center;margin-top:32px;padding-top:16px;border-top:1px solid #e0e0e0;font-size:11px;color:#999}
-                .print-btn{display:block;width:fit-content;margin:20px auto;padding:10px 32px;background:#519651;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer}
-                .print-btn:hover{background:#3d7a3d}
-                .balance-due{color:#dc2626;font-weight:600}
-                @media print{.print-btn{display:none;}}
-            </style></head><body>
-            <button class="print-btn" onclick="window.print()">Imprimer</button>
+                @media print{button{display:none}}
+</style></head><body>
             <div class="header">
-                <div class="logo">SO</div>
+                <div class="shop"><h1>Sofien Optic</h1><p>Tunis, Tunisia<br>ID: 1234567890</p></div>
+                <div class="invoice-meta"><h2>Invoice #ORD-${('0000' + selected.orderNumber).slice(-4)}</h2><p>Issued ${formatDate(createdAt)}</p></div>
+            </div>
+            <div class="bill-grid">
                 <div>
-                    <div class="shop-name">Sofien Optic</div>
-                    <div class="shop-sub">Tunis, Tunisie</div>
+                    <div class="label">BILL TO</div>
+                    <div class="name">${client.name} ${client.familyName}</div>
+                    <div class="detail">Phone: ${client.phone}</div>
+                </div>
+                <div>
+                    <div class="label">SHOP DETAILS</div>
+                    <div class="name">Sofien Optic</div>
+                    <div class="detail">Tunis, TN<br>ID: 1234567890</div>
                 </div>
             </div>
-            <div class="meta">
-                <div><strong>Client :</strong> ${client.name} ${client.familyName}<br><strong>Tél :</strong> ${client.phone}${client.address ? `<br><strong>Adresse :</strong> ${client.address}` : ''}</div>
-                <div style="text-align:right"><strong>Date :</strong> ${new Date(createdAt).toLocaleDateString('fr-TN')}</div>
+            ${(items.length || repairs.length) ? `<table><thead><tr><th style="width:45%">Description</th><th style="width:12%;text-align:center">Qty</th><th style="width:20%;text-align:right">Unit price</th><th style="width:23%;text-align:right">Total</th></tr></thead><tbody>${itemRows}${repairRows}</tbody></table>` : ''}
+            <div class="summary">
+                <div class="row"><span>Subtotal</span><span>${formatCurrency(grand.toFixed(3))}</span></div>
+                <div class="row"><span>Tax (0%)</span><span>0.000 TND</span></div>
+                <div class="row total"><span>Total due</span><span>${formatCurrency(totalAmount)}</span></div>
             </div>
-            ${items.length ? `<table><thead><tr><th>Article</th><th>Qté</th><th>Prix</th></tr></thead><tbody>${itemRows}</tbody></table>` : ''}
-            ${repairs.length ? `<table><thead><tr><th>Service</th><th>Qté</th><th>Prix</th></tr></thead><tbody>${repairRows}</tbody></table>` : ''}
-            <div class="totals-box">
-                <div class="row"><span>Total</span><strong>${formatTND(totalAmount)}</strong></div>
-                <div class="row"><span>Payé</span><span>${formatTND(totalPaid)}</span></div>
-                ${!isFullyPaid ? `<div class="row"><span>Reste à payer</span><span class="balance-due">${formatTND(balance)}</span></div>` : '<div class="row"><span>Statut</span><span style="color:#519651;font-weight:600">Payé</span></div>'}
-            </div>
-            ${paymentRows ? `<div class="payment-history"><h4>Historique des paiements</h4><table><thead><tr><th>Type</th><th>Montant</th><th>Date</th></tr></thead><tbody>${paymentRows}</tbody></table></div>` : ''}
-            <div class="footer">Sofien Optic — Merci de votre confiance</div>
+            ${isFullyPaid ? `<div class="paid-box"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Paid in full on ${formatDate(createdAt)}</div>` : ''}
+            ${paymentRows ? `<div><h4 style="font-size:13px;font-weight:600;margin-bottom:8px;color:#1a1a2e">Payment History</h4><table><thead><tr><th>Type</th><th style="text-align:right">Amount</th><th>Date</th></tr></thead><tbody>${paymentRows}</tbody></table></div>` : ''}
+            <div class="footer">Sofien Optic — Thank you for your trust</div>
             </body></html>`)
         printWindow.document.close()
     }
@@ -214,11 +223,11 @@ export function BillingPage() {
         if (!reportData || !reportTotals) return
         const printWindow = window.open('', '_blank')
         if (!printWindow) return
-        const periodLabel = reportPeriod === 'today' ? "Aujourd'hui" : reportPeriod === 'week' ? 'Cette semaine' : 'Ce mois'
+        const periodLabel = reportPeriod === 'today' ? 'Today' : reportPeriod === 'week' ? 'This Week' : 'This Month'
         const orderRows = reportData.map((r) =>
-            `<tr><td style="padding:6px 10px">#${r.orderNumber}</td><td style="padding:6px 10px">${r.client.name} ${r.client.familyName}</td><td style="padding:6px 10px">${typeLabel(r.orderType)}</td><td style="padding:6px 10px;text-align:right">${formatTND(r.totalAmount)}</td><td style="padding:6px 10px;text-align:right">${formatTND(r.totalPaid)}</td></tr>`
+            `<tr><td style="padding:6px 10px">#${r.orderNumber}</td><td style="padding:6px 10px">${r.client.name} ${r.client.familyName}</td><td style="padding:6px 10px">${typeLabel(r.orderType)}</td><td style="padding:6px 10px;text-align:right">${formatCurrency(r.totalAmount)}</td><td style="padding:6px 10px;text-align:right">${formatCurrency(r.totalPaid)}</td></tr>`
         ).join('')
-        printWindow.document.write(`<!DOCTYPE html><html><head><title>Rapport ${periodLabel} — Sofien Optic</title>
+        printWindow.document.write(`<!DOCTYPE html><html><head><title>Report ${periodLabel} — Sofien Optic</title>
             <style>
                 *{margin:0;padding:0;box-sizing:border-box}
                 body{font-family:'Segoe UI',Arial,sans-serif;max-width:800px;margin:0 auto;padding:32px 24px;color:#1a1a2e}
@@ -236,27 +245,26 @@ export function BillingPage() {
                 .summary-card.paid{background:#f0f4ff;border:1px solid #c8d6f0;color:#2563eb}
                 .summary-card.count{background:#fef3e6;border:1px solid #fde0c0;color:#d97706}
                 .footer{text-align:center;margin-top:24px;padding-top:12px;border-top:1px solid #e0e0e0;font-size:11px;color:#999}
-                .print-btn{display:block;width:fit-content;margin:20px auto;padding:10px 32px;background:#519651;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer}
-                @media print{.print-btn{display:none}}
-            </style></head><body>
-            <button class="print-btn" onclick="window.print()">Imprimer</button>
+                @media print{button{display:none}}
+</style></head><body>
             <div class="header">
                 <div class="logo">SO</div>
                 <div><div class="shop-name">Sofien Optic</div></div>
             </div>
-            <h2>Rapport — ${periodLabel}</h2>
+            <h2>Report — ${periodLabel}</h2>
             <div class="summary">
-                <div class="summary-card revenue"><div>Chiffre d'affaires</div><div class="value">${formatTND(reportTotals.revenue.toFixed(3))}</div></div>
-                <div class="summary-card paid"><div>Total encaissé</div><div class="value">${formatTND(reportTotals.paid.toFixed(3))}</div></div>
-                <div class="summary-card count"><div>Nombre de commandes</div><div class="value">${reportTotals.count}</div></div>
+                <div class="summary-card revenue"><div>Revenue</div><div class="value">${formatCurrency(reportTotals.revenue.toFixed(3))}</div></div>
+                <div class="summary-card paid"><div>Collected</div><div class="value">${formatCurrency(reportTotals.paid.toFixed(3))}</div></div>
+                <div class="summary-card count"><div>Orders</div><div class="value">${reportTotals.count}</div></div>
             </div>
-            <table><thead><tr><th>N°</th><th>Client</th><th>Type</th><th>Total</th><th>Payé</th></tr></thead><tbody>${orderRows}</tbody></table>
-            <div class="footer">Sofien Optic — Rapport généré le ${new Date().toLocaleDateString('fr-TN')}</div>
+            <table><thead><tr><th>#</th><th>Client</th><th>Type</th><th>Total</th><th>Paid</th></tr></thead><tbody>${orderRows}</tbody></table>
+            <div class="footer">Sofien Optic — Report generated ${new Date().toLocaleDateString('en-US')}</div>
             </body></html>`)
         printWindow.document.close()
     }
 
     async function handleQuickSale(data: OrderFormData) {
+        setSaving(true)
         try {
             const res = await fetch('/api/orders', {
                 method: 'POST',
@@ -267,20 +275,30 @@ export function BillingPage() {
                 const body = await res.json()
                 throw new Error(JSON.stringify(body.error))
             }
+            toast.success(t('billing.quickSaleSuccess'))
+            await delay(1500)
             setQuickSaleOpen(false)
             const params = new URLSearchParams()
-            if (search) params.set('search', search)
+            if (debouncedSearch) params.set('search', debouncedSearch)
             if (statusFilter) params.set('status', statusFilter)
             const refresh = await fetch(`/api/billing?${params}`)
             if (refresh.ok) setRecords(await refresh.json())
-            toast.success(t('billing.quickSaleSuccess'))
         } catch (error) {
             toast.error(error instanceof Error ? error.message : 'Quick sale failed')
+        } finally {
+            setSaving(false)
         }
     }
 
+    function delay(ms: number) {
+        return new Promise((resolve) => setTimeout(resolve, ms))
+    }
+
+    const showEmptyState = !loading && records.length === 0 && !debouncedSearch
+    const showNoResults = !loading && records.length === 0 && debouncedSearch
+
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 max-w-[900px]">
             <div className="flex items-center justify-between flex-wrap gap-2">
                 <h1 className="text-2xl font-bold">{t('nav.billing')}</h1>
                 <div className="flex gap-2">
@@ -299,13 +317,15 @@ export function BillingPage() {
                                 {t('billing.quickSale')}
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                        <DialogContent className="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
                                 <DialogTitle>{t('billing.quickSale')}</DialogTitle>
                             </DialogHeader>
                             <OrderForm
                                 onSubmit={handleQuickSale}
                                 onCancel={() => setQuickSaleOpen(false)}
+                                saving={saving}
+                                forcedOrderType="direct_sale"
                             />
                         </DialogContent>
                     </Dialog>
@@ -335,10 +355,20 @@ export function BillingPage() {
                 </select>
             </div>
 
-            {records.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 rounded-xl empty-state-gradient text-muted-foreground">
-                    <Receipt className="h-12 w-12 mb-4 opacity-50" />
-                    <p>{t('billing.noInvoices')}</p>
+            {loading && records.length === 0 ? (
+                <div className="flex items-center justify-center py-16">
+                    <Loader2 className="h-6 w-6 animate-spinner text-muted-foreground" />
+                </div>
+            ) : showEmptyState ? (
+                <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center max-w-[600px] mx-auto">
+                    <Receipt className="w-12 h-12 text-muted-foreground/50 mb-6" />
+                    <h2 className="text-lg font-medium text-foreground mb-2">{t('empty.noInvoices')}</h2>
+                    <p className="text-sm text-muted-foreground mb-6 max-w-sm leading-relaxed">{t('empty.noInvoicesDesc')}</p>
+                </div>
+            ) : showNoResults ? (
+                <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center max-w-[600px] mx-auto">
+                    <Search className="w-12 h-12 text-muted-foreground/50 mb-6" />
+                    <h2 className="text-lg font-medium text-foreground mb-2">{t('common.noResults')}</h2>
                 </div>
             ) : (
                 <div className="space-y-2">
@@ -346,7 +376,7 @@ export function BillingPage() {
                         <button
                             key={r.id}
                             onClick={() => setSelected(r)}
-                            className="w-full flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent transition-colors text-left row-alternate"
+                            className="w-full flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent transition-colors text-left row-alternate row-hover"
                         >
                             <div>
                                 <p className="font-medium">#{r.orderNumber} — {r.client.name} {r.client.familyName}</p>
@@ -354,9 +384,9 @@ export function BillingPage() {
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="text-right text-sm">
-                                    <p className="font-medium">{formatTND(r.totalAmount)}</p>
+                                    <p className="font-medium">{formatCurrency(r.totalAmount)}</p>
                                     {r.balance !== '0.000' && (
-                                        <p className="text-xs text-muted-foreground">{t('orders.balance')}: {formatTND(r.balance)}</p>
+                                        <p className="text-xs text-muted-foreground">{t('orders.balance')}: {formatCurrency(r.balance)}</p>
                                     )}
                                 </div>
                                 <Badge variant={paymentColors[r.paymentStatus] || 'outline'}>
@@ -370,103 +400,127 @@ export function BillingPage() {
 
             {/* Invoice Detail Dialog */}
             <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>{t('nav.billing')} #{selected?.orderNumber}</DialogTitle>
-                    </DialogHeader>
+                <DialogContent className="w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                     {selected && (
-                        <div ref={invoiceRef} className="space-y-4 text-sm">
-                            <div className="text-center border-b pb-3">
-                                <div className="flex items-center justify-center gap-3 mb-1">
-                                    <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg shrink-0">
-                                        SO
-                                    </div>
-                                    <div className="text-left">
-                                        <p className="font-bold text-lg text-primary">Sofien Optic</p>
-                                        <p className="text-xs text-muted-foreground">Tunis, Tunisie</p>
-                                    </div>
+                        <div className="py-4">
+                            {/* Header: invoice number + date + buttons */}
+                            <div className="flex items-start justify-between mb-4">
+                                <div>
+                                    <DialogTitle className="text-[22px] font-medium">
+                                        Invoice #ORD-{('0000' + selected.orderNumber).slice(-4)}
+                                    </DialogTitle>
+                                    <p className="text-sm text-muted-foreground mt-1">Issued {formatDate(selected.createdAt)}</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button variant="outline" size="sm" onClick={printInvoice}>
+                                        <Download className="h-4 w-4 mr-1.5" />
+                                        Export PDF
+                                    </Button>
+                                    <Button size="sm" className="gap-1.5" onClick={() => { printInvoice(); setTimeout(() => window.open('', '_blank')?.print(), 500) }}>
+                                        <Printer className="h-4 w-4 mr-1.5" />
+                                        Print
+                                    </Button>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                    <p className="text-muted-foreground text-xs">{t('orders.client')}</p>
-                                    <p className="font-medium">{selected.client.name} {selected.client.familyName}</p>
-                                    <p className="text-xs text-muted-foreground">{selected.client.phone}</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-muted-foreground text-xs">{t('billing.date')}</p>
-                                    <p>{formatDate(selected.createdAt)}</p>
-                                </div>
-                            </div>
+                            {/* Invoice Card */}
+                            <div className="border rounded-xl bg-card p-6 space-y-6">
 
-                            {selected.items.length > 0 && (
-                                <div>
-                                    <p className="font-semibold mb-1 text-primary text-xs uppercase tracking-wider">{t('orders.items')}</p>
-                                    <div className="space-y-1">
-                                        {selected.items.map((item, i) => (
-                                            <div key={i} className="flex justify-between p-2.5 bg-muted/30 rounded-lg border">
-                                                <span className="font-medium">{item.productName} <span className="font-normal text-muted-foreground">({item.brand})</span> <span className="text-muted-foreground">×{item.quantity}</span></span>
-                                                <span>{formatTND(item.unitPrice)}</span>
-                                            </div>
-                                        ))}
+                                {/* Bill To & Shop Details */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    <div>
+                                        <p className="text-[11px] font-bold uppercase tracking-[0.5px] text-muted-foreground mb-1.5">BILL TO</p>
+                                        <p className="text-[15px] font-medium text-foreground mb-1">{selected.client.name} {selected.client.familyName}</p>
+                                        <div className="text-sm text-muted-foreground leading-relaxed">
+                                            <p>Phone: {selected.client.phone}</p>
+                                            {selected.client.address && <p>Address: {selected.client.address}</p>}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-[11px] font-bold uppercase tracking-[0.5px] text-muted-foreground mb-1.5">SHOP DETAILS</p>
+                                        <p className="text-[15px] font-medium text-foreground mb-1">Sofien Optic</p>
+                                        <div className="text-sm text-muted-foreground leading-relaxed">
+                                            <p>Tunis, TN</p>
+                                            <p>ID: 1234567890</p>
+                                        </div>
                                     </div>
                                 </div>
-                            )}
 
-                            {selected.repairs.length > 0 && (
-                                <div>
-                                    <p className="font-semibold mb-1 text-primary text-xs uppercase tracking-wider">{t('nav.repairs')}</p>
-                                    <div className="space-y-1">
-                                        {selected.repairs.map((r, i) => (
-                                            <div key={i} className="flex justify-between p-2.5 bg-muted/30 rounded-lg border">
-                                                <span>{r.type}</span>
-                                                <span>{formatTND(r.price)}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="rounded-lg border border-primary/20 bg-primary/[0.03] p-4 space-y-1.5">
-                                <div className="flex justify-between font-semibold text-base">
-                                    <span>{t('orders.total')}</span>
-                                    <span className="text-primary">{formatTND(selected.totalAmount)}</span>
-                                </div>
-                                <div className="flex justify-between text-muted-foreground">
-                                    <span>{t('orders.paid')}</span>
-                                    <span>{formatTND(selected.totalPaid)}</span>
-                                </div>
-                                {selected.balance !== '0.000' && (
-                                    <div className="flex justify-between text-destructive font-medium">
-                                        <span>{t('orders.balance')}</span>
-                                        <span>{formatTND(selected.balance)}</span>
+                                {/* Line Items Table */}
+                                {(selected.items.length > 0 || selected.repairs.length > 0) && (
+                                    <div>
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="border-y">
+                                                    <th className="text-left py-3 text-sm font-medium text-muted-foreground" style={{width:'45%'}}>Description</th>
+                                                    <th className="text-right py-3 text-sm font-medium text-muted-foreground" style={{width:'12%'}}>Qty</th>
+                                                    <th className="text-right py-3 text-sm font-medium text-muted-foreground" style={{width:'20%'}}>Unit price</th>
+                                                    <th className="text-right py-3 text-sm font-medium text-muted-foreground" style={{width:'23%'}}>Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y">
+                                                {selected.items.map((item, i) => (
+                                                    <tr key={i} className="text-sm">
+                                                        <td className="py-3 text-foreground font-medium">{item.productName} <span className="text-muted-foreground font-normal">({item.brand})</span></td>
+                                                        <td className="py-3 text-right">{item.quantity}</td>
+                                                        <td className="py-3 text-right">{formatCurrency(item.unitPrice)}</td>
+                                                        <td className="py-3 text-right font-semibold">{formatCurrency((parseFloat(item.unitPrice) * item.quantity).toFixed(3))}</td>
+                                                    </tr>
+                                                ))}
+                                                {selected.repairs.map((r, i) => (
+                                                    <tr key={`repair-${i}`} className="text-sm">
+                                                        <td className="py-3 text-foreground font-medium">{r.type}</td>
+                                                        <td className="py-3 text-right">1</td>
+                                                        <td className="py-3 text-right">{formatCurrency(r.price)}</td>
+                                                        <td className="py-3 text-right font-semibold">{formatCurrency(r.price)}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 )}
-                                <div className="flex justify-between items-center pt-1">
-                                    <span className="text-muted-foreground">{t('orders.payment')}</span>
-                                    <Badge variant={paymentColors[selected.paymentStatus]}>{t(`orders.${selected.paymentStatus}`)}</Badge>
-                                </div>
-                            </div>
 
-                            {selected.payments.length > 0 && (
-                                <div>
-                                    <p className="font-semibold mb-1 text-primary text-xs uppercase tracking-wider">{t('orders.paymentHistory')}</p>
-                                    <div className="space-y-1">
-                                        {selected.payments.map((p, i) => (
-                                            <div key={i} className="flex justify-between p-2.5 bg-muted/30 rounded-lg border text-xs">
-                                                <span>{p.type === 'deposit' ? t('orders.deposit') : p.type === 'balance' ? t('orders.balancePayment') : t('orders.full')} — {formatDate(p.createdAt)}</span>
-                                                <span className="font-medium">{formatTND(p.amount)}</span>
-                                            </div>
-                                        ))}
+                                {/* Summary Totals */}
+                                <div className="flex justify-end">
+                                    <div className="w-full sm:w-[300px] space-y-2">
+                                        <div className="flex justify-between text-sm text-muted-foreground border-b pb-2">
+                                            <span>Subtotal</span>
+                                            <span>{formatCurrency(selected.totalAmount)}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm text-muted-foreground">
+                                            <span>Tax (0%)</span>
+                                            <span>0.000 TND</span>
+                                        </div>
+                                        <div className="flex justify-between text-base font-semibold text-foreground border-t-2 pt-2.5">
+                                            <span>Total due</span>
+                                            <span>{formatCurrency(selected.totalAmount)}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            )}
 
-                            <Button size="sm" variant="default" className="w-full gap-2" onClick={printInvoice}>
-                                <Printer className="h-4 w-4" />
-                                {t('billing.print')}
-                            </Button>
+                                {/* Payment Status */}
+                                {selected.paymentStatus === 'fullyPaid' && (
+                                    <div className="flex items-center gap-2.5 p-3 rounded-lg border-l-[3px] border-l-green-600 bg-green-50 dark:bg-green-950/20 text-sm font-medium text-green-700 dark:text-green-400">
+                                        <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
+                                        Paid in full on {formatDate(selected.createdAt)}
+                                    </div>
+                                )}
+
+                                {/* Payment History */}
+                                {selected.payments.length > 0 && (
+                                    <div>
+                                        <p className="text-sm font-semibold text-foreground mb-2">Payment History</p>
+                                        <div className="space-y-1">
+                                            {selected.payments.map((p, i) => (
+                                                <div key={i} className="flex justify-between p-2.5 bg-muted/30 rounded-lg border text-xs">
+                                                    <span>{p.type === 'deposit' ? 'Deposit' : p.type === 'balance' ? 'Balance Payment' : 'Full Payment'} — {new Date(p.createdAt).toLocaleDateString('en-US')}</span>
+                                                    <span className="font-medium">{formatCurrency(p.amount)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
                 </DialogContent>
@@ -474,7 +528,7 @@ export function BillingPage() {
 
             {/* Period Report Dialog */}
             <Dialog open={reportOpen} onOpenChange={(o) => { if (!o) setReportData(null); setReportOpen(o) }}>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <FileBarChart className="h-5 w-5 text-primary" />
@@ -494,7 +548,7 @@ export function BillingPage() {
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="px-3 pb-3">
-                                        <p className="text-lg font-bold text-primary">{formatTND(reportTotals.revenue.toFixed(3))}</p>
+                                        <p className="text-lg font-bold text-primary">{formatCurrency(reportTotals.revenue.toFixed(3))}</p>
                                     </CardContent>
                                 </Card>
                                 <Card>
@@ -502,7 +556,7 @@ export function BillingPage() {
                                         <CardTitle className="text-xs text-muted-foreground">{t('orders.paid')}</CardTitle>
                                     </CardHeader>
                                     <CardContent className="px-3 pb-3">
-                                        <p className="text-lg font-bold">{formatTND(reportTotals.paid.toFixed(3))}</p>
+                                        <p className="text-lg font-bold">{formatCurrency(reportTotals.paid.toFixed(3))}</p>
                                     </CardContent>
                                 </Card>
                                 <Card>
@@ -549,8 +603,8 @@ export function BillingPage() {
                                                 <td className="p-2.5 font-medium">#{r.orderNumber}</td>
                                                 <td className="p-2.5">{r.client.name} {r.client.familyName}</td>
                                                 <td className="p-2.5 text-muted-foreground">{typeLabel(r.orderType)}</td>
-                                                <td className="p-2.5 text-right font-medium">{formatTND(r.totalAmount)}</td>
-                                                <td className="p-2.5 text-right">{formatTND(r.totalPaid)}</td>
+                                                <td className="p-2.5 text-right font-medium">{formatCurrency(r.totalAmount)}</td>
+                                                <td className="p-2.5 text-right">{formatCurrency(r.totalPaid)}</td>
                                             </tr>
                                         ))}
                                     </tbody>

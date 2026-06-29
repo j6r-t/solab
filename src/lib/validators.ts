@@ -12,11 +12,17 @@ export type ClientFormData = z.infer<typeof clientSchema>
 
 export const productSchema = z.object({
     name: z.string().min(1, 'Product name is required'),
-    brand: z.string().min(1, 'Brand is required'),
-    model: z.string().min(1, 'Model is required'),
+    brand: z.string().optional(),
+    model: z.string().optional(),
     category: z.enum(['eyewear', 'lens', 'accessory']).optional(),
     price: z.coerce.number().min(0, 'Price must be positive'),
     quantity: z.coerce.number().int().min(0, 'Quantity must be 0 or more'),
+    lensType: z.enum(['singleVision', 'progressive', 'bifocal', 'office', 'photochromic']).optional(),
+    material: z.enum(['cr39', 'polycarbonate', 'highIndex', 'trivex']).optional(),
+    coating: z.enum(['none', 'ar', 'scratchResistant', 'blueBlock', 'arScratch', 'arBlueBlock']).optional(),
+    sph: z.coerce.number().optional(),
+    cyl: z.coerce.number().optional(),
+    add: z.coerce.number().optional(),
 })
 
 export type ProductFormData = z.infer<typeof productSchema>

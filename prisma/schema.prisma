@@ -74,6 +74,12 @@ model Product {
   category         ProductCategory?
   price            Decimal
   quantity         Int               @default(0)
+  lensType         LensType?
+  material         LensMaterial?
+  coating          LensCoating?
+  sph              Decimal?
+  cyl              Decimal?
+  add              Decimal?
   qrcode           QRCode?
   orderItems       OrderItem[]
   StockAdjustments StockAdjustment[]
@@ -86,6 +92,30 @@ enum ProductCategory {
   eyewear
   lens
   accessory
+}
+
+enum LensType {
+  singleVision
+  progressive
+  bifocal
+  office
+  photochromic
+}
+
+enum LensMaterial {
+  cr39
+  polycarbonate
+  highIndex
+  trivex
+}
+
+enum LensCoating {
+  none
+  ar
+  scratchResistant
+  blueBlock
+  arScratch
+  arBlueBlock
 }
 
 model QRCode {
@@ -180,6 +210,18 @@ enum RepairStatus {
   pending
   completed
   cancelled
+}
+
+model LensCatalogue {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+}
+
+model LensBrand {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
 }
 
 model StockAdjustment {

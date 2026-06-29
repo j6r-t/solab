@@ -12,9 +12,10 @@ interface ClientFormProps {
     defaultValues?: Partial<ClientFormData>
     onSubmit: (data: ClientFormData) => Promise<void>
     onCancel: () => void
+    saving?: boolean
 }
 
-export function ClientForm({ defaultValues, onSubmit, onCancel }: ClientFormProps) {
+export function ClientForm({ defaultValues, onSubmit, onCancel, saving: externalSaving }: ClientFormProps) {
     const { t } = useTranslation()
     const [formData, setFormData] = useState<ClientFormData>({
         name: defaultValues?.name || '',
@@ -24,7 +25,8 @@ export function ClientForm({ defaultValues, onSubmit, onCancel }: ClientFormProp
         gender: defaultValues?.gender || undefined,
     })
     const [errors, setErrors] = useState<Record<string, string[]>>({})
-    const [loading, setLoading] = useState(false)
+    const [internalSaving, setInternalSaving] = useState(false)
+    const loading = internalSaving || externalSaving || false
 
     function handleChange(field: keyof ClientFormData, value: string) {
         setFormData((prev) => ({ ...prev, [field]: value || undefined }))
@@ -41,7 +43,7 @@ export function ClientForm({ defaultValues, onSubmit, onCancel }: ClientFormProp
             return
         }
 
-        setLoading(true)
+        setInternalSaving(true)
         try {
             await onSubmit(formData)
         } catch (error: unknown) {
@@ -51,7 +53,7 @@ export function ClientForm({ defaultValues, onSubmit, onCancel }: ClientFormProp
                 setErrors(body.error || {})
             }
         } finally {
-            setLoading(false)
+            setInternalSaving(false)
         }
     }
 
@@ -132,7 +134,7 @@ export function ClientForm({ defaultValues, onSubmit, onCancel }: ClientFormProp
 
             <div className="flex gap-3 pt-2">
                 <Button type="submit" disabled={loading} className="flex-1">
-                    {loading ? t('common.loading') : t('common.save')}
+                    {loading ? t('common.saving') : t('common.save')}
                 </Button>
                 <Button type="button" variant="outline" onClick={onCancel}>
                     {t('common.cancel')}

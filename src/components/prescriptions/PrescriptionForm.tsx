@@ -20,9 +20,10 @@ interface PrescriptionFormProps {
     defaultValues?: Partial<PrescriptionFormData>
     onSubmit: (data: PrescriptionFormData) => Promise<void>
     onCancel: () => void
+    saving?: boolean
 }
 
-export function PrescriptionForm({ defaultValues, onSubmit, onCancel }: PrescriptionFormProps) {
+export function PrescriptionForm({ defaultValues, onSubmit, onCancel, saving: externalSaving }: PrescriptionFormProps) {
     const { t } = useTranslation()
     const [clients, setClients] = useState<ClientOption[]>([])
     const [clientSearch, setClientSearch] = useState('')
@@ -41,7 +42,8 @@ export function PrescriptionForm({ defaultValues, onSubmit, onCancel }: Prescrip
         doctorName: defaultValues?.doctorName || '',
     })
     const [errors, setErrors] = useState<Record<string, string[]>>({})
-    const [loading, setLoading] = useState(false)
+    const [internalSaving, setInternalSaving] = useState(false)
+    const loading = internalSaving || externalSaving || false
 
     useEffect(() => {
         async function load() {
@@ -79,7 +81,7 @@ export function PrescriptionForm({ defaultValues, onSubmit, onCancel }: Prescrip
             return
         }
 
-        setLoading(true)
+        setInternalSaving(true)
         try {
             await onSubmit(formData)
         } catch (error: unknown) {
@@ -88,7 +90,7 @@ export function PrescriptionForm({ defaultValues, onSubmit, onCancel }: Prescrip
                 setErrors(body.error || {})
             }
         } finally {
-            setLoading(false)
+            setInternalSaving(false)
         }
     }
 
@@ -178,7 +180,7 @@ export function PrescriptionForm({ defaultValues, onSubmit, onCancel }: Prescrip
 
             <div className="flex gap-3 pt-1">
                 <Button type="submit" disabled={loading} className="flex-1 h-10">
-                    {loading ? t('common.loading') : t('common.save')}
+                    {loading ? t('common.saving') : t('common.save')}
                 </Button>
                 <Button type="button" variant="outline" onClick={onCancel} className="h-10">
                     {t('common.cancel')}

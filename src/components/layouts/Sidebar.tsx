@@ -13,6 +13,7 @@ import {
     Glasses,
     LogOut,
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useViewStore, type ViewName } from '@/stores/view-store'
 import { useAuthStore } from '@/stores/auth-store'
@@ -34,6 +35,7 @@ export function Sidebar() {
     const { t } = useTranslation()
     const { currentView, setView } = useViewStore()
     const { logout } = useAuthStore()
+    const router = useRouter()
 
     return (
         <aside className="hidden md:flex w-64 flex-col border-r bg-card h-screen sticky top-0">
@@ -72,8 +74,7 @@ export function Sidebar() {
                 <button
                     onClick={() => {
                         logout()
-                        window.dispatchEvent(new Event('auth-logout'))
-                        window.location.href = '/login'
+                        router.push('/login')
                     }}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                     title={t('common.logout')}

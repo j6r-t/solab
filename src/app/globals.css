@@ -138,10 +138,35 @@
   .touch-target {
     @apply min-h-[44px] min-w-[44px];
   }
-  .empty-state-gradient {
-    background: linear-gradient(135deg, oklch(0.97 0 0) 0%, oklch(0.95 0.03 145) 100%);
+  .row-hover {
+    @apply transition-colors duration-150 hover:bg-muted/40;
   }
-  .dark .empty-state-gradient {
-    background: linear-gradient(135deg, oklch(0.2 0 0) 0%, oklch(0.22 0.04 145) 100%);
+  .bg-status-pending { background-color: rgb(254, 243, 199); }
+  .text-status-pending { color: rgb(180, 83, 9); }
+  .border-status-pending { border-color: rgb(254, 243, 199); }
+
+  .bg-status-ready { background-color: rgb(240, 253, 244); }
+  .text-status-ready { color: rgb(22, 101, 52); }
+  .border-status-ready { border-color: rgb(240, 253, 244); }
+
+  .bg-status-completed { background-color: rgb(239, 246, 255); }
+  .text-status-completed { color: rgb(37, 99, 235); }
+  .border-status-completed { border-color: rgb(239, 246, 255); }
+  @media (max-width: 767px) {
+    .responsive-card {
+      @apply flex flex-col gap-2 p-4 rounded-xl border bg-card;
+    }
+    .responsive-card-header {
+      @apply flex items-center justify-between;
+    }
+    .responsive-card-hide {
+      @apply hidden;
+    }
+  }
+  @keyframes spinner {
+    to { transform: rotate(360deg); }
+  }
+  .animate-spinner {
+    animation: spinner 0.6s linear infinite;
   }
 }

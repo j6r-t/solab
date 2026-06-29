@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useDebounce } from '@/hooks/useDebounce'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -13,7 +14,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
-import { Plus, FileText, User, Stethoscope, Calendar, Eye, EyeOff, Search, Pencil, Trash2 } from 'lucide-react'
+import { Plus, FileText, User, Stethoscope, Calendar, Eye, EyeOff, Search, Pencil, Trash2, Loader2 } from 'lucide-react'
 import type { PrescriptionFormData } from '@/lib/validators'
 import { toast } from 'sonner'
 
@@ -41,9 +42,13 @@ export function PrescriptionsPage() {
     const [dialogOpen, setDialogOpen] = useState(false)
     const [editPrescription, setEditPrescription] = useState<Prescription | null>(null)
     const [deleteTarget, setDeleteTarget] = useState<Prescription | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [saving, setSaving] = useState(false)
+    const debouncedSearch = useDebounce(search, 300)
 
     useEffect(() => {
         async function load() {
+            setLoading(true)
             try {
                 const res = await fetch('/api/prescriptions')
                 if (res.ok) {
@@ -51,6 +56,8 @@ export function PrescriptionsPage() {
                 }
             } catch (error) {
                 console.error('Failed to fetch prescriptions:', error)
+            } finally {
+                setLoading(false)
             }
         }
         load()
@@ -62,34 +69,46 @@ export function PrescriptionsPage() {
     }
 
     async function handleCreate(data: PrescriptionFormData) {
-        const res = await fetch('/api/prescriptions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-        })
-        if (!res.ok) {
-            const body = await res.json()
-            throw new Error(JSON.stringify(body.error))
+        setSaving(true)
+        try {
+            const res = await fetch('/api/prescriptions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            })
+            if (!res.ok) {
+                const body = await res.json()
+                throw new Error(JSON.stringify(body.error))
+            }
+            toast.success(t('prescriptions.created'))
+            await delay(1500)
+            setDialogOpen(false)
+            await reFetch()
+        } finally {
+            setSaving(false)
         }
-        setDialogOpen(false)
-        await reFetch()
-        toast.success(t('prescriptions.created'))
     }
 
     async function handleUpdate(data: PrescriptionFormData) {
         if (!editPrescription) return
-        const res = await fetch(`/api/prescriptions/${editPrescription.id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-        })
-        if (!res.ok) {
-            const body = await res.json()
-            throw new Error(JSON.stringify(body.error))
+        setSaving(true)
+        try {
+            const res = await fetch(`/api/prescriptions/${editPrescription.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            })
+            if (!res.ok) {
+                const body = await res.json()
+                throw new Error(JSON.stringify(body.error))
+            }
+            toast.success(t('prescriptions.updated'))
+            await delay(1500)
+            setEditPrescription(null)
+            await reFetch()
+        } finally {
+            setSaving(false)
         }
-        setEditPrescription(null)
-        await reFetch()
-        toast.success(t('prescriptions.updated'))
     }
 
     async function handleDelete(prescription: Prescription) {
@@ -99,11 +118,18 @@ export function PrescriptionsPage() {
         toast.success(t('prescriptions.deleted'))
     }
 
-    const filtered = search
+    function delay(ms: number) {
+        return new Promise((resolve) => setTimeout(resolve, ms))
+    }
+
+    const filtered = debouncedSearch
         ? prescriptions.filter((rx) =>
-            `${rx.client.name} ${rx.client.familyName}`.toLowerCase().includes(search.toLowerCase())
+            `${rx.client.name} ${rx.client.familyName}`.toLowerCase().includes(debouncedSearch.toLowerCase())
           )
         : prescriptions
+
+    const showEmptyState = !loading && prescriptions.length === 0
+    const showNoResults = filtered.length === 0 && prescriptions.length > 0
 
     return (
         <>
@@ -126,10 +152,25 @@ export function PrescriptionsPage() {
                     />
                 </div>
 
-                {filtered.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 rounded-xl empty-state-gradient text-muted-foreground">
-                        <FileText className="h-12 w-12 mb-4 opacity-50" />
-                        <p>{t('prescriptions.noPrescriptions')}</p>
+                {loading && prescriptions.length === 0 ? (
+                    <div className="flex items-center justify-center py-16">
+                        <Loader2 className="h-6 w-6 animate-spinner text-muted-foreground" />
+                    </div>
+                ) : showEmptyState ? (
+                    <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-4">
+                        <FileText className="w-12 h-12 text-muted-foreground/50 mb-6" />
+                        <h2 className="text-lg font-medium text-foreground mb-2">{t('empty.noPrescriptions')}</h2>
+                        <p className="text-sm text-muted-foreground mb-6 max-w-sm text-center">{t('empty.noPrescriptionsDesc')}</p>
+                        <Button onClick={() => { setEditPrescription(null); setDialogOpen(true) }}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            {t('empty.noPrescriptionsAction')}
+                        </Button>
+                    </div>
+                ) : showNoResults ? (
+                    <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-4">
+                        <Search className="w-12 h-12 text-muted-foreground/50 mb-6" />
+                        <h2 className="text-lg font-medium text-foreground mb-2">{t('common.noResults')}</h2>
+                        <p className="text-sm text-muted-foreground">{t('empty.noResults')}</p>
                     </div>
                 ) : (
                     <div className="grid gap-3 sm:grid-cols-2">
@@ -205,7 +246,7 @@ export function PrescriptionsPage() {
                 )}
 
                 <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) setEditPrescription(null); setDialogOpen(open) }}>
-                    <DialogContent className="max-w-lg">
+                    <DialogContent className="w-full sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>{editPrescription ? t('common.edit') : t('prescriptions.newPrescription')}</DialogTitle>
                         </DialogHeader>
@@ -226,6 +267,7 @@ export function PrescriptionsPage() {
                             } : undefined}
                             onSubmit={editPrescription ? handleUpdate : handleCreate}
                             onCancel={() => { setEditPrescription(null); setDialogOpen(false) }}
+                            saving={saving}
                         />
                     </DialogContent>
                 </Dialog>

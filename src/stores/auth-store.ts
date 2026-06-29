@@ -10,7 +10,7 @@ interface AuthState {
     isAuthenticated: boolean
     user: User | null
     setAuth: (token: string, user: User) => void
-    logout: () => Promise<void>
+    logout: () => void
 }
 
 // Initialize from localStorage on first load
@@ -41,16 +41,10 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         localStorage.setItem('auth-user', JSON.stringify(user))
         set({ isAuthenticated: true, user })
     },
-    logout: async () => {
-        // Call logout API to clear cookie
-        try {
-            await fetch('/api/auth/logout', { method: 'POST' })
-        } catch (error) {
-            console.error('Logout API error:', error)
-        }
-        // Clear localStorage
+    logout: () => {
         localStorage.removeItem('auth-token')
         localStorage.removeItem('auth-user')
         set({ isAuthenticated: false, user: null })
+        fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
     },
 }))

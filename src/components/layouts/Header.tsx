@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useViewStore } from '@/stores/view-store'
@@ -10,6 +11,7 @@ export function Header() {
     const { t } = useTranslation()
     const { currentView, goBack } = useViewStore()
     const { logout } = useAuthStore()
+    const router = useRouter()
 
     const showBack = currentView !== 'dashboard'
 
@@ -36,8 +38,7 @@ export function Header() {
                     <button
                         onClick={() => {
                             logout()
-                            window.dispatchEvent(new Event('auth-logout'))
-                            window.location.href = '/login'
+                            router.push('/login')
                         }}
                         className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
                         title={t('common.logout')}

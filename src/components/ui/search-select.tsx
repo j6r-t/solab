@@ -75,7 +75,7 @@ export function SearchSelect({
                 <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
             </Button>
             <Dialog open={open} onOpenChange={(o) => { if (!o) setSearch(''); setOpen(o) }}>
-                <DialogContent className="max-w-md p-0 gap-0">
+                <DialogContent className="w-full sm:max-w-md p-0 gap-0">
                     <DialogHeader className="px-4 pt-4 pb-0">
                         <DialogTitle className="text-sm font-medium">{title}</DialogTitle>
                     </DialogHeader>

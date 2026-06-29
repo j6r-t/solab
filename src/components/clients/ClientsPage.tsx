@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useDebounce } from '@/hooks/useDebounce'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ClientForm } from '@/components/clients/ClientForm'
@@ -12,7 +13,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
-import { Plus, Search, Users, Pencil, Trash2, Phone, Calendar } from 'lucide-react'
+import { Plus, Search, Users, Pencil, Trash2, Loader2 } from 'lucide-react'
 import type { ClientFormData } from '@/lib/validators'
 import { toast } from 'sonner'
 
@@ -34,12 +35,16 @@ export function ClientsPage() {
     const [dialogOpen, setDialogOpen] = useState(false)
     const [editClient, setEditClient] = useState<Client | null>(null)
     const [deleteTarget, setDeleteTarget] = useState<Client | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [saving, setSaving] = useState(false)
+    const debouncedSearch = useDebounce(search, 300)
 
     useEffect(() => {
         async function load() {
+            setLoading(true)
             try {
                 const params = new URLSearchParams()
-                if (search) params.set('search', search)
+                if (debouncedSearch) params.set('search', debouncedSearch)
                 if (genderFilter) params.set('gender', genderFilter)
                 const res = await fetch(`/api/clients?${params}`)
                 if (res.ok) {
@@ -47,48 +52,62 @@ export function ClientsPage() {
                 }
             } catch (error) {
                 toast.error(error instanceof Error ? error.message : 'Failed to fetch clients')
+            } finally {
+                setLoading(false)
             }
         }
         load()
-    }, [search, genderFilter])
+    }, [debouncedSearch, genderFilter])
 
     async function reFetch() {
         const params = new URLSearchParams()
-        if (search) params.set('search', search)
+        if (debouncedSearch) params.set('search', debouncedSearch)
         if (genderFilter) params.set('gender', genderFilter)
         const res = await fetch(`/api/clients?${params}`)
         if (res.ok) setClients(await res.json())
     }
 
     async function handleCreate(data: ClientFormData) {
-        const res = await fetch('/api/clients', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-        })
-        if (!res.ok) {
-            const body = await res.json()
-            throw new Error(JSON.stringify(body.error))
+        setSaving(true)
+        try {
+            const res = await fetch('/api/clients', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            })
+            if (!res.ok) {
+                const body = await res.json()
+                throw new Error(JSON.stringify(body.error))
+            }
+            toast.success(t('clients.created'))
+            await delay(1500)
+            setDialogOpen(false)
+            await reFetch()
+        } finally {
+            setSaving(false)
         }
-        setDialogOpen(false)
-        await reFetch()
-        toast.success(t('clients.created'))
     }
 
     async function handleUpdate(data: ClientFormData) {
         if (!editClient) return
-        const res = await fetch(`/api/clients/${editClient.id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-        })
-        if (!res.ok) {
-            const body = await res.json()
-            throw new Error(JSON.stringify(body.error))
+        setSaving(true)
+        try {
+            const res = await fetch(`/api/clients/${editClient.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            })
+            if (!res.ok) {
+                const body = await res.json()
+                throw new Error(JSON.stringify(body.error))
+            }
+            toast.success(t('clients.updated'))
+            await delay(1500)
+            setEditClient(null)
+            await reFetch()
+        } finally {
+            setSaving(false)
         }
-        setEditClient(null)
-        await reFetch()
-        toast.success(t('clients.updated'))
     }
 
     async function handleDelete(client: Client) {
@@ -98,47 +117,63 @@ export function ClientsPage() {
         toast.success(t('clients.deleted'))
     }
 
+    function delay(ms: number) {
+        return new Promise((resolve) => setTimeout(resolve, ms))
+    }
+
+    const showEmptyState = !loading && clients.length === 0 && !debouncedSearch
+    const showNoResults = !loading && clients.length === 0 && debouncedSearch
+
     return (
         <>
-            <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold">{t('clients.title')}</h1>
-                    <Button onClick={() => { setEditClient(null); setDialogOpen(true) }}>
+            <div className="space-y-6 max-w-[900px]">
+                <div>
+                    <h1 className="text-[22px] font-medium">{t('clients.title')}</h1>
+                    <p className="text-sm text-muted-foreground mt-1">Manage your customer information</p>
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <div className="relative flex-1 min-w-[200px]">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search clients"
+                            className="pl-10 h-10"
+                        />
+                    </div>
+                    <Button variant="outline" onClick={() => { setEditClient(null); setDialogOpen(true) }}>
                         <Plus className="h-4 w-4 mr-2" />
                         {t('clients.newClient')}
                     </Button>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder={t('clients.searchPlaceholder')}
-                            className="pl-10 h-10"
-                        />
+                {loading && clients.length === 0 ? (
+                    <div className="flex items-center justify-center py-16">
+                        <Loader2 className="h-6 w-6 animate-spinner text-muted-foreground" />
                     </div>
-                    <select
-                        value={genderFilter}
-                        onChange={(e) => setGenderFilter(e.target.value)}
-                        className="h-10 px-3 rounded-lg border bg-background text-sm min-w-[130px]"
-                    >
-                        <option value="">{t('common.all')}</option>
-                        <option value="male">{t('clients.male')}</option>
-                        <option value="female">{t('clients.female')}</option>
-                    </select>
-                </div>
-
-                {clients.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 rounded-xl empty-state-gradient text-muted-foreground">
-                        <Users className="h-12 w-12 mb-4 opacity-50" />
-                        <p>{t('clients.noClients')}</p>
+                ) : showEmptyState ? (
+                    <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center max-w-[600px] mx-auto">
+                        <Users className="w-12 h-12 text-muted-foreground/50 mb-6" />
+                        <h2 className="text-lg font-medium text-foreground mb-2">No clients yet</h2>
+                        <p className="text-sm text-muted-foreground mb-6 max-w-sm leading-relaxed">
+                            Create your first client profile to start tracking prescriptions and orders.
+                            Each client can have multiple prescriptions and order history.
+                        </p>
+                        <Button onClick={() => { setEditClient(null); setDialogOpen(true) }}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create first client
+                        </Button>
+                    </div>
+                ) : showNoResults ? (
+                    <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center max-w-[600px] mx-auto">
+                        <Search className="w-12 h-12 text-muted-foreground/50 mb-6" />
+                        <h2 className="text-lg font-medium text-foreground mb-2">{t('common.noResults')}</h2>
                     </div>
                 ) : (
                     <div className="space-y-2">
                         {clients.map((client) => (
-                            <div key={client.id} className="flex items-center justify-between p-4 rounded-lg border bg-card row-alternate">
+                            <div key={client.id} className="flex items-center justify-between p-4 rounded-lg border bg-card row-alternate row-hover">
                                 <div>
                                     <p className="font-medium">{client.name} {client.familyName}</p>
                                     <p className="text-sm text-muted-foreground">{client.phone}</p>
@@ -164,10 +199,11 @@ export function ClientsPage() {
                             </div>
                         ))}
                     </div>
+
                 )}
 
                 <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) { setEditClient(null) }; setDialogOpen(open) }}>
-                    <DialogContent className="max-w-md">
+                    <DialogContent className="w-full sm:max-w-md">
                         <DialogHeader>
                             <DialogTitle>{editClient ? t('common.edit') : t('clients.newClient')}</DialogTitle>
                         </DialogHeader>
@@ -175,6 +211,7 @@ export function ClientsPage() {
                             defaultValues={editClient ? { name: editClient.name, familyName: editClient.familyName, phone: editClient.phone, address: editClient.address || '', gender: editClient.gender || undefined } : undefined}
                             onSubmit={editClient ? handleUpdate : handleCreate}
                             onCancel={() => { setEditClient(null); setDialogOpen(false) }}
+                            saving={saving}
                         />
                     </DialogContent>
                 </Dialog>

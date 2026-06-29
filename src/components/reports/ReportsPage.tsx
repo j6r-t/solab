@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BarChart3, TrendingUp, Users, Package, DollarSign, ShoppingCart } from 'lucide-react'
+import { formatCurrency } from '@/lib/currency'
 
 interface ReportData {
     totalRevenue: string
@@ -30,12 +31,8 @@ export function ReportsPage() {
         load()
     }, [period])
 
-    function formatTND(amount: string): string {
-        return parseFloat(amount).toFixed(3) + ' TND'
-    }
-
     const kpis = data ? [
-        { label: t('dashboard.totalRevenue'), value: formatTND(data.totalRevenue), icon: DollarSign, color: 'text-green-600' },
+        { label: t('dashboard.totalRevenue'), value: formatCurrency(data.totalRevenue), icon: DollarSign, color: 'text-green-600' },
         { label: t('dashboard.totalClients'), value: data.totalClients.toString(), icon: Users, color: 'text-blue-600' },
         { label: t('orders.total'), value: data.totalOrders.toString(), icon: ShoppingCart, color: 'text-orange-600' },
         { label: t('stock.title'), value: data.totalProducts.toString(), icon: Package, color: 'text-purple-600' },
@@ -82,9 +79,9 @@ export function ReportsPage() {
                         <Card>
                             <CardHeader><CardTitle className="text-lg">{t('reports.revenueByType')}</CardTitle></CardHeader>
                             <CardContent className="space-y-2">
-                                <div className="flex justify-between"><span>{t('orders.type_standard')}</span><span className="font-semibold">{formatTND(data.revenueByType.standard)}</span></div>
-                                <div className="flex justify-between"><span>{t('orders.type_remounting')}</span><span className="font-semibold">{formatTND(data.revenueByType.remounting)}</span></div>
-                                <div className="flex justify-between"><span>{t('orders.type_direct_sale')}</span><span className="font-semibold">{formatTND(data.revenueByType.direct_sale)}</span></div>
+                                <div className="flex justify-between"><span>{t('orders.type_standard')}</span><span className="font-semibold">{formatCurrency(data.revenueByType.standard)}</span></div>
+                                <div className="flex justify-between"><span>{t('orders.type_remounting')}</span><span className="font-semibold">{formatCurrency(data.revenueByType.remounting)}</span></div>
+                                <div className="flex justify-between"><span>{t('orders.type_direct_sale')}</span><span className="font-semibold">{formatCurrency(data.revenueByType.direct_sale)}</span></div>
                             </CardContent>
                         </Card>
 

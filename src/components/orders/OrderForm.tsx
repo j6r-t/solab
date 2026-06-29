@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { SearchSelect, type SearchSelectOption } from '@/components/ui/search-select'
-import { Trash2, Plus, Package } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Trash2, Plus, Package, Wrench } from 'lucide-react'
 import { toast } from 'sonner'
 
 export interface OrderItemInput {
@@ -25,6 +26,7 @@ export interface OrderRepairInput {
     type: string
     price: number
     expectedCompletionDate: string
+    repairServiceId?: string
 }
 
 export interface OrderFormData {
@@ -61,28 +63,39 @@ interface PrescriptionOption {
     client: { name: string; familyName: string }
 }
 
+interface RepairService {
+    id: string
+    name: string
+    defaultPrice: string
+}
+
 interface OrderFormProps {
     defaultValues?: Partial<OrderFormData>
     onSubmit: (data: OrderFormData) => Promise<void>
     onCancel: () => void
+    saving?: boolean
+    forcedOrderType?: 'standard' | 'remounting' | 'direct_sale'
 }
 
-export function OrderForm({ defaultValues, onSubmit, onCancel }: OrderFormProps) {
+export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalSaving, forcedOrderType }: OrderFormProps) {
     const { t } = useTranslation()
     const [clients, setClients] = useState<Client[]>([])
     const [clientSearch, setClientSearch] = useState('')
     const [products, setProducts] = useState<Product[]>([])
     const [productSearch, setProductSearch] = useState('')
-    const [orderType, setOrderType] = useState<'standard' | 'remounting' | 'direct_sale'>('standard')
+    const [orderType, setOrderType] = useState<'standard' | 'remounting' | 'direct_sale'>(forcedOrderType || defaultValues?.orderType || 'standard')
     const [selectedClientId, setSelectedClientId] = useState(defaultValues?.clientId || '')
     const [items, setItems] = useState<OrderItemInput[]>(defaultValues?.items || [])
     const [repairs, setRepairs] = useState<OrderRepairInput[]>(defaultValues?.repairs || [])
     const [paymentType, setPaymentType] = useState<'full' | 'deposit'>('full')
     const [depositAmount, setDepositAmount] = useState('')
-    const [loading, setLoading] = useState(false)
+    const [internalSaving, setInternalSaving] = useState(false)
+    const saving = internalSaving || externalSaving
     const [prescriptions, setPrescriptions] = useState<PrescriptionOption[]>([])
     const [selectedPrescriptionId, setSelectedPrescriptionId] = useState(defaultValues?.prescriptionId || '')
     const [turnaroundDays, setTurnaroundDays] = useState(defaultValues?.turnaroundDays?.toString() || '')
+    const [repairServices, setRepairServices] = useState<RepairService[]>([])
+    const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([])
 
     useEffect(() => {
         fetch(`/api/clients?search=${encodeURIComponent(clientSearch)}`)
@@ -108,6 +121,17 @@ export function OrderForm({ defaultValues, onSubmit, onCancel }: OrderFormProps)
             setPrescriptions([])
         }
     }, [selectedClientId])
+
+    useEffect(() => {
+        fetch('/api/repair-services')
+            .then((r) => r.ok && r.json())
+            .then((data) => setRepairServices(data || []))
+            .catch(() => {})
+    }, [])
+
+    useEffect(() => {
+        if (forcedOrderType) setOrderType(forcedOrderType)
+    }, [forcedOrderType])
 
     function addItem(product: Product) {
         setItems((prev) => [...prev, { productId: product.id, quantity: 1, unitPrice: parseFloat(product.price) }])
@@ -136,9 +160,35 @@ export function OrderForm({ defaultValues, onSubmit, onCancel }: OrderFormProps)
         setRepairs((prev) => prev.filter((_, i) => i !== index))
     }
 
+    function toggleRepairService(service: RepairService) {
+        const isSelected = selectedServiceIds.includes(service.id)
+        if (isSelected) {
+            setSelectedServiceIds((prev) => prev.filter((id) => id !== service.id))
+            setRepairs((prev) => prev.filter((r) => r.repairServiceId !== service.id))
+        } else {
+            setSelectedServiceIds((prev) => [...prev, service.id])
+            const defaultDate = turnaroundDays
+                ? new Date(Date.now() + parseInt(turnaroundDays) * 86400000).toISOString().split('T')[0]
+                : ''
+            setRepairs((prev) => [
+                ...prev,
+                {
+                    type: service.name,
+                    price: parseFloat(service.defaultPrice),
+                    expectedCompletionDate: defaultDate,
+                    repairServiceId: service.id,
+                },
+            ])
+        }
+    }
+
+    function updateServiceRepairDate(serviceId: string, date: string) {
+        setRepairs((prev) => prev.map((r) => (r.repairServiceId === serviceId ? { ...r, expectedCompletionDate: date } : r)))
+    }
+
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
-        setLoading(true)
+        setInternalSaving(true)
         try {
             const payments: OrderPaymentInput[] = []
             if (orderType === 'direct_sale') {
@@ -160,7 +210,7 @@ export function OrderForm({ defaultValues, onSubmit, onCancel }: OrderFormProps)
         } catch (error) {
             toast.error(error instanceof Error ? error.message : 'Failed to create order')
         } finally {
-            setLoading(false)
+            setInternalSaving(false)
         }
     }
 
@@ -190,27 +240,34 @@ export function OrderForm({ defaultValues, onSubmit, onCancel }: OrderFormProps)
 
     return (
         <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-                <Label>{t('orders.orderType')}</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {(['standard', 'remounting', 'direct_sale'] as const).map((type) => (
-                        <Button
-                            key={type}
-                            type="button"
-                            variant={orderType === type ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => {
-                                setOrderType(type)
-                                if (type === 'direct_sale') setPaymentType('full')
-                            }}
-                            className="h-auto flex-col items-start gap-1 py-3 px-3 text-left leading-tight whitespace-normal"
-                        >
-                            <span className="font-medium text-sm">{t(`orders.type_${type}`)}</span>
-                            <span className="text-xs opacity-90 font-normal leading-relaxed text-pretty">{t(`orders.type_${type}_desc`)}</span>
-                        </Button>
-                    ))}
+            {forcedOrderType ? (
+                <div className="rounded-lg bg-muted/30 p-3 border text-sm">
+                    <span className="font-medium">{t(`orders.type_${forcedOrderType}`)}</span>
+                    <span className="text-muted-foreground ml-2">— {t(`orders.type_${forcedOrderType}_desc`)}</span>
                 </div>
-            </div>
+            ) : (
+                <div className="space-y-2">
+                    <Label>{t('orders.orderType')}</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        {(['standard', 'remounting', 'direct_sale'] as const).map((type) => (
+                            <Button
+                                key={type}
+                                type="button"
+                                variant={orderType === type ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => {
+                                    setOrderType(type)
+                                    if (type === 'direct_sale') setPaymentType('full')
+                                }}
+                                className="h-auto flex-col items-start gap-1 py-3 px-3 text-left leading-tight whitespace-normal"
+                            >
+                                <span className="font-medium text-sm">{t(`orders.type_${type}`)}</span>
+                                <span className="text-xs opacity-90 font-normal leading-relaxed text-pretty">{t(`orders.type_${type}_desc`)}</span>
+                            </Button>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="space-y-2">
                 <Label>{t('orders.client')} *</Label>
@@ -308,39 +365,73 @@ export function OrderForm({ defaultValues, onSubmit, onCancel }: OrderFormProps)
 
             {(orderType === 'standard' || orderType === 'remounting') && (
                 <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <Label>{t('nav.repairs')}</Label>
-                        <Button type="button" variant="outline" size="sm" onClick={addRepair}>
-                            <Plus className="h-3 w-3 mr-1" /> {t('common.add')}
-                        </Button>
-                    </div>
-                    {repairs.map((r, i) => (
-                        <div key={i} className="flex items-center gap-2 p-2.5 bg-muted/30 rounded-lg border">
-                            <Input
-                                value={r.type}
-                                onChange={(e) => updateRepair(i, 'type', e.target.value)}
-                                placeholder={t('repairs.type')}
-                                className="flex-1 h-7 text-xs"
-                            />
-                            <Input
-                                type="number"
-                                step="0.001"
-                                value={r.price || ''}
-                                onChange={(e) => updateRepair(i, 'price', parseFloat(e.target.value) || 0)}
-                                placeholder="Price"
-                                className="w-20 h-7 text-xs"
-                            />
-                            <Input
-                                type="date"
-                                value={r.expectedCompletionDate}
-                                onChange={(e) => updateRepair(i, 'expectedCompletionDate', e.target.value)}
-                                className="w-34 h-7 text-xs"
-                            />
-                            <Button type="button" variant="ghost" size="icon" onClick={() => removeRepair(i)} className="h-7 w-7 shrink-0">
-                                <Trash2 className="h-3 w-3 text-destructive" />
-                            </Button>
+                    <Label>{t('nav.repairs')}</Label>
+                    {repairServices.length > 0 ? (
+                        <div className="space-y-2">
+                            {repairServices.map((service) => {
+                                const checked = selectedServiceIds.includes(service.id)
+                                const repairObj = repairs.find((r) => r.repairServiceId === service.id)
+                                return (
+                                    <div key={service.id} className="flex items-center gap-3 p-2.5 bg-muted/30 rounded-lg border">
+                                        <Checkbox
+                                            id={`service-${service.id}`}
+                                            checked={checked}
+                                            onCheckedChange={() => toggleRepairService(service)}
+                                        />
+                                        <label htmlFor={`service-${service.id}`} className="flex-1 flex items-center gap-2 text-sm cursor-pointer">
+                                            <Wrench className="h-4 w-4 text-muted-foreground shrink-0" />
+                                            <span className="font-medium">{service.name}</span>
+                                            <span className="text-muted-foreground">({parseFloat(service.defaultPrice).toFixed(3)} TND)</span>
+                                        </label>
+                                        {checked && (
+                                            <Input
+                                                type="date"
+                                                value={repairObj?.expectedCompletionDate || ''}
+                                                onChange={(e) => updateServiceRepairDate(service.id, e.target.value)}
+                                                className="w-36 h-7 text-xs"
+                                            />
+                                        )}
+                                    </div>
+                                )
+                            })}
                         </div>
-                    ))}
+                    ) : (
+                        <div>
+                            <p className="text-sm text-muted-foreground italic mb-2">{t('repairs.noServicesConfigured')}</p>
+                            <div className="space-y-1.5">
+                                {repairs.map((r, i) => (
+                                    <div key={i} className="flex items-center gap-2 p-2.5 bg-muted/30 rounded-lg border">
+                                        <Input
+                                            value={r.type}
+                                            onChange={(e) => updateRepair(i, 'type', e.target.value)}
+                                            placeholder={t('repairs.type')}
+                                            className="flex-1 h-7 text-xs"
+                                        />
+                                        <Input
+                                            type="number"
+                                            step="0.001"
+                                            value={r.price || ''}
+                                            onChange={(e) => updateRepair(i, 'price', parseFloat(e.target.value) || 0)}
+                                            placeholder="Price"
+                                            className="w-20 h-7 text-xs"
+                                        />
+                                        <Input
+                                            type="date"
+                                            value={r.expectedCompletionDate}
+                                            onChange={(e) => updateRepair(i, 'expectedCompletionDate', e.target.value)}
+                                            className="w-34 h-7 text-xs"
+                                        />
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => removeRepair(i)} className="h-7 w-7 shrink-0">
+                                            <Trash2 className="h-3 w-3 text-destructive" />
+                                        </Button>
+                                    </div>
+                                ))}
+                                <Button type="button" variant="outline" size="sm" onClick={addRepair}>
+                                    <Plus className="h-3 w-3 mr-1" /> {t('common.add')}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -392,8 +483,8 @@ export function OrderForm({ defaultValues, onSubmit, onCancel }: OrderFormProps)
             </div>
 
             <div className="flex gap-3 pt-1">
-                <Button type="submit" disabled={loading || !selectedClientId} className="flex-1 h-10">
-                    {loading ? t('common.loading') : t('common.save')}
+                <Button type="submit" disabled={saving || !selectedClientId} className="flex-1 h-10">
+                    {saving ? t('common.saving') : t('common.save')}
                 </Button>
                 <Button type="button" variant="outline" onClick={onCancel} className="h-10">
                     {t('common.cancel')}
