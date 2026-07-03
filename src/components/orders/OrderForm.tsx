@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,7 +8,13 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { SearchSelect, type SearchSelectOption } from '@/components/ui/search-select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Trash2, Plus, Package, Wrench } from 'lucide-react'
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
+import { Trash2, Plus, Package, Wrench, QrCode, Camera, Loader2, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 export interface OrderItemInput {
@@ -58,7 +64,7 @@ interface Product {
 
 interface PrescriptionOption {
     id: string
-    doctorName: string
+    doctor: { name: string } | null
     createdAt: string
     client: { name: string; familyName: string }
 }
@@ -93,9 +99,71 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
     const saving = internalSaving || externalSaving
     const [prescriptions, setPrescriptions] = useState<PrescriptionOption[]>([])
     const [selectedPrescriptionId, setSelectedPrescriptionId] = useState(defaultValues?.prescriptionId || '')
-    const [turnaroundDays, setTurnaroundDays] = useState(defaultValues?.turnaroundDays?.toString() || '')
+    const [expectedCompletionDate, setExpectedCompletionDate] = useState('')
     const [repairServices, setRepairServices] = useState<RepairService[]>([])
     const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([])
+    const [showNewRx, setShowNewRx] = useState(false)
+    const [newRxRight, setNewRxRight] = useState({ sph: 0, cyl: 0, axis: 0, add: 0, pd: 0 })
+    const [newRxLeft, setNewRxLeft] = useState({ sph: 0, cyl: 0, axis: 0, add: 0, pd: 0 })
+    const [creatingRx, setCreatingRx] = useState(false)
+    const [qrScanOpen, setQrScanOpen] = useState(false)
+    const [qrScanning, setQrScanning] = useState(false)
+    const qrReaderRef = useRef<HTMLDivElement>(null)
+    const html5QrRef = useRef<unknown>(null)
+
+    async function handleQrScan(result: string) {
+        setQrScanning(false)
+        try {
+            const res = await fetch(`/api/qrcode?code=${encodeURIComponent(result)}`)
+            if (!res.ok) {
+                toast.error('Product not found for this QR code')
+                return
+            }
+            const product = await res.json()
+            addItem(product)
+            toast.success(`${product.name} added`)
+            setQrScanOpen(false)
+        } catch {
+            toast.error('Failed to look up QR code')
+        }
+    }
+
+    useEffect(() => {
+        if (!qrScanOpen || !qrReaderRef.current) return
+        let cancelled = false
+        async function start() {
+            try {
+                const { Html5Qrcode } = await import('html5-qrcode')
+                if (cancelled) return
+                const reader = new Html5Qrcode('qr-reader')
+                html5QrRef.current = reader
+                setQrScanning(true)
+                await reader.start(
+                    { facingMode: 'environment' },
+                    { fps: 10, qrbox: { width: 250, height: 250 } },
+                    (decodedText: string) => {
+                        if (!cancelled) {
+                            reader.stop().catch(() => {})
+                            handleQrScan(decodedText)
+                        }
+                    },
+                    () => {},
+                )
+            } catch {
+                if (!cancelled) {
+                    toast.error('Camera access denied or not supported')
+                    setQrScanOpen(false)
+                }
+            }
+        }
+        start()
+        return () => {
+            cancelled = true
+            setQrScanning(false)
+            const reader = html5QrRef.current as { stop: () => Promise<void> } | null
+            if (reader) { reader.stop().catch(() => {}); html5QrRef.current = null }
+        }
+    }, [qrScanOpen])
 
     useEffect(() => {
         fetch(`/api/clients?search=${encodeURIComponent(clientSearch)}`)
@@ -113,14 +181,22 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
 
     useEffect(() => {
         if (selectedClientId) {
+            setSelectedPrescriptionId('')
             fetch(`/api/prescriptions?clientId=${selectedClientId}`)
                 .then((r) => r.ok && r.json())
                 .then((data) => setPrescriptions(data || []))
                 .catch(() => {})
         } else {
             setPrescriptions([])
+            setSelectedPrescriptionId('')
         }
     }, [selectedClientId])
+
+    useEffect(() => {
+        if (prescriptions.length > 0 && !selectedPrescriptionId) {
+            setSelectedPrescriptionId(prescriptions[0].id)
+        }
+    }, [prescriptions, selectedPrescriptionId])
 
     useEffect(() => {
         fetch('/api/repair-services')
@@ -146,10 +222,8 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
     }
 
     function addRepair() {
-        const defaultDate = turnaroundDays
-            ? new Date(Date.now() + parseInt(turnaroundDays) * 86400000).toISOString().split('T')[0]
-            : ''
-        setRepairs((prev) => [...prev, { type: '', price: 0, expectedCompletionDate: defaultDate }])
+        const date = expectedCompletionDate || new Date().toISOString().split('T')[0]
+        setRepairs((prev) => [...prev, { type: '', price: 0, expectedCompletionDate: date }])
     }
 
     function updateRepair(index: number, field: keyof OrderRepairInput, value: string | number) {
@@ -167,18 +241,42 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
             setRepairs((prev) => prev.filter((r) => r.repairServiceId !== service.id))
         } else {
             setSelectedServiceIds((prev) => [...prev, service.id])
-            const defaultDate = turnaroundDays
-                ? new Date(Date.now() + parseInt(turnaroundDays) * 86400000).toISOString().split('T')[0]
-                : ''
+            const date = expectedCompletionDate || new Date().toISOString().split('T')[0]
             setRepairs((prev) => [
                 ...prev,
                 {
                     type: service.name,
                     price: parseFloat(service.defaultPrice),
-                    expectedCompletionDate: defaultDate,
+                    expectedCompletionDate: date,
                     repairServiceId: service.id,
                 },
             ])
+        }
+    }
+
+    async function handleCreatePrescription() {
+        setCreatingRx(true)
+        try {
+            const res = await fetch('/api/prescriptions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    clientId: selectedClientId,
+                    sphRight: newRxRight.sph, cylRight: newRxRight.cyl, axisRight: newRxRight.axis, addRight: newRxRight.add, pdRight: newRxRight.pd,
+                    sphLeft: newRxLeft.sph, cylLeft: newRxLeft.cyl, axisLeft: newRxLeft.axis, addLeft: newRxLeft.add, pdLeft: newRxLeft.pd,
+                }),
+            })
+            if (res.ok) {
+                const created = await res.json()
+                const refreshed = await fetch(`/api/prescriptions?clientId=${selectedClientId}`)
+                if (refreshed.ok) setPrescriptions(await refreshed.json())
+                setSelectedPrescriptionId(created.id)
+                setShowNewRx(false)
+                setNewRxRight({ sph: 0, cyl: 0, axis: 0, add: 0, pd: 0 })
+                setNewRxLeft({ sph: 0, cyl: 0, axis: 0, add: 0, pd: 0 })
+            }
+        } finally {
+            setCreatingRx(false)
         }
     }
 
@@ -205,7 +303,9 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                 payments,
                 repairs,
                 prescriptionId: selectedPrescriptionId || undefined,
-                turnaroundDays: parseInt(turnaroundDays) || undefined,
+                turnaroundDays: expectedCompletionDate
+                    ? Math.ceil((new Date(expectedCompletionDate).getTime() - Date.now()) / 86400000)
+                    : undefined,
             })
         } catch (error) {
             toast.error(error instanceof Error ? error.message : 'Failed to create order')
@@ -230,7 +330,7 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
 
     const prescriptionOptions: SearchSelectOption[] = prescriptions.map((p) => ({
         value: p.id,
-        label: `Dr. ${p.doctorName}`,
+        label: `Dr. ${p.doctor?.name || '—'}`,
         secondary: new Date(p.createdAt).toLocaleDateString(),
     }))
 
@@ -296,20 +396,59 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                             title={t('prescriptions.title')}
                         />
                     ) : (
-                        <p className="text-sm text-muted-foreground italic">{t('prescriptions.noPrescriptions')}</p>
+                        <div>
+                            <p className="text-sm text-muted-foreground italic mb-2">{t('prescriptions.noPrescriptions')}</p>
+                            <Button type="button" variant="outline" size="sm" onClick={() => setShowNewRx(true)}>
+                                <Plus className="h-3 w-3 mr-1" /> {t('prescriptions.newPrescription')}
+                            </Button>
+                            {showNewRx && (
+                                <div className="mt-3 p-3 border rounded-lg space-y-3">
+                                    <div className="grid grid-cols-5 gap-2">
+                                        {(['sph', 'cyl', 'axis', 'add', 'pd'] as const).map((field) => (
+                                            <div key={field} className="space-y-1">
+                                                <Label className="text-xs text-muted-foreground">{t(`prescriptions.${field}`)} R</Label>
+                                                <Input type="number" step={field === 'axis' || field === 'pd' ? '1' : '0.25'}
+                                                    min={field === 'axis' ? '0' : undefined} max={field === 'axis' ? '180' : undefined}
+                                                    value={newRxRight[field] || ''}
+                                                    onChange={(e) => setNewRxRight((prev) => ({ ...prev, [field]: parseFloat(e.target.value) || 0 }))}
+                                                    className="h-7 text-xs" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="grid grid-cols-5 gap-2">
+                                        {(['sph', 'cyl', 'axis', 'add', 'pd'] as const).map((field) => (
+                                            <div key={field} className="space-y-1">
+                                                <Label className="text-xs text-muted-foreground">{t(`prescriptions.${field}`)} L</Label>
+                                                <Input type="number" step={field === 'axis' || field === 'pd' ? '1' : '0.25'}
+                                                    min={field === 'axis' ? '0' : undefined} max={field === 'axis' ? '180' : undefined}
+                                                    value={newRxLeft[field] || ''}
+                                                    onChange={(e) => setNewRxLeft((prev) => ({ ...prev, [field]: parseFloat(e.target.value) || 0 }))}
+                                                    className="h-7 text-xs" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button type="button" size="sm" onClick={handleCreatePrescription} disabled={creatingRx}>
+                                            {creatingRx ? t('common.saving') : t('common.save')}
+                                        </Button>
+                                        <Button type="button" variant="outline" size="sm" onClick={() => setShowNewRx(false)}>
+                                            {t('common.cancel')}
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
             )}
 
             {(orderType === 'standard' || orderType === 'remounting') && (
                 <div className="space-y-2">
-                    <Label>{t('orders.turnaround')} <span className="text-muted-foreground font-normal">({t('orders.inDays')})</span></Label>
+                    <Label>{t('orders.expectedCompletion')}</Label>
                     <Input
-                        type="number"
-                        min={1}
-                        value={turnaroundDays}
-                        onChange={(e) => setTurnaroundDays(e.target.value)}
-                        placeholder={t('orders.turnaroundPlaceholder')}
+                        type="date"
+                        value={expectedCompletionDate}
+                        onChange={(e) => setExpectedCompletionDate(e.target.value)}
                         className="h-9"
                     />
                 </div>
@@ -318,18 +457,25 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
             {(orderType === 'standard' || orderType === 'direct_sale') && (
                 <div className="space-y-3">
                     <Label>{t('orders.items')}</Label>
-                    <SearchSelect
-                        options={productOptions}
-                        value=""
-                        onChange={(val) => {
-                            const product = products.find((p) => p.id === val)
-                            if (product) addItem(product)
-                        }}
-                        placeholder={t('stock.searchPlaceholder')}
-                        searchPlaceholder={t('stock.searchPlaceholder')}
-                        emptyMessage={t('stock.noProducts')}
-                        title={t('orders.items')}
-                    />
+                    <div className="flex gap-2">
+                        <div className="flex-1">
+                            <SearchSelect
+                                options={productOptions}
+                                value=""
+                                onChange={(val) => {
+                                    const product = products.find((p) => p.id === val)
+                                    if (product) addItem(product)
+                                }}
+                                placeholder={t('stock.searchPlaceholder')}
+                                searchPlaceholder={t('stock.searchPlaceholder')}
+                                emptyMessage={t('stock.noProducts')}
+                                title={t('orders.items')}
+                            />
+                        </div>
+                        <Button type="button" variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => setQrScanOpen(true)} title="Scan QR code">
+                            <QrCode className="h-4 w-4" />
+                        </Button>
+                    </div>
                     {items.length > 0 && (
                         <div className="space-y-1.5">
                             {items.map((item, i) => {
@@ -490,6 +636,30 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                     {t('common.cancel')}
                 </Button>
             </div>
+
+            <Dialog open={qrScanOpen} onOpenChange={(open) => { if (!open) { setQrScanOpen(false); setQrScanning(false) } }}>
+                <DialogContent className="sm:max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Camera className="h-4 w-4" />
+                            Scan QR Code
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="flex flex-col items-center gap-3 py-2">
+                        <div id="qr-reader" ref={qrReaderRef} className={qrScanning ? '' : 'hidden'} />
+                        {!qrScanning && qrScanOpen && (
+                            <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
+                                <Loader2 className="h-6 w-6 animate-spinner" />
+                                <p className="text-sm">Starting camera...</p>
+                            </div>
+                        )}
+                        <Button type="button" variant="outline" size="sm" onClick={() => { setQrScanOpen(false); setQrScanning(false) }}>
+                            <X className="h-4 w-4 mr-1" />
+                            {t('common.cancel')}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </form>
     )
 }

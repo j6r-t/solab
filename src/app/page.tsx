@@ -15,6 +15,9 @@ import { RepairsPage } from '@/components/repairs/RepairsPage'
 import { BillingPage } from '@/components/billing/BillingPage'
 import { ReportsPage } from '@/components/reports/ReportsPage'
 import { SettingsPage } from '@/components/settings/SettingsPage'
+import { DoctorsPage } from '@/components/doctors/DoctorsPage'
+import { FournisseursPage } from '@/components/fournisseurs/FournisseursPage'
+import { QRCodePage } from '@/components/qrcode/QRCodePage'
 
 const views: Record<string, React.FC> = {
   dashboard: DashboardPage,
@@ -26,6 +29,9 @@ const views: Record<string, React.FC> = {
   billing: BillingPage,
   reports: ReportsPage,
   settings: SettingsPage,
+  doctors: DoctorsPage,
+  fournisseurs: FournisseursPage,
+  qrcode: QRCodePage,
 }
 
 export default function Home() {

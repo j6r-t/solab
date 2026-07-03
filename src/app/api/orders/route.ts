@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
                             type: r.type,
                             price: r.price,
                             status: 'pending',
-                            expectedCompletionDate: new Date(r.expectedCompletionDate),
+                            expectedCompletionDate: new Date(r.expectedCompletionDate || Date.now()),
                             repairServiceId: r.repairServiceId || null,
                         })),
                     }

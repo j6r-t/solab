@@ -37,6 +37,21 @@ interface InvoiceRepair {
     price: string
 }
 
+interface InvoicePrescription {
+    sphRight: string
+    cylRight: string
+    axisRight: number
+    addRight: string
+    pdRight: number
+    sphLeft: string
+    cylLeft: string
+    axisLeft: number
+    addLeft: string
+    pdLeft: number
+    dateWritten: string | null
+    doctorName: string | null
+}
+
 interface BillingRecord {
     id: string
     orderNumber: number
@@ -51,6 +66,8 @@ interface BillingRecord {
     items: InvoiceItem[]
     payments: InvoicePayment[]
     repairs: InvoiceRepair[]
+    turnaroundDays: number | null
+    prescription: InvoicePrescription | null
 }
 
 const paymentColors: Record<string, 'default' | 'secondary' | 'destructive'> = {
@@ -77,12 +94,22 @@ export function BillingPage() {
     useEffect(() => {
         async function load() {
             setLoading(true)
-            const params = new URLSearchParams()
-            if (debouncedSearch) params.set('search', debouncedSearch)
-            if (statusFilter) params.set('status', statusFilter)
-            const res = await fetch(`/api/billing?${params}`)
-            if (res.ok) setRecords(await res.json())
-            setLoading(false)
+            try {
+                const params = new URLSearchParams()
+                if (debouncedSearch) params.set('search', debouncedSearch)
+                if (statusFilter) params.set('status', statusFilter)
+                const res = await fetch(`/api/billing?${params}`)
+                if (!res.ok) {
+                    const body = await res.json()
+                    throw new Error(body.error || 'Failed to fetch invoices')
+                }
+                setRecords(await res.json())
+            } catch (error) {
+                console.error('Failed to fetch billing records:', error)
+                toast.error(error instanceof Error ? error.message : 'Failed to load invoices')
+            } finally {
+                setLoading(false)
+            }
         }
         load()
     }, [debouncedSearch, statusFilter])
@@ -150,71 +177,68 @@ export function BillingPage() {
     function printInvoice() {
         const printWindow = window.open('', '_blank')
         if (!printWindow || !selected) return
-        const { client, items, payments, repairs, totalAmount, totalPaid, balance, paymentStatus, createdAt } = selected
-        const isFullyPaid = paymentStatus === 'fullyPaid'
-        const itemRows = items.map((i) =>
-            `<tr><td style="padding:8px 12px">${i.productName} (${i.brand})</td><td style="padding:8px 12px;text-align:center">${i.quantity}</td><td style="padding:8px 12px;text-align:right">${formatCurrency(i.unitPrice)}</td><td style="padding:8px 12px;text-align:right;font-weight:600">${formatCurrency((parseFloat(i.unitPrice) * i.quantity).toFixed(3))}</td></tr>`
-        ).join('')
-        const repairRows = repairs.map((r) =>
-            `<tr><td style="padding:8px 12px">${r.type}</td><td style="padding:8px 12px;text-align:center">1</td><td style="padding:8px 12px;text-align:right">${formatCurrency(r.price)}</td><td style="padding:8px 12px;text-align:right;font-weight:600">${formatCurrency(r.price)}</td></tr>`
-        ).join('')
-        const paymentRows = payments.map((p) =>
-            `<tr><td style="padding:8px 12px">${p.type === 'deposit' ? 'Deposit' : p.type === 'balance' ? 'Balance' : 'Full Payment'}</td><td style="padding:8px 12px;text-align:right">${formatCurrency(p.amount)}</td><td style="padding:8px 12px">${new Date(p.createdAt).toLocaleDateString('en-US')}</td></tr>`
-        ).join('')
-        const subtotal = items.reduce((s, i) => s + parseFloat(i.unitPrice) * i.quantity, 0)
-        const repairTotal = repairs.reduce((s, r) => s + parseFloat(r.price), 0)
-        const grand = subtotal + repairTotal
-        printWindow.document.write(`<!DOCTYPE html><html><head><title>Invoice - Sofien Optic</title>
+        const { client, items, payments, repairs, totalAmount, totalPaid, balance, createdAt, turnaroundDays, prescription } = selected
+        const prescriptionDate = prescription?.dateWritten ? new Date(prescription.dateWritten).toLocaleDateString('fr-TN', { day: 'numeric', month: 'numeric', year: 'numeric' }) : null
+        const deposit = payments.find((p) => p.type === 'deposit')
+        const designation = items.map((i) => `${i.productName}${i.brand ? ` (${i.brand})` : ''}`).join(', ')
+        const promiseDate = turnaroundDays
+            ? new Date(new Date(createdAt).getTime() + turnaroundDays * 86400000).toLocaleDateString('fr-TN', { day: 'numeric', month: 'numeric', year: 'numeric' })
+            : ''
+        const rxRows = prescription
+            ? `
+              <tr><td style="padding:8px 6px;text-align:center;font-weight:600">OD</td><td style="padding:8px 6px;text-align:center">${prescription.sphRight}</td><td style="padding:8px 6px;text-align:center">${prescription.cylRight}</td><td style="padding:8px 6px;text-align:center">${prescription.axisRight}</td><td style="padding:8px 6px;text-align:center">${prescription.addRight}</td><td style="padding:8px 6px;text-align:center">${prescription.pdRight}</td><td style="padding:8px 6px;text-align:center"></td></tr>
+              <tr><td style="padding:8px 6px;text-align:center;font-weight:600">OG</td><td style="padding:8px 6px;text-align:center">${prescription.sphLeft}</td><td style="padding:8px 6px;text-align:center">${prescription.cylLeft}</td><td style="padding:8px 6px;text-align:center">${prescription.axisLeft}</td><td style="padding:8px 6px;text-align:center">${prescription.addLeft}</td><td style="padding:8px 6px;text-align:center">${prescription.pdLeft}</td><td style="padding:8px 6px;text-align:center"></td></tr>`
+            : ''
+        printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Facture - Sofien Optic</title>
             <style>
                 *{margin:0;padding:0;box-sizing:border-box}
-                body{font-family:'Segoe UI',Arial,sans-serif;max-width:700px;margin:0 auto;padding:40px 32px;color:#1a1a2e}
-                .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:24px;border-bottom:2px solid #1a1a2e}
-                .shop h1{font-size:22px;font-weight:700;color:#1a1a2e}
-                .shop p{font-size:13px;color:#666;margin-top:2px}
-                .invoice-meta{text-align:right;font-size:13px}
-                .invoice-meta h2{font-size:18px;font-weight:600;margin-bottom:4px}
-                .invoice-meta p{color:#555;line-height:1.6}
-                .bill-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px}
-                .bill-grid .label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:6px}
-                .bill-grid .name{font-size:15px;font-weight:500;color:#1a1a2e;margin-bottom:4px}
-                .bill-grid .detail{font-size:13px;color:#555;line-height:1.6}
-                table{width:100%;border-collapse:collapse;margin-bottom:20px}
-                th{padding:12px;text-align:left;font-size:13px;font-weight:600;color:#555;border-top:1px solid #ddd;border-bottom:1px solid #ddd}
-                th:last-child{text-align:right}
-                td{padding:12px;border-bottom:1px solid #eee;font-size:13px}
-                td:last-child{text-align:right;font-weight:600}
-                .summary{width:300px;margin-left:auto;margin-bottom:24px}
-                .summary .row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px;color:#555}
-                .summary .total{border-top:2px solid #1a1a2e;padding-top:10px;margin-top:4px;font-size:16px;font-weight:600;color:#1a1a2e}
-                .paid-box{display:flex;align-items:center;gap:8px;padding:12px 16px;background:#f0fdf4;border-radius:8px;border-left:3px solid #16a34a;font-size:13px;font-weight:500;color:#166534;margin-bottom:24px}
-                .footer{text-align:center;margin-top:32px;padding-top:16px;border-top:1px solid #e0e0e0;font-size:11px;color:#999}
-                @media print{button{display:none}}
+                body{font-family:'Segoe UI',Arial,sans-serif;max-width:750px;margin:0 auto;padding:32px;color:#000}
+                .shop-name{font-size:24px;font-weight:bold;color:#37b34a;letter-spacing:-0.5px;text-align:center}
+                .shop-name span{color:#37b34a}
+                .shop-name .ptic{font-size:24px;font-weight:bold;color:#37b34a;margin-left:-4px}
+                .divider{height:2px;background:#37b34a;margin:12px 0 20px}
+                .fields-grid{display:flex;gap:40px;margin-bottom:20px}
+                .fields-grid .col{flex:1}
+                .field-row{display:flex;align-items:baseline;margin-bottom:10px;font-size:13px}
+                .field-row .label{font-weight:600;white-space:nowrap;min-width:115px}
+                .field-row .dots{flex:1;border-bottom:1px dotted #999;margin:0 4px;height:1em}
+                .field-row .value{font-weight:500;white-space:nowrap;font-size:13px}
+                .rx-table{width:100%;border-collapse:collapse;margin:16px 0 10px;font-size:13px}
+                .rx-table th{padding:8px 6px;text-align:center;font-weight:600;border:1px solid #000;background:#f5f5f5}
+                .rx-table td{padding:8px 6px;text-align:center;border:1px solid #000}
+                .footer-divider{height:2px;background:#37b34a;margin:20px 0 12px}
+                .footer-text{text-align:center;font-size:11px;color:#555;line-height:1.6}
+                .footer-text .shop{font-weight:600;color:#37b34a}
+                @media print{button{display:none}body{padding:16px}}
 </style></head><body>
-            <div class="header">
-                <div class="shop"><h1>Sofien Optic</h1><p>Tunis, Tunisia<br>ID: 1234567890</p></div>
-                <div class="invoice-meta"><h2>Invoice #ORD-${('0000' + selected.orderNumber).slice(-4)}</h2><p>Issued ${formatDate(createdAt)}</p></div>
-            </div>
-            <div class="bill-grid">
-                <div>
-                    <div class="label">BILL TO</div>
-                    <div class="name">${client.name} ${client.familyName}</div>
-                    <div class="detail">Phone: ${client.phone}</div>
+            <div class="shop-name">Sofiene <span class="ptic">ptic</span></div>
+            <div class="divider"></div>
+            <div class="fields-grid">
+                <div class="col">
+                    <div class="field-row"><span class="label">Date:</span><span class="dots"></span><span class="value">${formatDate(createdAt)}</span></div>
+                    <div class="field-row"><span class="label">N &amp; P:</span><span class="dots"></span><span class="value">${client.name} ${client.familyName}</span></div>
+                    <div class="field-row"><span class="label">N de Tel:</span><span class="dots"></span><span class="value">${client.phone}</span></div>
+                    <div class="field-row"><span class="label">Designation:</span><span class="dots"></span><span class="value">${designation || '—'}</span></div>
+                    ${prescriptionDate ? `<div class="field-row"><span class="label">Date Ordonnance:</span><span class="dots"></span><span class="value">${prescriptionDate}</span></div>` : ''}
+                    ${prescription?.doctorName ? `<div class="field-row"><span class="label">Medecin:</span><span class="dots"></span><span class="value">${prescription.doctorName}</span></div>` : ''}
                 </div>
-                <div>
-                    <div class="label">SHOP DETAILS</div>
-                    <div class="name">Sofien Optic</div>
-                    <div class="detail">Tunis, TN<br>ID: 1234567890</div>
+                <div class="col">
+                    <div class="field-row"><span class="label">Prix:</span><span class="dots"></span><span class="value">${formatCurrency(totalAmount)}</span></div>
+                    <div class="field-row"><span class="label">Acompte:</span><span class="dots"></span><span class="value">${deposit ? formatCurrency(deposit.amount) : '—'}</span></div>
+                    <div class="field-row"><span class="label">Reste:</span><span class="dots"></span><span class="value">${formatCurrency(balance)}</span></div>
+                    <div class="field-row"><span class="label">Date promise:</span><span class="dots"></span><span class="value">${promiseDate || '—'}</span></div>
                 </div>
             </div>
-            ${(items.length || repairs.length) ? `<table><thead><tr><th style="width:45%">Description</th><th style="width:12%;text-align:center">Qty</th><th style="width:20%;text-align:right">Unit price</th><th style="width:23%;text-align:right">Total</th></tr></thead><tbody>${itemRows}${repairRows}</tbody></table>` : ''}
-            <div class="summary">
-                <div class="row"><span>Subtotal</span><span>${formatCurrency(grand.toFixed(3))}</span></div>
-                <div class="row"><span>Tax (0%)</span><span>0.000 TND</span></div>
-                <div class="row total"><span>Total due</span><span>${formatCurrency(totalAmount)}</span></div>
+            <table class="rx-table">
+                <thead><tr><th style="width:12%">OD/OG</th><th style="width:14%">Sph</th><th style="width:14%">Cyl</th><th style="width:14%">Axe</th><th style="width:14%">Add</th><th style="width:16%">Ep</th><th style="width:16%">H</th></tr></thead>
+                <tbody>${rxRows || '<tr><td colspan="7" style="padding:16px;text-align:center;color:#999">Aucune ordonnance</td></tr>'}</tbody>
+            </table>
+            <div class="footer-divider"></div>
+            <div class="footer-text">
+                Rue de la liberte M&rsquo;himidia en face Ooredoo<br>
+                <span class="shop">Sofiene Optic</span><br>
+                24.398.692 &mdash; 24.248.632
             </div>
-            ${isFullyPaid ? `<div class="paid-box"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Paid in full on ${formatDate(createdAt)}</div>` : ''}
-            ${paymentRows ? `<div><h4 style="font-size:13px;font-weight:600;margin-bottom:8px;color:#1a1a2e">Payment History</h4><table><thead><tr><th>Type</th><th style="text-align:right">Amount</th><th>Date</th></tr></thead><tbody>${paymentRows}</tbody></table></div>` : ''}
-            <div class="footer">Sofien Optic — Thank you for your trust</div>
             </body></html>`)
         printWindow.document.close()
     }
@@ -401,15 +425,19 @@ export function BillingPage() {
             {/* Invoice Detail Dialog */}
             <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
                 <DialogContent className="w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-                    {selected && (
+                    {selected && (() => {
+                        const s = selected
+                        const deposit = s.payments.find((p) => p.type === 'deposit')
+                        const designation = s.items.map((i) => `${i.productName}${i.brand ? ` (${i.brand})` : ''}`).join(', ')
+                        const promiseDate = s.turnaroundDays
+                            ? new Date(new Date(s.createdAt).getTime() + s.turnaroundDays * 86400000).toLocaleDateString('fr-TN', { day: 'numeric', month: 'numeric', year: 'numeric' })
+                            : null
+                        return (
                         <div className="py-4">
-                            {/* Header: invoice number + date + buttons */}
                             <div className="flex items-start justify-between mb-4">
                                 <div>
-                                    <DialogTitle className="text-[22px] font-medium">
-                                        Invoice #ORD-{('0000' + selected.orderNumber).slice(-4)}
-                                    </DialogTitle>
-                                    <p className="text-sm text-muted-foreground mt-1">Issued {formatDate(selected.createdAt)}</p>
+                                    <p className="text-[22px] font-bold" style={{color:'#37b34a'}}>Sofiene ptic</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">Facture #{s.orderNumber} &mdash; {formatDate(s.createdAt)}</p>
                                 </div>
                                 <div className="flex gap-2">
                                     <Button variant="outline" size="sm" onClick={printInvoice}>
@@ -423,106 +451,120 @@ export function BillingPage() {
                                 </div>
                             </div>
 
-                            {/* Invoice Card */}
-                            <div className="border rounded-xl bg-card p-6 space-y-6">
-
-                                {/* Bill To & Shop Details */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                    <div>
-                                        <p className="text-[11px] font-bold uppercase tracking-[0.5px] text-muted-foreground mb-1.5">BILL TO</p>
-                                        <p className="text-[15px] font-medium text-foreground mb-1">{selected.client.name} {selected.client.familyName}</p>
-                                        <div className="text-sm text-muted-foreground leading-relaxed">
-                                            <p>Phone: {selected.client.phone}</p>
-                                            {selected.client.address && <p>Address: {selected.client.address}</p>}
+                            <div className="border rounded-xl bg-card p-5 space-y-5">
+                                {/* Two-column fields */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-2.5 text-sm">
+                                    <div className="space-y-2.5">
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="font-semibold shrink-0 w-24">Date:</span>
+                                            <span className="flex-1 border-b border-dotted border-muted-foreground/40 min-w-0" />
+                                            <span>{formatDate(s.createdAt)}</span>
                                         </div>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="font-semibold shrink-0 w-24">N &amp; P:</span>
+                                            <span className="flex-1 border-b border-dotted border-muted-foreground/40 min-w-0" />
+                                            <span>{s.client.name} {s.client.familyName}</span>
+                                        </div>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="font-semibold shrink-0 w-24">N de Tel:</span>
+                                            <span className="flex-1 border-b border-dotted border-muted-foreground/40 min-w-0" />
+                                            <span>{s.client.phone}</span>
+                                        </div>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="font-semibold shrink-0 w-24">Designation:</span>
+                                            <span className="flex-1 border-b border-dotted border-muted-foreground/40 min-w-0" />
+                                            <span className="text-right max-w-[200px] truncate" title={designation}>{designation || '—'}</span>
+                                        </div>
+                                        {s.prescription?.dateWritten && (
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="font-semibold shrink-0 w-24">Date Ordonnance:</span>
+                                            <span className="flex-1 border-b border-dotted border-muted-foreground/40 min-w-0" />
+                                            <span>{new Date(s.prescription.dateWritten).toLocaleDateString('fr-TN', { day: 'numeric', month: 'numeric', year: 'numeric' })}</span>
+                                        </div>
+                                        )}
+                                        {s.prescription?.doctorName && (
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="font-semibold shrink-0 w-24">Medecin:</span>
+                                            <span className="flex-1 border-b border-dotted border-muted-foreground/40 min-w-0" />
+                                            <span>{s.prescription.doctorName}</span>
+                                        </div>
+                                        )}
                                     </div>
-                                    <div>
-                                        <p className="text-[11px] font-bold uppercase tracking-[0.5px] text-muted-foreground mb-1.5">SHOP DETAILS</p>
-                                        <p className="text-[15px] font-medium text-foreground mb-1">Sofien Optic</p>
-                                        <div className="text-sm text-muted-foreground leading-relaxed">
-                                            <p>Tunis, TN</p>
-                                            <p>ID: 1234567890</p>
+                                    <div className="space-y-2.5">
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="font-semibold shrink-0 w-24">Prix:</span>
+                                            <span className="flex-1 border-b border-dotted border-muted-foreground/40 min-w-0" />
+                                            <span>{formatCurrency(s.totalAmount)}</span>
+                                        </div>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="font-semibold shrink-0 w-24">Acompte:</span>
+                                            <span className="flex-1 border-b border-dotted border-muted-foreground/40 min-w-0" />
+                                            <span>{deposit ? formatCurrency(deposit.amount) : '—'}</span>
+                                        </div>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="font-semibold shrink-0 w-24">Reste:</span>
+                                            <span className="flex-1 border-b border-dotted border-muted-foreground/40 min-w-0" />
+                                            <span>{formatCurrency(s.balance)}</span>
+                                        </div>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="font-semibold shrink-0 w-24">Date promise:</span>
+                                            <span className="flex-1 border-b border-dotted border-muted-foreground/40 min-w-0" />
+                                            <span>{promiseDate || '—'}</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Line Items Table */}
-                                {(selected.items.length > 0 || selected.repairs.length > 0) && (
-                                    <div>
-                                        <table className="w-full text-sm">
+                                {/* Prescription Table */}
+                                {s.prescription ? (
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm border-collapse">
                                             <thead>
-                                                <tr className="border-y">
-                                                    <th className="text-left py-3 text-sm font-medium text-muted-foreground" style={{width:'45%'}}>Description</th>
-                                                    <th className="text-right py-3 text-sm font-medium text-muted-foreground" style={{width:'12%'}}>Qty</th>
-                                                    <th className="text-right py-3 text-sm font-medium text-muted-foreground" style={{width:'20%'}}>Unit price</th>
-                                                    <th className="text-right py-3 text-sm font-medium text-muted-foreground" style={{width:'23%'}}>Total</th>
+                                                <tr className="border border-foreground/20 bg-muted/50">
+                                                    <th className="p-2 text-center font-semibold border-r border-foreground/20 w-[12%]">OD/OG</th>
+                                                    <th className="p-2 text-center font-semibold border-r border-foreground/20 w-[14%]">Sph</th>
+                                                    <th className="p-2 text-center font-semibold border-r border-foreground/20 w-[14%]">Cyl</th>
+                                                    <th className="p-2 text-center font-semibold border-r border-foreground/20 w-[14%]">Axe</th>
+                                                    <th className="p-2 text-center font-semibold border-r border-foreground/20 w-[14%]">Add</th>
+                                                    <th className="p-2 text-center font-semibold border-r border-foreground/20 w-[16%]">Ep</th>
+                                                    <th className="p-2 text-center font-semibold w-[16%]">H</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y">
-                                                {selected.items.map((item, i) => (
-                                                    <tr key={i} className="text-sm">
-                                                        <td className="py-3 text-foreground font-medium">{item.productName} <span className="text-muted-foreground font-normal">({item.brand})</span></td>
-                                                        <td className="py-3 text-right">{item.quantity}</td>
-                                                        <td className="py-3 text-right">{formatCurrency(item.unitPrice)}</td>
-                                                        <td className="py-3 text-right font-semibold">{formatCurrency((parseFloat(item.unitPrice) * item.quantity).toFixed(3))}</td>
-                                                    </tr>
-                                                ))}
-                                                {selected.repairs.map((r, i) => (
-                                                    <tr key={`repair-${i}`} className="text-sm">
-                                                        <td className="py-3 text-foreground font-medium">{r.type}</td>
-                                                        <td className="py-3 text-right">1</td>
-                                                        <td className="py-3 text-right">{formatCurrency(r.price)}</td>
-                                                        <td className="py-3 text-right font-semibold">{formatCurrency(r.price)}</td>
-                                                    </tr>
-                                                ))}
+                                            <tbody>
+                                                <tr className="border-x border-foreground/20">
+                                                    <td className="p-2 text-center font-semibold border-r border-foreground/20">OD</td>
+                                                    <td className="p-2 text-center border-r border-foreground/20">{s.prescription.sphRight}</td>
+                                                    <td className="p-2 text-center border-r border-foreground/20">{s.prescription.cylRight}</td>
+                                                    <td className="p-2 text-center border-r border-foreground/20">{s.prescription.axisRight}</td>
+                                                    <td className="p-2 text-center border-r border-foreground/20">{s.prescription.addRight}</td>
+                                                    <td className="p-2 text-center border-r border-foreground/20">{s.prescription.pdRight}</td>
+                                                    <td className="p-2 text-center"></td>
+                                                </tr>
+                                                <tr className="border border-foreground/20">
+                                                    <td className="p-2 text-center font-semibold border-r border-foreground/20">OG</td>
+                                                    <td className="p-2 text-center border-r border-foreground/20">{s.prescription.sphLeft}</td>
+                                                    <td className="p-2 text-center border-r border-foreground/20">{s.prescription.cylLeft}</td>
+                                                    <td className="p-2 text-center border-r border-foreground/20">{s.prescription.axisLeft}</td>
+                                                    <td className="p-2 text-center border-r border-foreground/20">{s.prescription.addLeft}</td>
+                                                    <td className="p-2 text-center border-r border-foreground/20">{s.prescription.pdLeft}</td>
+                                                    <td className="p-2 text-center"></td>
+                                                </tr>
                                             </tbody>
                                         </table>
                                     </div>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground italic text-center py-3">Aucune ordonnance</p>
                                 )}
 
-                                {/* Summary Totals */}
-                                <div className="flex justify-end">
-                                    <div className="w-full sm:w-[300px] space-y-2">
-                                        <div className="flex justify-between text-sm text-muted-foreground border-b pb-2">
-                                            <span>Subtotal</span>
-                                            <span>{formatCurrency(selected.totalAmount)}</span>
-                                        </div>
-                                        <div className="flex justify-between text-sm text-muted-foreground">
-                                            <span>Tax (0%)</span>
-                                            <span>0.000 TND</span>
-                                        </div>
-                                        <div className="flex justify-between text-base font-semibold text-foreground border-t-2 pt-2.5">
-                                            <span>Total due</span>
-                                            <span>{formatCurrency(selected.totalAmount)}</span>
-                                        </div>
-                                    </div>
+                                {/* Footer */}
+                                <div className="border-t-2 pt-4 text-center text-xs text-muted-foreground leading-relaxed" style={{borderColor:'#37b34a'}}>
+                                    <p>Rue de la liberte M&rsquo;himidia en face Ooredoo</p>
+                                    <p className="font-semibold" style={{color:'#37b34a'}}>Sofiene Optic</p>
+                                    <p>24.398.692 &mdash; 24.248.632</p>
                                 </div>
-
-                                {/* Payment Status */}
-                                {selected.paymentStatus === 'fullyPaid' && (
-                                    <div className="flex items-center gap-2.5 p-3 rounded-lg border-l-[3px] border-l-green-600 bg-green-50 dark:bg-green-950/20 text-sm font-medium text-green-700 dark:text-green-400">
-                                        <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
-                                        Paid in full on {formatDate(selected.createdAt)}
-                                    </div>
-                                )}
-
-                                {/* Payment History */}
-                                {selected.payments.length > 0 && (
-                                    <div>
-                                        <p className="text-sm font-semibold text-foreground mb-2">Payment History</p>
-                                        <div className="space-y-1">
-                                            {selected.payments.map((p, i) => (
-                                                <div key={i} className="flex justify-between p-2.5 bg-muted/30 rounded-lg border text-xs">
-                                                    <span>{p.type === 'deposit' ? 'Deposit' : p.type === 'balance' ? 'Balance Payment' : 'Full Payment'} — {new Date(p.createdAt).toLocaleDateString('en-US')}</span>
-                                                    <span className="font-medium">{formatCurrency(p.amount)}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         </div>
-                    )}
+                        )
+                    })()}
                 </DialogContent>
             </Dialog>
 

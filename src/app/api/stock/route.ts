@@ -2,30 +2,67 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { productSchema } from '@/lib/validators'
 
-// GET /api/stock?search=term&category=eyewear
+const VALID_CATEGORIES = ['lunette', 'lentille', 'verre', 'accessory', 'nettoyant_lentilles', 'nettoyant_monture'] as const
+
+// GET /api/stock?search=term&category=lunette&fournisseurId=xxx&stockStatus=inStock|lowStock|outOfStock&brand=xxx
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = request.nextUrl
         const search = searchParams.get('search') || ''
         const category = searchParams.get('category') || ''
+        const fournisseurId = searchParams.get('fournisseurId') || ''
+        const stockStatus = searchParams.get('stockStatus') || ''
+        const brand = searchParams.get('brand') || ''
+        const lensType = searchParams.get('lensType') || ''
 
         const where: Record<string, unknown> = {}
 
+        const orConditions: Record<string, unknown>[] = []
+
         if (search) {
-            where.OR = [
+            orConditions.push(
                 { name: { contains: search } },
                 { brand: { contains: search } },
                 { model: { contains: search } },
-            ]
+            )
         }
 
-        if (category) {
+        if (brand) {
+            orConditions.push({ brand: { contains: brand } })
+        }
+
+        if (orConditions.length > 0) {
+            where.OR = orConditions
+        }
+
+        if (category && VALID_CATEGORIES.includes(category as typeof VALID_CATEGORIES[number])) {
             where.category = category
+        }
+
+        if (fournisseurId) {
+            where.fournisseurId = fournisseurId
+        }
+
+        if (lensType) {
+            where.lensType = lensType
+        }
+
+        if (stockStatus === 'outOfStock') {
+            where.quantity = 0
+        } else if (stockStatus === 'lowStock') {
+            where.quantity = { gt: 0, lte: 3 }
+        } else if (stockStatus === 'inStock') {
+            where.quantity = { gt: 3 }
         }
 
         const products = await db.product.findMany({
             where,
             orderBy: { createdAt: 'desc' },
+            include: {
+                fournisseur: { select: { id: true, name: true } },
+                _count: { select: { orderItems: true } },
+                qrcode: { select: { code: true } },
+            },
         })
 
         return NextResponse.json(products)

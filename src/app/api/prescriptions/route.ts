@@ -2,20 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { prescriptionSchema } from '@/lib/validators'
 
-// GET /api/prescriptions?clientId=xxx
+// GET /api/prescriptions?clientId=xxx&doctorId=xxx&includeClient=true
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = request.nextUrl
         const clientId = searchParams.get('clientId') || ''
+        const doctorId = searchParams.get('doctorId') || ''
 
         const where: Record<string, unknown> = {}
-        if (clientId) {
-            where.clientId = clientId
-        }
+        if (clientId) where.clientId = clientId
+        if (doctorId) where.doctorId = doctorId
 
         const prescriptions = await db.prescription.findMany({
             where,
-            include: { client: { select: { name: true, familyName: true, phone: true } } },
+            include: {
+                client: { select: { name: true, familyName: true, phone: true } },
+                doctor: { select: { id: true, name: true } },
+            },
             orderBy: { createdAt: 'desc' },
         })
 

@@ -31,7 +31,8 @@ interface Prescription {
     axisLeft: number
     addLeft: string
     pdLeft: number
-    doctorName: string
+    doctor: { id: string; name: string } | null
+    dateWritten: string | null
     createdAt: string
 }
 
@@ -197,7 +198,8 @@ export function PrescriptionsPage() {
 
                                     <div className="flex items-center gap-2 text-xs text-muted-foreground border-t pt-2">
                                         <Stethoscope className="h-3.5 w-3.5" />
-                                        <span>{t('prescriptions.doctorName')}: <span className="font-medium text-foreground">{rx.doctorName}</span></span>
+                                        <span>{t('prescriptions.doctor')}: <span className="font-medium text-foreground">{rx.doctor?.name || '—'}</span></span>
+                                        {rx.dateWritten && <><span className="text-muted-foreground/50">|</span><Calendar className="h-3 w-3" /><span>{new Date(rx.dateWritten).toLocaleDateString()}</span></>}
                                     </div>
 
                                     <div className="bg-card rounded-lg border p-2">
@@ -263,7 +265,8 @@ export function PrescriptionsPage() {
                                 axisLeft: editPrescription.axisLeft,
                                 addLeft: parseFloat(editPrescription.addLeft),
                                 pdLeft: editPrescription.pdLeft,
-                                doctorName: editPrescription.doctorName,
+                                doctorId: editPrescription.doctor?.id || '',
+                                dateWritten: editPrescription.dateWritten || undefined,
                             } : undefined}
                             onSubmit={editPrescription ? handleUpdate : handleCreate}
                             onCancel={() => { setEditPrescription(null); setDialogOpen(false) }}

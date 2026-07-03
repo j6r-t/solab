@@ -40,6 +40,27 @@ enum Gender {
   male
 }
 
+model Doctor {
+  id             String         @id @default(cuid())
+  name           String
+  phone          String
+  address        String?
+  specialization String?
+  prescriptions  Prescription[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model Fournisseur {
+  id        String    @id @default(cuid())
+  name      String
+  phone     String
+  address   String?
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
 model Prescription {
   id       String @id @default(cuid())
   clientId String
@@ -59,8 +80,10 @@ model Prescription {
   addLeft  Decimal
   pdLeft   Int
 
-  doctorName String
-  orders   Order[]
+  doctorId   String?
+  doctor     Doctor?  @relation(fields: [doctorId], references: [id])
+  dateWritten DateTime?
+  orders     Order[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -73,13 +96,17 @@ model Product {
   model            String
   category         ProductCategory?
   price            Decimal
+  costPrice        Decimal?
   quantity         Int               @default(0)
+  thickness        String?
   lensType         LensType?
   material         LensMaterial?
   coating          LensCoating?
   sph              Decimal?
   cyl              Decimal?
   add              Decimal?
+  fournisseurId    String?
+  fournisseur      Fournisseur?      @relation(fields: [fournisseurId], references: [id])
   qrcode           QRCode?
   orderItems       OrderItem[]
   StockAdjustments StockAdjustment[]
@@ -89,9 +116,12 @@ model Product {
 }
 
 enum ProductCategory {
-  eyewear
-  lens
+  lunette
+  lentille
+  verre
   accessory
+  nettoyant_lentilles
+  nettoyant_monture
 }
 
 enum LensType {
@@ -210,12 +240,6 @@ enum RepairStatus {
   pending
   completed
   cancelled
-}
-
-model LensCatalogue {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
 }
 
 model LensBrand {

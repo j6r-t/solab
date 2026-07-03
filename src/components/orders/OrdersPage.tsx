@@ -42,7 +42,7 @@ interface Repair {
 
 interface Prescription {
     id: string
-    doctorName: string
+    doctor: { name: string } | null
     sphRight: string
     cylRight: string
     axisRight: number
@@ -53,7 +53,6 @@ interface Prescription {
     axisLeft: number
     addLeft: string
     pdLeft: number
-    createdAt: string
 }
 
 interface Order {
@@ -124,6 +123,8 @@ export function OrdersPage() {
     const [createOpen, setCreateOpen] = useState(false)
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
+    const [statusConfirmTarget, setStatusConfirmTarget] = useState<{ orderId: string; status: string } | null>(null)
+    const [updatingOrders, setUpdatingOrders] = useState<Set<string>>(new Set())
     const debouncedSearch = useDebounce(search, 300)
 
     useEffect(() => {
@@ -176,15 +177,31 @@ export function OrdersPage() {
     }
 
     async function handleStatusUpdate(orderId: string, status: string) {
-        await fetch(`/api/orders/${orderId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status }),
-        })
-        setSelectedOrder(null)
-        setDetailOpen(false)
-        await reFetch()
-        toast.success(t('orders.statusUpdated'))
+        setUpdatingOrders((prev) => new Set(prev).add(orderId))
+        try {
+            const res = await fetch(`/api/orders/${orderId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status }),
+            })
+            if (!res.ok) {
+                const body = await res.json()
+                throw new Error(body.error || 'Failed to update status')
+            }
+            toast.success(t('orders.statusUpdated'))
+            setSelectedOrder(null)
+            setDetailOpen(false)
+            await reFetch()
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to update order')
+        } finally {
+            setUpdatingOrders((prev) => { const next = new Set(prev); next.delete(orderId); return next })
+            setStatusConfirmTarget(null)
+        }
+    }
+
+    function confirmStatusUpdate(orderId: string, status: string) {
+        setStatusConfirmTarget({ orderId, status })
     }
 
     function delay(ms: number) {
@@ -304,11 +321,11 @@ export function OrdersPage() {
                             <div className="flex gap-2">
                                 {selectedOrder.status === 'pending' && (
                                     <>
-                                        <Button size="sm" onClick={() => handleStatusUpdate(selectedOrder.id, 'ready')}>
-                                            <CheckCircle className="h-4 w-4 mr-1" />
+                                        <Button size="sm" onClick={() => confirmStatusUpdate(selectedOrder.id, 'ready')} disabled={updatingOrders.has(selectedOrder.id)}>
+                                            {updatingOrders.has(selectedOrder.id) ? <Loader2 className="h-4 w-4 mr-1 animate-spinner" /> : <CheckCircle className="h-4 w-4 mr-1" />}
                                             {t('orders.markReady')}
                                         </Button>
-                                        <Button size="sm" variant="outline" onClick={() => handleStatusUpdate(selectedOrder.id, 'cancelled')}>
+                                        <Button size="sm" variant="outline" onClick={() => confirmStatusUpdate(selectedOrder.id, 'cancelled')} disabled={updatingOrders.has(selectedOrder.id)}>
                                             <XCircle className="h-4 w-4 mr-1" />
                                             {t('common.cancelled')}
                                         </Button>
@@ -316,11 +333,11 @@ export function OrdersPage() {
                                 )}
                                 {selectedOrder.status === 'ready' && (
                                     <>
-                                        <Button size="sm" onClick={() => handleStatusUpdate(selectedOrder.id, 'completed')}>
-                                            <CheckCircle className="h-4 w-4 mr-1" />
+                                        <Button size="sm" onClick={() => confirmStatusUpdate(selectedOrder.id, 'completed')} disabled={updatingOrders.has(selectedOrder.id)}>
+                                            {updatingOrders.has(selectedOrder.id) ? <Loader2 className="h-4 w-4 mr-1 animate-spinner" /> : <CheckCircle className="h-4 w-4 mr-1" />}
                                             {t('orders.markPickedUp')}
                                         </Button>
-                                        <Button size="sm" variant="outline" onClick={() => handleStatusUpdate(selectedOrder.id, 'cancelled')}>
+                                        <Button size="sm" variant="outline" onClick={() => confirmStatusUpdate(selectedOrder.id, 'cancelled')} disabled={updatingOrders.has(selectedOrder.id)}>
                                             <XCircle className="h-4 w-4 mr-1" />
                                             {t('common.cancelled')}
                                         </Button>
@@ -339,7 +356,7 @@ export function OrdersPage() {
                                 <div>
                                     <p className="font-semibold text-sm mb-2">{t('prescriptions.title')}</p>
                                     <div className="text-sm p-2 bg-muted/30 rounded space-y-1">
-                                        <p><span className="text-muted-foreground">{t('prescriptions.doctorName')}:</span> {selectedOrder.prescription.doctorName}</p>
+                                        <p><span className="text-muted-foreground">{t('prescriptions.doctor')}:</span> {selectedOrder.prescription.doctor?.name || '—'}</p>
                                         <div className="grid grid-cols-2 gap-2 text-xs">
                                             <div>
                                                 <p className="font-medium">{t('prescriptions.rightEye')}</p>
@@ -410,6 +427,16 @@ export function OrdersPage() {
                     />
                 </DialogContent>
             </Dialog>
+
+            <ConfirmDialog
+                open={!!statusConfirmTarget}
+                onOpenChange={() => setStatusConfirmTarget(null)}
+                title="Update Order Status"
+                description={statusConfirmTarget ? `Move order to "${statusConfirmTarget.status}"?` : ''}
+                confirmLabel="Update"
+                cancelLabel={t('common.cancel')}
+                onConfirm={() => statusConfirmTarget && handleStatusUpdate(statusConfirmTarget.orderId, statusConfirmTarget.status)}
+            />
 
             <ConfirmDialog
                 open={!!deleteTarget}

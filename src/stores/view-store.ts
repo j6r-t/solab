@@ -19,6 +19,9 @@ export type ViewName =
   | 'repairs'
   | 'reports'
   | 'settings'
+  | 'doctors'
+  | 'fournisseurs'
+  | 'qrcode'
 
 interface ViewState {
   currentView: ViewName

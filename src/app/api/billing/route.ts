@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
                 items: { include: { product: { select: { id: true, name: true, brand: true, model: true, category: true } } } },
                 payments: { orderBy: { createdAt: 'asc' } },
                 repairs: { include: { repairService: true } },
+                prescription: { include: { doctor: { select: { name: true } } } },
             },
             orderBy: { createdAt: 'desc' },
         })
@@ -63,6 +64,23 @@ export async function GET(request: NextRequest) {
                     type: r.type,
                     price: r.price.toString(),
                 })),
+                turnaroundDays: order.turnaroundDays,
+                prescription: order.prescription
+                    ? {
+                          sphRight: order.prescription.sphRight.toString(),
+                          cylRight: order.prescription.cylRight.toString(),
+                          axisRight: order.prescription.axisRight,
+                          addRight: order.prescription.addRight.toString(),
+                          pdRight: order.prescription.pdRight,
+                          sphLeft: order.prescription.sphLeft.toString(),
+                          cylLeft: order.prescription.cylLeft.toString(),
+                          axisLeft: order.prescription.axisLeft,
+                          addLeft: order.prescription.addLeft.toString(),
+                          pdLeft: order.prescription.pdLeft,
+                          dateWritten: order.prescription.dateWritten,
+                          doctorName: order.prescription.doctor?.name || null,
+                      }
+                    : null,
             }
         })
 

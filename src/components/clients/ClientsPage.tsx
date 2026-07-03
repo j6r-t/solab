@@ -6,6 +6,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ClientForm } from '@/components/clients/ClientForm'
+import { PrescriptionForm } from '@/components/prescriptions/PrescriptionForm'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
     Dialog,
@@ -37,6 +38,10 @@ export function ClientsPage() {
     const [deleteTarget, setDeleteTarget] = useState<Client | null>(null)
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
+    const [wizardOpen, setWizardOpen] = useState(false)
+    const [wizardStep, setWizardStep] = useState(1)
+    const [newClientId, setNewClientId] = useState('')
+    const [newClientName, setNewClientName] = useState('')
     const debouncedSearch = useDebounce(search, 300)
 
     useEffect(() => {
@@ -142,7 +147,7 @@ export function ClientsPage() {
                             className="pl-10 h-10"
                         />
                     </div>
-                    <Button variant="outline" onClick={() => { setEditClient(null); setDialogOpen(true) }}>
+                    <Button variant="outline" onClick={() => { setWizardOpen(true); setWizardStep(1); setNewClientId(''); setNewClientName('') }}>
                         <Plus className="h-4 w-4 mr-2" />
                         {t('clients.newClient')}
                     </Button>
@@ -160,7 +165,7 @@ export function ClientsPage() {
                             Create your first client profile to start tracking prescriptions and orders.
                             Each client can have multiple prescriptions and order history.
                         </p>
-                        <Button onClick={() => { setEditClient(null); setDialogOpen(true) }}>
+                        <Button onClick={() => { setWizardOpen(true); setWizardStep(1); setNewClientId(''); setNewClientName('') }}>
                             <Plus className="h-4 w-4 mr-2" />
                             Create first client
                         </Button>
@@ -213,6 +218,77 @@ export function ClientsPage() {
                             onCancel={() => { setEditClient(null); setDialogOpen(false) }}
                             saving={saving}
                         />
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={wizardOpen} onOpenChange={(open) => { if (!open) { setWizardStep(1); setNewClientId('') }; setWizardOpen(open) }}>
+                    <DialogContent className="w-full sm:max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle>{t('clients.newClient')}</DialogTitle>
+                            <div className="flex items-center gap-2 mt-1">
+                                <div className={`h-1.5 flex-1 rounded-full ${wizardStep >= 1 ? 'bg-primary' : 'bg-muted'}`} />
+                                <div className={`h-1.5 flex-1 rounded-full ${wizardStep >= 2 ? 'bg-primary' : 'bg-muted'}`} />
+                                <span className="text-xs text-muted-foreground ml-1">{wizardStep}/2</span>
+                            </div>
+                        </DialogHeader>
+                        {wizardStep === 1 && (
+                            <ClientForm
+                                onSubmit={async (data) => {
+                                    setSaving(true)
+                                    try {
+                                        const res = await fetch('/api/clients', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify(data),
+                                        })
+                                        if (!res.ok) {
+                                            const body = await res.json()
+                                            throw new Error(JSON.stringify(body.error))
+                                        }
+                                        const created = await res.json()
+                                        setNewClientId(created.id)
+                                        setNewClientName(`${created.name} ${created.familyName}`)
+                                        setWizardStep(2)
+                                        await reFetch()
+                                    } finally {
+                                        setSaving(false)
+                                    }
+                                }}
+                                onCancel={() => { setWizardOpen(false); setWizardStep(1); setNewClientId('') }}
+                                saving={saving}
+                            />
+                        )}
+                        {wizardStep === 2 && (
+                            <div className="space-y-4">
+                                <p className="text-sm text-muted-foreground">{t('clients.addPrescriptionPrompt').replace('{name}', newClientName)}</p>
+                                <PrescriptionForm
+                                    preselectedClientId={newClientId}
+                                    preselectedClientName={newClientName}
+                                    onSubmit={async (data) => {
+                                        setSaving(true)
+                                        try {
+                                            const res = await fetch('/api/prescriptions', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify(data),
+                                            })
+                                            if (!res.ok) {
+                                                const body = await res.json()
+                                                throw new Error(JSON.stringify(body.error))
+                                            }
+                                            toast.success(t('prescriptions.created'))
+                                        } finally {
+                                            setSaving(false)
+                                        }
+                                        setWizardOpen(false)
+                                        setWizardStep(1)
+                                        setNewClientId('')
+                                    }}
+                                    onCancel={() => setWizardOpen(false)}
+                                    saving={saving}
+                                />
+                            </div>
+                        )}
                     </DialogContent>
                 </Dialog>
             </div>

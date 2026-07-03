@@ -16,17 +16,26 @@ interface ClientOption {
     phone: string
 }
 
+interface DoctorOption {
+    id: string
+    name: string
+    phone: string
+}
+
 interface PrescriptionFormProps {
     defaultValues?: Partial<PrescriptionFormData>
     onSubmit: (data: PrescriptionFormData) => Promise<void>
     onCancel: () => void
     saving?: boolean
+    preselectedClientId?: string
+    preselectedClientName?: string
 }
 
-export function PrescriptionForm({ defaultValues, onSubmit, onCancel, saving: externalSaving }: PrescriptionFormProps) {
+export function PrescriptionForm({ defaultValues, onSubmit, onCancel, saving: externalSaving, preselectedClientId, preselectedClientName }: PrescriptionFormProps) {
     const { t } = useTranslation()
     const [clients, setClients] = useState<ClientOption[]>([])
     const [clientSearch, setClientSearch] = useState('')
+    const [doctors, setDoctors] = useState<DoctorOption[]>([])
     const [formData, setFormData] = useState<PrescriptionFormData>({
         clientId: defaultValues?.clientId || '',
         sphRight: defaultValues?.sphRight ?? 0,
@@ -39,13 +48,21 @@ export function PrescriptionForm({ defaultValues, onSubmit, onCancel, saving: ex
         axisLeft: defaultValues?.axisLeft ?? 0,
         addLeft: defaultValues?.addLeft ?? 0,
         pdLeft: defaultValues?.pdLeft ?? 0,
-        doctorName: defaultValues?.doctorName || '',
+        doctorId: defaultValues?.doctorId || '',
+        dateWritten: defaultValues?.dateWritten || '',
     })
     const [errors, setErrors] = useState<Record<string, string[]>>({})
     const [internalSaving, setInternalSaving] = useState(false)
     const loading = internalSaving || externalSaving || false
 
     useEffect(() => {
+        if (preselectedClientId) {
+            setFormData((prev) => ({ ...prev, clientId: preselectedClientId }))
+        }
+    }, [preselectedClientId])
+
+    useEffect(() => {
+        if (preselectedClientId) return
         async function load() {
             try {
                 const res = await fetch(`/api/clients?search=${encodeURIComponent(clientSearch)}`)
@@ -58,12 +75,22 @@ export function PrescriptionForm({ defaultValues, onSubmit, onCancel, saving: ex
             }
         }
         load()
-    }, [clientSearch])
+    }, [clientSearch, preselectedClientId])
+
+    useEffect(() => {
+        fetch('/api/doctors').then((r) => r.ok && r.json()).then((data) => setDoctors(data || [])).catch(() => {})
+    }, [])
 
     const clientOptions: SearchSelectOption[] = clients.map((c) => ({
         value: c.id,
         label: `${c.name} ${c.familyName}`,
         secondary: c.phone,
+    }))
+
+    const doctorOptions: SearchSelectOption[] = doctors.map((d) => ({
+        value: d.id,
+        label: d.name,
+        secondary: d.phone,
     }))
 
     function handleChange(field: keyof PrescriptionFormData, value: string | number) {
@@ -96,18 +123,52 @@ export function PrescriptionForm({ defaultValues, onSubmit, onCancel, saving: ex
 
     return (
         <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-                <Label>{t('orders.client')} *</Label>
-                <SearchSelect
-                    options={clientOptions}
-                    value={formData.clientId}
-                    onChange={(val) => handleChange('clientId', val)}
-                    placeholder={t('clients.searchPlaceholder')}
-                    searchPlaceholder={t('clients.searchPlaceholder')}
-                    emptyMessage={t('clients.noClients')}
-                    title={t('orders.client')}
-                />
-                {errors.clientId && <p className="text-sm text-destructive">{errors.clientId[0]}</p>}
+            {preselectedClientId ? (
+                <div className="rounded-lg bg-muted/30 p-3 border text-sm">
+                    <span className="text-muted-foreground">{t('orders.client')}: </span>
+                    <span className="font-medium">{preselectedClientName}</span>
+                </div>
+            ) : (
+                <div className="space-y-2">
+                    <Label>{t('orders.client')} *</Label>
+                    <SearchSelect
+                        options={clientOptions}
+                        value={formData.clientId}
+                        onChange={(val) => handleChange('clientId', val)}
+                        placeholder={t('clients.searchPlaceholder')}
+                        searchPlaceholder={t('clients.searchPlaceholder')}
+                        emptyMessage={t('clients.noClients')}
+                        title={t('orders.client')}
+                    />
+                    {errors.clientId && <p className="text-sm text-destructive">{errors.clientId[0]}</p>}
+                </div>
+            )}
+
+            <Separator />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label>{t('prescriptions.doctor')}</Label>
+                    <SearchSelect
+                        options={doctorOptions}
+                        value={formData.doctorId || ''}
+                        onChange={(val) => handleChange('doctorId', val)}
+                        placeholder={t('common.select')}
+                        searchPlaceholder={t('common.search')}
+                        emptyMessage={t('common.noResults')}
+                        title={t('prescriptions.doctor')}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="dateWritten">{t('prescriptions.dateWritten')}</Label>
+                    <Input
+                        id="dateWritten"
+                        type="date"
+                        value={formData.dateWritten || ''}
+                        onChange={(e) => handleChange('dateWritten', e.target.value)}
+                        className="h-9"
+                    />
+                </div>
             </div>
 
             <Separator />
@@ -162,20 +223,6 @@ export function PrescriptionForm({ defaultValues, onSubmit, onCancel, saving: ex
                         </div>
                     ))}
                 </div>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-2">
-                <Label htmlFor="doctorName">{t('prescriptions.doctorName')} *</Label>
-                <Input
-                    id="doctorName"
-                    value={formData.doctorName}
-                    onChange={(e) => handleChange('doctorName', e.target.value)}
-                    placeholder="Dr. ..."
-                    className="h-9"
-                />
-                {errors.doctorName && <p className="text-sm text-destructive">{errors.doctorName[0]}</p>}
             </div>
 
             <div className="flex gap-3 pt-1">

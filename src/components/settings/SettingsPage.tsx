@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useLocaleStore } from '@/stores/locale-store'
+
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Globe, User, Smartphone, Wrench, Plus, Pencil, Trash2, Eye } from 'lucide-react'
+import { Globe, User, Smartphone, Wrench, Plus, Pencil, Trash2, Eye, KeyRound, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface RepairService {
@@ -154,6 +155,35 @@ export function SettingsPage() {
     const [servicePrice, setServicePrice] = useState('')
     const [deleteTarget, setDeleteTarget] = useState<RepairService | null>(null)
     const [saving, setSaving] = useState(false)
+    const [pwCurrent, setPwCurrent] = useState('')
+    const [pwNew, setPwNew] = useState('')
+    const [pwConfirm, setPwConfirm] = useState('')
+    const [pwSaving, setPwSaving] = useState(false)
+    async function handleChangePassword() {
+        if (!pwCurrent || !pwNew) return
+        if (pwNew !== pwConfirm) return toast.error(t('settings.passwordMismatch'))
+        if (pwNew.length < 6) return toast.error('Password must be at least 6 characters')
+        setPwSaving(true)
+        try {
+            const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null
+            const res = await fetch('/api/auth/change-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+                body: JSON.stringify({ currentPassword: pwCurrent, newPassword: pwNew }),
+            })
+            if (!res.ok) {
+                const body = await res.json()
+                if (body.error === 'Current password is incorrect') throw new Error(t('settings.wrongPassword'))
+                throw new Error(body.error || 'Failed to update password')
+            }
+            toast.success(t('settings.passwordUpdated'))
+            setPwCurrent(''); setPwNew(''); setPwConfirm('')
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to update password')
+        } finally {
+            setPwSaving(false)
+        }
+    }
 
     function loadServices() {
         fetch('/api/repair-services').then((r) => r.ok && r.json()).then((data) => setServices(data || [])).catch(() => {})
@@ -229,16 +259,29 @@ export function SettingsPage() {
                         <Label>Email</Label>
                         <Input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} placeholder="owner@sofien.tn" />
                     </div>
+                    <div className="border-t pt-4 space-y-3">
+                        <p className="text-sm font-medium flex items-center gap-2"><KeyRound className="h-4 w-4" />{t('settings.updatePassword')}</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">{t('settings.currentPassword')}</Label>
+                                <Input type="password" value={pwCurrent} onChange={(e) => setPwCurrent(e.target.value)} />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">{t('settings.newPassword')}</Label>
+                                <Input type="password" value={pwNew} onChange={(e) => setPwNew(e.target.value)} />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">{t('settings.confirmPassword')}</Label>
+                                <Input type="password" value={pwConfirm} onChange={(e) => setPwConfirm(e.target.value)} />
+                            </div>
+                        </div>
+                        <Button size="sm" onClick={handleChangePassword} disabled={pwSaving || !pwCurrent || !pwNew || !pwConfirm}>
+                            {pwSaving && <Loader2 className="h-4 w-4 mr-1 animate-spinner" />}
+                            {t('settings.updatePassword')}
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
-
-            <NamedItemCard
-                title={t('settings.lensTypes')}
-                icon={Eye}
-                description={t('settings.lensTypesDesc')}
-                apiPath="/api/lens-catalogue"
-                tPrefix="settings"
-            />
 
             <NamedItemCard
                 title={t('settings.lensBrands')}

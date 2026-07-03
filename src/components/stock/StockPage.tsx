@@ -21,7 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { Plus, Search, Package, Pencil, Trash2, Loader2, Box } from 'lucide-react'
+import { Plus, Search, Package, Pencil, Trash2, Loader2, Box, QrCode } from 'lucide-react'
 import type { ProductFormData } from '@/lib/validators'
 import { formatCurrency } from '@/lib/currency'
 import { toast } from 'sonner'
@@ -31,9 +31,11 @@ interface Product {
     name: string
     brand: string
     model: string
-    category: 'eyewear' | 'lens' | 'accessory' | null
+    category: 'lunette' | 'lentille' | 'verre' | 'accessory' | 'nettoyant_lentilles' | 'nettoyant_monture' | null
     price: string
+    costPrice: string | null
     quantity: number
+    thickness: string | null
     lensType: string | null
     material: string | null
     coating: string | null
@@ -41,6 +43,9 @@ interface Product {
     cyl: string | null
     add: string | null
     createdAt: string
+    fournisseur: { id: string; name: string } | null
+    _count: { orderItems: number }
+    qrcode: { code: string } | null
 }
 
 function getStockStatus(quantity: number): { label: string; variant: 'default' | 'secondary' | 'destructive'; className: string } {
@@ -54,12 +59,22 @@ export function StockPage() {
     const [products, setProducts] = useState<Product[]>([])
     const [search, setSearch] = useState('')
     const [category, setCategory] = useState('')
+    const [stockStatus, setStockStatus] = useState('')
+    const [brandFilter, setBrandFilter] = useState('')
+    const [lensTypeFilter, setLensTypeFilter] = useState('')
+    const [fournisseurFilter, setFournisseurFilter] = useState('')
+    const [fournisseurs, setFournisseurs] = useState<{ id: string; name: string }[]>([])
     const [dialogOpen, setDialogOpen] = useState(false)
     const [editProduct, setEditProduct] = useState<Product | null>(null)
+    const [qrProduct, setQrProduct] = useState<Product | null>(null)
     const [deleteTarget, setDeleteTarget] = useState<Product | null>(null)
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const debouncedSearch = useDebounce(search, 300)
+
+    useEffect(() => {
+        fetch('/api/fournisseurs').then((r) => r.ok && r.json()).then((data) => setFournisseurs(data || [])).catch(() => {})
+    }, [])
 
     useEffect(() => {
         async function load() {
@@ -68,23 +83,40 @@ export function StockPage() {
                 const params = new URLSearchParams()
                 if (debouncedSearch) params.set('search', debouncedSearch)
                 if (category) params.set('category', category)
+                if (stockStatus) params.set('stockStatus', stockStatus)
+                if (brandFilter) params.set('brand', brandFilter)
+                if (lensTypeFilter) params.set('lensType', lensTypeFilter)
+                if (fournisseurFilter) params.set('fournisseurId', fournisseurFilter)
                 const res = await fetch(`/api/stock?${params}`)
-                if (res.ok) setProducts(await res.json())
+                if (!res.ok) {
+                    const body = await res.json()
+                    throw new Error(body.error || 'Failed to fetch products')
+                }
+                setProducts(await res.json())
             } catch (error) {
                 console.error('Failed to fetch products:', error)
+                toast.error(error instanceof Error ? error.message : 'Failed to load stock')
             } finally {
                 setLoading(false)
             }
         }
         load()
-    }, [debouncedSearch, category])
+    }, [debouncedSearch, category, stockStatus, brandFilter, lensTypeFilter, fournisseurFilter])
 
     async function reFetch() {
-        const params = new URLSearchParams()
-        if (debouncedSearch) params.set('search', debouncedSearch)
-        if (category) params.set('category', category)
-        const res = await fetch(`/api/stock?${params}`)
-        if (res.ok) setProducts(await res.json())
+        try {
+            const params = new URLSearchParams()
+            if (debouncedSearch) params.set('search', debouncedSearch)
+            if (category) params.set('category', category)
+            if (stockStatus) params.set('stockStatus', stockStatus)
+            if (brandFilter) params.set('brand', brandFilter)
+            if (lensTypeFilter) params.set('lensType', lensTypeFilter)
+            if (fournisseurFilter) params.set('fournisseurId', fournisseurFilter)
+            const res = await fetch(`/api/stock?${params}`)
+            if (res.ok) setProducts(await res.json())
+        } catch (error) {
+            console.error('reFetch error:', error)
+        }
     }
 
     async function handleCreate(data: ProductFormData) {
@@ -150,7 +182,7 @@ export function StockPage() {
     const showNoResults = !loading && products.length === 0 && debouncedSearch
 
     return (
-        <div className="space-y-6 max-w-[900px]">
+        <div className="space-y-6 max-w-[1000px]">
             <div>
                 <h1 className="text-[22px] font-medium">{t('stock.title')}</h1>
                 <p className="text-sm text-muted-foreground mt-1">Track inventory and manage products</p>
@@ -172,15 +204,68 @@ export function StockPage() {
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="__all__">{t('common.all')}</SelectItem>
-                        <SelectItem value="eyewear">{t('stock.eyewear')}</SelectItem>
-                        <SelectItem value="lens">{t('stock.lens')}</SelectItem>
+                        <SelectItem value="lunette">{t('stock.lunette')}</SelectItem>
+                        <SelectItem value="lentille">{t('stock.lentille')}</SelectItem>
+                        <SelectItem value="verre">{t('stock.verre')}</SelectItem>
                         <SelectItem value="accessory">{t('stock.accessory')}</SelectItem>
+                        <SelectItem value="nettoyant_lentilles">{t('stock.nettoyant_lentilles')}</SelectItem>
+                        <SelectItem value="nettoyant_monture">{t('stock.nettoyant_monture')}</SelectItem>
+                    </SelectContent>
+                </Select>
+                <Select value={stockStatus} onValueChange={setStockStatus}>
+                    <SelectTrigger className="w-full sm:w-40 h-10">
+                        <SelectValue placeholder={t('common.all')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="">{t('common.all')}</SelectItem>
+                        <SelectItem value="inStock">{t('stock.inStock')}</SelectItem>
+                        <SelectItem value="lowStock">{t('stock.lowStock')}</SelectItem>
+                        <SelectItem value="outOfStock">{t('stock.outOfStock')}</SelectItem>
                     </SelectContent>
                 </Select>
                 <Button onClick={() => { setEditProduct(null); setDialogOpen(true) }}>
                     <Plus className="h-4 w-4 mr-2" />
                     {t('stock.newProduct')}
                 </Button>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+                {category === 'verre' ? (
+                    <Select value={lensTypeFilter} onValueChange={setLensTypeFilter}>
+                        <SelectTrigger className="w-full sm:w-44 h-9">
+                            <SelectValue placeholder={t('stock.lensType')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="">{t('common.all')}</SelectItem>
+                            <SelectItem value="singleVision">{t('stock.singleVision')}</SelectItem>
+                            <SelectItem value="progressive">{t('stock.progressive')}</SelectItem>
+                            <SelectItem value="bifocal">{t('stock.bifocal')}</SelectItem>
+                            <SelectItem value="office">{t('stock.office')}</SelectItem>
+                            <SelectItem value="photochromic">{t('stock.photochromic')}</SelectItem>
+                        </SelectContent>
+                    </Select>
+                ) : (
+                    <div className="relative flex-1 min-w-[150px]">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            value={brandFilter}
+                            onChange={(e) => setBrandFilter(e.target.value)}
+                            placeholder={t('stock.brand')}
+                            className="pl-10 h-9 text-sm"
+                        />
+                    </div>
+                )}
+                <Select value={fournisseurFilter} onValueChange={setFournisseurFilter}>
+                    <SelectTrigger className="w-full sm:w-44 h-9">
+                        <SelectValue placeholder={t('stock.fournisseur')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="">{t('common.all')}</SelectItem>
+                        {fournisseurs.map((f) => (
+                            <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
 
             {loading && products.length === 0 ? (
@@ -211,7 +296,8 @@ export function StockPage() {
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('stock.category')}</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Details</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('stock.title')}</th>
-                                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">{t('stock.price')}</th>
+                                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">{t('stock.sellingPrice')}</th>
+                                <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">QR</th>
                                 <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Actions</th>
                             </tr>
                         </thead>
@@ -222,17 +308,21 @@ export function StockPage() {
                                     <tr key={product.id} className="row-hover">
                                         <td className="py-3 px-4">
                                             <p className="font-medium text-foreground">{product.name}</p>
-                                            {product.category === 'lens' ? (
+                                            {product.category === 'lentille' ? (
                                                 <p className="text-xs text-muted-foreground">{product.brand}</p>
-                                            ) : product.category === 'eyewear' ? (
-                                                <p className="text-xs text-muted-foreground">{product.brand} — {product.model}</p>
+                                            ) : product.category === 'lunette' ? (
+                                                <p className="text-xs text-muted-foreground">{product.brand} &mdash; Ref: {product.model}</p>
+                                            ) : product.category === 'verre' ? (
+                                                <p className="text-xs text-muted-foreground">{product.brand}{product.thickness ? ` (${product.thickness})` : ''}</p>
+                                            ) : product.category === 'nettoyant_lentilles' || product.category === 'nettoyant_monture' ? (
+                                                <p className="text-xs text-muted-foreground">{product.thickness || '—'}</p>
                                             ) : null}
                                         </td>
                                         <td className="py-3 px-4 text-sm text-muted-foreground">
                                             {categoryLabel(product.category)}
                                         </td>
                                         <td className="py-3 px-4 text-sm">
-                                            {product.category === 'lens' ? (
+                                            {(product.category === 'lentille' || product.category === 'verre') ? (
                                                 <div className="space-y-0.5">
                                                     {product.lensType && <p className="text-xs text-muted-foreground">{t(`stock.${product.lensType}`)}</p>}
                                                     {product.material && <p className="text-xs text-muted-foreground">{t(`stock.${product.material}`)}</p>}
@@ -242,6 +332,18 @@ export function StockPage() {
                                                             {product.sph && `SPH ${product.sph}`}{product.cyl && ` / CYL ${product.cyl}`}{product.add && ` / ADD ${product.add}`}
                                                         </p>
                                                     )}
+                                                    {product.costPrice && (
+                                                        <p className="text-xs text-muted-foreground">Cost: {formatCurrency(product.costPrice)}</p>
+                                                    )}
+                                                    {product.fournisseur && (
+                                                        <p className="text-xs text-muted-foreground">Supplier: {product.fournisseur.name}</p>
+                                                    )}
+                                                </div>
+                                            ) : product.category === 'lunette' ? (
+                                                product.costPrice ? <p className="text-xs text-muted-foreground">Cost: {formatCurrency(product.costPrice)}</p> : <span className="text-xs text-muted-foreground">—</span>
+                                            ) : product.category === 'nettoyant_lentilles' || product.category === 'nettoyant_monture' ? (
+                                                <div className="space-y-0.5">
+                                                    {product.costPrice && <p className="text-xs text-muted-foreground">Cost: {formatCurrency(product.costPrice)}</p>}
                                                 </div>
                                             ) : (
                                                 <span className="text-xs text-muted-foreground">—</span>
@@ -258,6 +360,11 @@ export function StockPage() {
                                         </td>
                                         <td className="py-3 px-4 text-right font-semibold">
                                             {formatCurrency(product.price)}
+                                        </td>
+                                        <td className="py-3 px-4 text-center">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setQrProduct(product)} title={t('stock.qrCode')}>
+                                                <QrCode className="h-4 w-4" />
+                                            </Button>
                                         </td>
                                         <td className="py-3 px-4 text-right">
                                             <div className="flex items-center justify-end gap-1">
@@ -283,11 +390,44 @@ export function StockPage() {
                         <DialogTitle>{editProduct ? t('common.edit') : t('stock.newProduct')}</DialogTitle>
                     </DialogHeader>
                     <ProductForm
-                        defaultValues={editProduct ? { name: editProduct.name, brand: editProduct.brand, model: editProduct.model, category: editProduct.category || undefined, price: parseFloat(editProduct.price), quantity: editProduct.quantity, lensType: editProduct.lensType as ProductFormData['lensType'], material: editProduct.material as ProductFormData['material'], coating: editProduct.coating as ProductFormData['coating'], sph: editProduct.sph ? parseFloat(editProduct.sph) : undefined, cyl: editProduct.cyl ? parseFloat(editProduct.cyl) : undefined, add: editProduct.add ? parseFloat(editProduct.add) : undefined } : undefined}
+                        defaultValues={editProduct ? {
+                            name: editProduct.name, brand: editProduct.brand, model: editProduct.model,
+                            category: editProduct.category || undefined,
+                            price: parseFloat(editProduct.price),
+                            costPrice: editProduct.costPrice ? parseFloat(editProduct.costPrice) : undefined,
+                            quantity: editProduct.quantity,
+                            thickness: editProduct.thickness || undefined,
+                            lensType: editProduct.lensType as ProductFormData['lensType'],
+                            material: editProduct.material as ProductFormData['material'],
+                            coating: editProduct.coating as ProductFormData['coating'],
+                            sph: editProduct.sph ? parseFloat(editProduct.sph) : undefined,
+                            cyl: editProduct.cyl ? parseFloat(editProduct.cyl) : undefined,
+                            add: editProduct.add ? parseFloat(editProduct.add) : undefined,
+                            fournisseurId: editProduct.fournisseur?.id || undefined,
+                        } : undefined}
                         onSubmit={editProduct ? handleUpdate : handleCreate}
                         onCancel={() => { setEditProduct(null); setDialogOpen(false) }}
                         saving={saving}
                     />
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={!!qrProduct} onOpenChange={(open) => { if (!open) setQrProduct(null) }}>
+                <DialogContent className="sm:max-w-xs">
+                    <DialogHeader>
+                        <DialogTitle>{t('stock.qrCode')} — {qrProduct?.name}</DialogTitle>
+                    </DialogHeader>
+                    {qrProduct?.qrcode?.code && (
+                        <div className="flex flex-col items-center gap-3 py-4">
+                            <p className="text-sm font-semibold">{qrProduct.model || qrProduct.name}</p>
+                            <img
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrProduct.qrcode.code)}`}
+                                alt={qrProduct.qrcode.code}
+                                className="rounded-lg border"
+                            />
+                            <p className="text-xs text-muted-foreground font-mono select-all">{qrProduct.qrcode.code}</p>
+                        </div>
+                    )}
                 </DialogContent>
             </Dialog>
 

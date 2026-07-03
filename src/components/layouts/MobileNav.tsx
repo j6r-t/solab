@@ -11,6 +11,9 @@ import {
     Receipt,
     BarChart3,
     Settings,
+    Stethoscope,
+    Truck,
+    QrCode,
 } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useViewStore, type ViewName } from '@/stores/view-store'
@@ -35,6 +38,9 @@ const secondaryItems = [
     { icon: Wrench, view: 'repairs' as ViewName, labelKey: 'repairs' },
     { icon: Receipt, view: 'billing' as ViewName, labelKey: 'billing' },
     { icon: BarChart3, view: 'reports' as ViewName, labelKey: 'reports' },
+    { icon: Stethoscope, view: 'doctors' as ViewName, labelKey: 'doctors' },
+    { icon: Truck, view: 'fournisseurs' as ViewName, labelKey: 'fournisseurs' },
+    { icon: QrCode, view: 'qrcode' as ViewName, labelKey: 'qrCode' },
     { icon: Settings, view: 'settings' as ViewName, labelKey: 'settings' },
 ]
 
