@@ -223,7 +223,7 @@ export function OrdersPage() {
                 <p className="text-sm text-muted-foreground mt-1">Manage client orders and track status</p>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <div className="relative flex-1 min-w-[200px]">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -233,7 +233,7 @@ export function OrdersPage() {
                         className="pl-10 h-10"
                     />
                 </div>
-                <Button variant="outline" onClick={() => setCreateOpen(true)}>
+                <Button variant="outline" className="w-full sm:w-auto" onClick={() => setCreateOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     {t('orders.newOrder')}
                 </Button>
@@ -259,7 +259,7 @@ export function OrdersPage() {
                     <h2 className="text-lg font-medium text-foreground mb-2">{t('common.noResults')}</h2>
                 </div>
             ) : (
-                <div className="border rounded-xl bg-card overflow-hidden">
+                <div className="border rounded-xl bg-card overflow-x-auto">
                     <table className="w-full">
                         <thead>
                             <tr className="bg-muted/30 border-b">
@@ -318,14 +318,14 @@ export function OrdersPage() {
                     </DialogHeader>
                     {selectedOrder && (
                         <div className="space-y-4">
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                                 {selectedOrder.status === 'pending' && (
                                     <>
-                                        <Button size="sm" onClick={() => confirmStatusUpdate(selectedOrder.id, 'ready')} disabled={updatingOrders.has(selectedOrder.id)}>
+                                        <Button size="sm" className="flex-1 sm:flex-none" onClick={() => confirmStatusUpdate(selectedOrder.id, 'ready')} disabled={updatingOrders.has(selectedOrder.id)}>
                                             {updatingOrders.has(selectedOrder.id) ? <Loader2 className="h-4 w-4 mr-1 animate-spinner" /> : <CheckCircle className="h-4 w-4 mr-1" />}
                                             {t('orders.markReady')}
                                         </Button>
-                                        <Button size="sm" variant="outline" onClick={() => confirmStatusUpdate(selectedOrder.id, 'cancelled')} disabled={updatingOrders.has(selectedOrder.id)}>
+                                        <Button size="sm" variant="outline" className="flex-1 sm:flex-none" onClick={() => confirmStatusUpdate(selectedOrder.id, 'cancelled')} disabled={updatingOrders.has(selectedOrder.id)}>
                                             <XCircle className="h-4 w-4 mr-1" />
                                             {t('common.cancelled')}
                                         </Button>
@@ -333,11 +333,11 @@ export function OrdersPage() {
                                 )}
                                 {selectedOrder.status === 'ready' && (
                                     <>
-                                        <Button size="sm" onClick={() => confirmStatusUpdate(selectedOrder.id, 'completed')} disabled={updatingOrders.has(selectedOrder.id)}>
+                                        <Button size="sm" className="flex-1 sm:flex-none" onClick={() => confirmStatusUpdate(selectedOrder.id, 'completed')} disabled={updatingOrders.has(selectedOrder.id)}>
                                             {updatingOrders.has(selectedOrder.id) ? <Loader2 className="h-4 w-4 mr-1 animate-spinner" /> : <CheckCircle className="h-4 w-4 mr-1" />}
                                             {t('orders.markPickedUp')}
                                         </Button>
-                                        <Button size="sm" variant="outline" onClick={() => confirmStatusUpdate(selectedOrder.id, 'cancelled')} disabled={updatingOrders.has(selectedOrder.id)}>
+                                        <Button size="sm" variant="outline" className="flex-1 sm:flex-none" onClick={() => confirmStatusUpdate(selectedOrder.id, 'cancelled')} disabled={updatingOrders.has(selectedOrder.id)}>
                                             <XCircle className="h-4 w-4 mr-1" />
                                             {t('common.cancelled')}
                                         </Button>

@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { Trash2, Plus, Package, Wrench, QrCode, Camera, Loader2, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { Html5Qrcode } from 'html5-qrcode'
 
 export interface OrderItemInput {
     productId: string
@@ -108,8 +109,15 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
     const [creatingRx, setCreatingRx] = useState(false)
     const [qrScanOpen, setQrScanOpen] = useState(false)
     const [qrScanning, setQrScanning] = useState(false)
-    const qrReaderRef = useRef<HTMLDivElement>(null)
+    const [qrError, setQrError] = useState('')
+    const qrReaderId = 'qr-reader-scanner'
     const html5QrRef = useRef<unknown>(null)
+    const mountedRef = useRef(false)
+
+    useEffect(() => {
+        mountedRef.current = true
+        return () => { mountedRef.current = false }
+    }, [])
 
     async function handleQrScan(result: string) {
         setQrScanning(false)
@@ -129,39 +137,45 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
     }
 
     useEffect(() => {
-        if (!qrScanOpen || !qrReaderRef.current) return
+        if (!qrScanOpen) return
+        setQrScanning(false)
+        setQrError('')
         let cancelled = false
+        let reader: Html5Qrcode | null = null
+
         async function start() {
             try {
-                const { Html5Qrcode } = await import('html5-qrcode')
-                if (cancelled) return
-                const reader = new Html5Qrcode('qr-reader')
+                reader = new Html5Qrcode(qrReaderId)
                 html5QrRef.current = reader
+                if (cancelled || !mountedRef.current) { reader.stop().catch(() => {}); return }
                 setQrScanning(true)
                 await reader.start(
                     { facingMode: 'environment' },
                     { fps: 10, qrbox: { width: 250, height: 250 } },
                     (decodedText: string) => {
-                        if (!cancelled) {
-                            reader.stop().catch(() => {})
+                        if (!cancelled && mountedRef.current) {
+                            cancelled = true
+                            if (reader) { reader.stop().catch(() => {}) }
                             handleQrScan(decodedText)
                         }
                     },
                     () => {},
                 )
-            } catch {
-                if (!cancelled) {
-                    toast.error('Camera access denied or not supported')
-                    setQrScanOpen(false)
+            } catch (err) {
+                if (!cancelled && mountedRef.current) {
+                    setQrError(err instanceof Error ? err.message : 'Camera access denied or not available')
+                    setQrScanning(false)
                 }
             }
         }
-        start()
+
+        const timer = setTimeout(start, 300)
+
         return () => {
-            cancelled = true
+            clearTimeout(timer)
             setQrScanning(false)
-            const reader = html5QrRef.current as { stop: () => Promise<void> } | null
-            if (reader) { reader.stop().catch(() => {}); html5QrRef.current = null }
+            if (reader && !cancelled) { reader.stop().catch(() => {}) }
+            html5QrRef.current = null
         }
     }, [qrScanOpen])
 
@@ -348,7 +362,7 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
             ) : (
                 <div className="space-y-2">
                     <Label>{t('orders.orderType')}</Label>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="flex flex-col sm:grid sm:grid-cols-3 gap-2">
                         {(['standard', 'remounting', 'direct_sale'] as const).map((type) => (
                             <Button
                                 key={type}
@@ -588,11 +602,11 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                         {t('orders.directSalePayment')}
                     </div>
                 ) : (
-                    <div className="flex gap-2">
-                        <Button type="button" variant={paymentType === 'full' ? 'default' : 'outline'} size="sm" onClick={() => setPaymentType('full')}>
+                    <div className="flex flex-wrap gap-2">
+                        <Button type="button" variant={paymentType === 'full' ? 'default' : 'outline'} size="sm" onClick={() => setPaymentType('full')} className="flex-1 sm:flex-none">
                             {t('orders.full')}
                         </Button>
-                        <Button type="button" variant={paymentType === 'deposit' ? 'default' : 'outline'} size="sm" onClick={() => setPaymentType('deposit')}>
+                        <Button type="button" variant={paymentType === 'deposit' ? 'default' : 'outline'} size="sm" onClick={() => setPaymentType('deposit')} className="flex-1 sm:flex-none">
                             {t('orders.deposit')}
                         </Button>
                     </div>
@@ -628,16 +642,16 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                 </div>
             </div>
 
-            <div className="flex gap-3 pt-1">
-                <Button type="submit" disabled={saving || !selectedClientId} className="flex-1 h-10">
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
+                <Button type="submit" disabled={saving || !selectedClientId} className="w-full sm:flex-1 h-10">
                     {saving ? t('common.saving') : t('common.save')}
                 </Button>
-                <Button type="button" variant="outline" onClick={onCancel} className="h-10">
+                <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-auto h-10">
                     {t('common.cancel')}
                 </Button>
             </div>
 
-            <Dialog open={qrScanOpen} onOpenChange={(open) => { if (!open) { setQrScanOpen(false); setQrScanning(false) } }}>
+            <Dialog open={qrScanOpen} onOpenChange={(open) => { if (!open) { setQrScanOpen(false); setQrScanning(false); setQrError('') } }}>
                 <DialogContent className="sm:max-w-sm">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
@@ -646,14 +660,17 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                         </DialogTitle>
                     </DialogHeader>
                     <div className="flex flex-col items-center gap-3 py-2">
-                        <div id="qr-reader" ref={qrReaderRef} className={qrScanning ? '' : 'hidden'} />
-                        {!qrScanning && qrScanOpen && (
+                        <div id={qrReaderId} className="w-full" />
+                        {qrError && (
+                            <p className="text-sm text-destructive text-center">{qrError}</p>
+                        )}
+                        {!qrScanning && !qrError && (
                             <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
                                 <Loader2 className="h-6 w-6 animate-spinner" />
                                 <p className="text-sm">Starting camera...</p>
                             </div>
                         )}
-                        <Button type="button" variant="outline" size="sm" onClick={() => { setQrScanOpen(false); setQrScanning(false) }}>
+                        <Button type="button" variant="outline" size="sm" onClick={() => { setQrScanOpen(false); setQrScanning(false); setQrError('') }}>
                             <X className="h-4 w-4 mr-1" />
                             {t('common.cancel')}
                         </Button>

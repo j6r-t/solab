@@ -203,18 +203,18 @@ export function PrescriptionsPage() {
                                     </div>
 
                                     <div className="bg-card rounded-lg border p-2">
-                                    <div className="grid grid-cols-2 gap-3 text-sm">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                                         <div className="space-y-1.5">
                                             <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
                                                 <Eye className="h-3.5 w-3.5" />
                                                 {t('prescriptions.rightEye')}
                                             </div>
-                                            <div className="grid grid-cols-5 gap-1 bg-muted/30 rounded-lg p-2 text-center">
-                                                <div className="rounded p-1.5 bg-background border"><p className="text-[10px] text-muted-foreground">{t('prescriptions.sph')}</p><p className="font-semibold text-xs">{rx.sphRight}</p></div>
-                                                <div className="rounded p-1.5 bg-background border"><p className="text-[10px] text-muted-foreground">{t('prescriptions.cyl')}</p><p className="font-semibold text-xs">{rx.cylRight}</p></div>
-                                                <div className="rounded p-1.5 bg-background border"><p className="text-[10px] text-muted-foreground">{t('prescriptions.axis')}</p><p className="font-semibold text-xs">{rx.axisRight}°</p></div>
-                                                <div className="rounded p-1.5 bg-background border"><p className="text-[10px] text-muted-foreground">{t('prescriptions.add')}</p><p className="font-semibold text-xs">{rx.addRight}</p></div>
-                                                <div className="rounded p-1.5 bg-background border"><p className="text-[10px] text-muted-foreground">{t('prescriptions.pd')}</p><p className="font-semibold text-xs">{rx.pdRight}</p></div>
+                                            <div className="grid grid-cols-5 gap-1 bg-muted/30 rounded-lg p-1.5 text-center">
+                                                <div className="rounded p-1 bg-background border"><p className="text-[10px] text-muted-foreground">{t('prescriptions.sph')}</p><p className="font-semibold text-xs">{rx.sphRight}</p></div>
+                                                <div className="rounded p-1 bg-background border"><p className="text-[10px] text-muted-foreground">{t('prescriptions.cyl')}</p><p className="font-semibold text-xs">{rx.cylRight}</p></div>
+                                                <div className="rounded p-1 bg-background border"><p className="text-[10px] text-muted-foreground">{t('prescriptions.axis')}</p><p className="font-semibold text-xs">{rx.axisRight}°</p></div>
+                                                <div className="rounded p-1 bg-background border"><p className="text-[10px] text-muted-foreground">{t('prescriptions.add')}</p><p className="font-semibold text-xs">{rx.addRight}</p></div>
+                                                <div className="rounded p-1 bg-background border"><p className="text-[10px] text-muted-foreground">{t('prescriptions.pd')}</p><p className="font-semibold text-xs">{rx.pdRight}</p></div>
                                             </div>
                                         </div>
                                         <div className="space-y-1.5">
@@ -222,12 +222,12 @@ export function PrescriptionsPage() {
                                                 <EyeOff className="h-3.5 w-3.5" />
                                                 {t('prescriptions.leftEye')}
                                             </div>
-                                            <div className="grid grid-cols-5 gap-1 bg-muted/30 rounded-lg p-2 text-center">
-                                                <div className="rounded p-1.5 bg-background border"><p className="text-[10px] text-muted-foreground">{t('prescriptions.sph')}</p><p className="font-semibold text-xs">{rx.sphLeft}</p></div>
-                                                <div className="rounded p-1.5 bg-background border"><p className="text-[10px] text-muted-foreground">{t('prescriptions.cyl')}</p><p className="font-semibold text-xs">{rx.cylLeft}</p></div>
-                                                <div className="rounded p-1.5 bg-background border"><p className="text-[10px] text-muted-foreground">{t('prescriptions.axis')}</p><p className="font-semibold text-xs">{rx.axisLeft}°</p></div>
-                                                <div className="rounded p-1.5 bg-background border"><p className="text-[10px] text-muted-foreground">{t('prescriptions.add')}</p><p className="font-semibold text-xs">{rx.addLeft}</p></div>
-                                                <div className="rounded p-1.5 bg-background border"><p className="text-[10px] text-muted-foreground">{t('prescriptions.pd')}</p><p className="font-semibold text-xs">{rx.pdLeft}</p></div>
+                                            <div className="grid grid-cols-5 gap-1 bg-muted/30 rounded-lg p-1.5 text-center">
+                                                <div className="rounded p-1 bg-background border"><p className="text-[10px] text-muted-foreground">{t('prescriptions.sph')}</p><p className="font-semibold text-xs">{rx.sphLeft}</p></div>
+                                                <div className="rounded p-1 bg-background border"><p className="text-[10px] text-muted-foreground">{t('prescriptions.cyl')}</p><p className="font-semibold text-xs">{rx.cylLeft}</p></div>
+                                                <div className="rounded p-1 bg-background border"><p className="text-[10px] text-muted-foreground">{t('prescriptions.axis')}</p><p className="font-semibold text-xs">{rx.axisLeft}°</p></div>
+                                                <div className="rounded p-1 bg-background border"><p className="text-[10px] text-muted-foreground">{t('prescriptions.add')}</p><p className="font-semibold text-xs">{rx.addLeft}</p></div>
+                                                <div className="rounded p-1 bg-background border"><p className="text-[10px] text-muted-foreground">{t('prescriptions.pd')}</p><p className="font-semibold text-xs">{rx.pdLeft}</p></div>
                                             </div>
                                         </div>
                                     </div>

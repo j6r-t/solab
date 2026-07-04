@@ -118,7 +118,7 @@ export function RepairsPage() {
                     <h2 className="text-lg font-medium text-foreground mb-2">{t('common.noResults')}</h2>
                 </div>
             ) : (
-                <div className="border rounded-xl bg-card overflow-hidden">
+                <div className="border rounded-xl bg-card overflow-x-auto">
                     <table className="w-full">
                         <thead>
                             <tr className="bg-muted/30 border-b">

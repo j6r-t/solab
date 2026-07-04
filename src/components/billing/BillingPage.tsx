@@ -628,7 +628,7 @@ export function BillingPage() {
                                 </Button>
                             </div>
 
-                            <div className="max-h-64 overflow-y-auto border rounded-lg">
+                            <div className="max-h-64 overflow-y-auto overflow-x-auto border rounded-lg">
                                 <table className="w-full text-sm">
                                     <thead className="bg-muted/50 sticky top-0">
                                         <tr>

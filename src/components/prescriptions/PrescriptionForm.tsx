@@ -225,11 +225,11 @@ export function PrescriptionForm({ defaultValues, onSubmit, onCancel, saving: ex
                 </div>
             </div>
 
-            <div className="flex gap-3 pt-1">
-                <Button type="submit" disabled={loading} className="flex-1 h-10">
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
+                <Button type="submit" disabled={loading} className="w-full sm:flex-1 h-10">
                     {loading ? t('common.saving') : t('common.save')}
                 </Button>
-                <Button type="button" variant="outline" onClick={onCancel} className="h-10">
+                <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-auto h-10">
                     {t('common.cancel')}
                 </Button>
             </div>

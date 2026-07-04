@@ -413,11 +413,11 @@ export function ProductForm({ defaultValues, onSubmit, onCancel, saving: externa
                 </div>
             </div>
 
-            <div className="flex gap-3 pt-2">
-                <Button type="submit" disabled={loading} className="flex-1">
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <Button type="submit" disabled={loading} className="w-full sm:flex-1">
                     {loading ? t('common.saving') : t('common.save')}
                 </Button>
-                <Button type="button" variant="outline" onClick={onCancel}>
+                <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-auto">
                     {t('common.cancel')}
                 </Button>
             </div>
