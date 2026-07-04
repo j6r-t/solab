@@ -1,0 +1,22 @@
+// Re-export common Prisma-generated types for convenience
+export type {
+    Client,
+    Product,
+    Order,
+    OrderItem,
+    Payment,
+    Repair,
+    RepairService,
+    Prescription,
+    Doctor,
+    Fournisseur,
+    LensBrand,
+    QRCode,
+    User,
+    StockAdjustment,
+    OrderStatus,
+    OrderType,
+    PaymentType,
+    ProductCategory,
+    RepairStatus,
+} from '@prisma/client'

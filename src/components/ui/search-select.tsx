@@ -10,7 +10,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog'
 import { Search, Check, ChevronDown } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils/cn'
 
 export interface SearchSelectOption {
     value: string

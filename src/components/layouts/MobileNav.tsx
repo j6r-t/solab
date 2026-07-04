@@ -14,9 +14,9 @@ import {
     Stethoscope,
     Truck,
 } from 'lucide-react'
-import { useTranslation } from '@/hooks/useTranslation'
+import { useTranslation } from '@/lib/hooks/useTranslation'
 import { useViewStore, type ViewName } from '@/stores/view-store'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils/cn'
 import {
     Sheet,
     SheetContent,

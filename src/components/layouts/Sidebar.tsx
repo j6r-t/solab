@@ -16,10 +16,10 @@ import {
     Truck,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useTranslation } from '@/hooks/useTranslation'
+import { useTranslation } from '@/lib/hooks/useTranslation'
 import { useViewStore, type ViewName } from '@/stores/view-store'
 import { useAuthStore } from '@/stores/auth-store'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils/cn'
 
 const navItems = [
     { icon: LayoutDashboard, view: 'dashboard' as ViewName, labelKey: 'dashboard' },

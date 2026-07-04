@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { createToken, comparePassword } from '@/lib/auth'
+import { db } from '@/lib/database/db'
+import { createToken, comparePassword } from '@/features/auth/auth.service'
 
 export async function POST(request: NextRequest) {
     try {

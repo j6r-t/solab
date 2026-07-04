@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
-import { useTranslation } from '@/hooks/useTranslation'
+import { useTranslation } from '@/lib/hooks/useTranslation'
 import { useViewStore } from '@/stores/view-store'
 import { useAuthStore } from '@/stores/auth-store'
 import { Glasses, LogOut } from 'lucide-react'
