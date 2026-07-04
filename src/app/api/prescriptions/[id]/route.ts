@@ -15,9 +15,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
             )
         }
 
+        const data = { ...parsed.data }
+        if (data.dateWritten && data.dateWritten.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            data.dateWritten = new Date(data.dateWritten).toISOString()
+        }
+
         const prescription = await db.prescription.update({
             where: { id },
-            data: parsed.data,
+            data,
         })
 
         return NextResponse.json(prescription)
