@@ -1,6 +1,6 @@
 import { clientRepo } from '@/lib/database/repositories'
 import { Prisma } from '@prisma/client'
-import { ConflictError } from '@/lib/errors'
+import { ConflictError } from '@/errors'
 
 export async function listClients(params?: { search?: string; gender?: string }) {
     const where: Prisma.ClientWhereInput = {}

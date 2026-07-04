@@ -1,8 +1,8 @@
 import { qrcodeRepo } from '@/lib/database/repositories'
-import { ValidationError, NotFoundError } from '@/lib/errors'
+import { BadRequestError, NotFoundError } from '@/errors'
 
 export async function lookupProductByCode(code: string) {
-    if (!code) throw new ValidationError('QR code parameter is required')
+    if (!code) throw new BadRequestError('QR code parameter is required')
     const qrcode: any = await qrcodeRepo.findUnique({
         where: { code },
         include: {

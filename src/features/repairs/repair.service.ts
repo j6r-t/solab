@@ -1,7 +1,7 @@
 import { repairRepo } from '@/lib/database/repositories'
 import { sendRepairReadySms } from '@/lib/services/sms'
 import { Prisma } from '@prisma/client'
-import { ValidationError } from '@/lib/errors'
+import { BadRequestError } from '@/errors'
 
 export async function listRepairs(params?: { status?: string; search?: string }) {
     const where: Prisma.RepairWhereInput = { repairServiceId: { not: null } }
@@ -41,7 +41,7 @@ export async function updateRepairStatus(id: string, status: string) {
     if (status) {
         return repairRepo.update({ where: { id }, data: { status: status as any } })
     }
-    throw new ValidationError('Status is required')
+    throw new BadRequestError('Status is required')
 }
 
 export async function deleteRepair(id: string) {

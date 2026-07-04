@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { ok } from '@/lib/api/response'
-import { handleError } from '@/lib/api/error-handler'
+import { handleError } from '@/middlewares/errorHandler'
 import { parseQuery } from '@/lib/api/parse'
 import { getReports } from './report.service'
 import { toReportResponse } from './report.dto'

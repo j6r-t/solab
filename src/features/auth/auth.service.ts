@@ -2,7 +2,7 @@ import { SignJWT, jwtVerify } from 'jose'
 import bcrypt from 'bcryptjs'
 import { userRepo } from '@/lib/database/repositories'
 import { JWT_SECRET_FALLBACK } from '@/lib/constants'
-import { ValidationError, UnauthorizedError, NotFoundError, ForbiddenError } from '@/lib/errors'
+import { BadRequestError, UnauthorizedError, NotFoundError, ForbiddenError } from '@/errors'
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || JWT_SECRET_FALLBACK)
 
@@ -31,7 +31,7 @@ export async function verifyToken(token: string): Promise<string | null> {
 }
 
 export async function authenticateUser(email: string, password: string) {
-    if (!email || !password) throw new ValidationError('Email and password are required')
+    if (!email || !password) throw new BadRequestError('Email and password are required')
 
     const user = await userRepo.findUnique({ where: { email } })
     if (!user || !(await comparePassword(password, user.password))) {
@@ -44,7 +44,7 @@ export async function authenticateUser(email: string, password: string) {
 
 export async function setupAdmin() {
     const existing = await userRepo.findFirst()
-    if (existing) throw new ValidationError('Admin user already exists')
+    if (existing) throw new BadRequestError('Admin user already exists')
 
     const hashedPassword = await hashPassword('admin123')
     const user = await userRepo.create({
@@ -55,8 +55,8 @@ export async function setupAdmin() {
 }
 
 export async function changePassword(email: string, currentPassword: string, newPassword: string) {
-    if (!currentPassword || !newPassword) throw new ValidationError('Current password and new password are required')
-    if (newPassword.length < 6) throw new ValidationError('New password must be at least 6 characters')
+    if (!currentPassword || !newPassword) throw new BadRequestError('Current password and new password are required')
+    if (newPassword.length < 6) throw new BadRequestError('New password must be at least 6 characters')
 
     const user = await userRepo.findUnique({ where: { email } })
     if (!user) throw new NotFoundError('User not found')

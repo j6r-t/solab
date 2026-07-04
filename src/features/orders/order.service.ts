@@ -1,7 +1,7 @@
 import { orderRepo, clientRepo, productRepo, paymentRepo, stockAdjustmentRepo } from '@/lib/database/repositories'
 import { db } from '@/lib/database/db'
 import { Prisma } from '@prisma/client'
-import { ValidationError, NotFoundError } from '@/lib/errors'
+import { BadRequestError, NotFoundError } from '@/errors'
 
 function generateOrderNumber(): Promise<number> {
     return db.$transaction(async (tx) => {
@@ -65,7 +65,7 @@ export async function createOrder(data: {
 }) {
     const { clientId, orderType, items, payments, repairs, prescriptionId, turnaroundDays } = data
 
-    if (!clientId) throw new ValidationError('Client is required')
+    if (!clientId) throw new BadRequestError('Client is required')
 
     const client = await clientRepo.findUnique({ where: { id: clientId } })
     if (!client) throw new NotFoundError('Client not found')
@@ -78,7 +78,7 @@ export async function createOrder(data: {
             const product = await productRepo.findUnique({ where: { id: item.productId } })
             if (!product) throw new NotFoundError(`Product ${item.productId} not found`)
             if (product.quantity < item.quantity) {
-                throw new ValidationError(`Insufficient stock for ${product.name}`)
+                throw new BadRequestError(`Insufficient stock for ${product.name}`)
             }
             const price = item.unitPrice || parseFloat(product.price.toString())
             totalAmount += price * item.quantity
@@ -166,11 +166,11 @@ export async function updateOrderStatus(id: string, status: string) {
         return orderRepo.update({ where: { id }, data: { status: 'cancelled' } })
     }
 
-    throw new ValidationError('No valid updates')
+    throw new BadRequestError('No valid updates')
 }
 
 export async function addOrderPayments(id: string, payments: { amount: number; type: string }[]) {
-    if (!payments?.length) throw new ValidationError('No valid updates')
+    if (!payments?.length) throw new BadRequestError('No valid updates')
 
     for (const payment of payments) {
         await paymentRepo.create({ data: { orderId: id, amount: payment.amount, type: payment.type as any } })

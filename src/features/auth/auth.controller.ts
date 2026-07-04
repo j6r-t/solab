@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { ok, noContent } from '@/lib/api/response'
-import { handleError } from '@/lib/api/error-handler'
+import { handleError } from '@/middlewares/errorHandler'
 import { parseBody } from '@/lib/api/parse'
 import { getAuthenticatedUser } from '@/lib/api/auth'
 import { authenticateUser, setupAdmin, changePassword } from './auth.service'

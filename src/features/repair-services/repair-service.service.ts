@@ -1,5 +1,5 @@
 import { repairServiceRepo, repairRepo } from '@/lib/database/repositories'
-import { ValidationError, NotFoundError, ConflictError } from '@/lib/errors'
+import { BadRequestError, NotFoundError, ConflictError } from '@/errors'
 
 export async function listRepairServices() {
     return repairServiceRepo.findMany({ orderBy: { name: 'asc' } })
@@ -7,7 +7,7 @@ export async function listRepairServices() {
 
 export async function createRepairService(data: { name: string; defaultPrice: number }) {
     if (!data.name || data.defaultPrice === undefined) {
-        throw new ValidationError('Name and default price are required')
+        throw new BadRequestError('Name and default price are required')
     }
     return repairServiceRepo.create({ data: { name: data.name, defaultPrice: parseFloat(String(data.defaultPrice)) } })
 }

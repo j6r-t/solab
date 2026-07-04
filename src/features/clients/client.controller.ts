@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { ok, created, noContent } from '@/lib/api/response'
-import { handleError } from '@/lib/api/error-handler'
+import { handleError } from '@/middlewares/errorHandler'
 import { parseBody, parseQuery } from '@/lib/api/parse'
 import { clientSchema } from './client.schema'
 import { listClients, createClient, updateClient, deleteClient } from './client.service'

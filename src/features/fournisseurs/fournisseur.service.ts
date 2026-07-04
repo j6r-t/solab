@@ -1,6 +1,6 @@
 import { fournisseurRepo } from '@/lib/database/repositories'
 import { Prisma } from '@prisma/client'
-import { NotFoundError } from '@/lib/errors'
+import { NotFoundError } from '@/errors'
 
 export async function listFournisseurs(params?: { search?: string }) {
     const where: Prisma.FournisseurWhereInput = {}

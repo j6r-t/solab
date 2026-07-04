@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { UnauthorizedError } from '@/lib/errors'
+import { UnauthorizedError } from '@/errors'
 import { verifyToken } from '@/features/auth/auth.service'
 
 export async function getAuthenticatedUser(request: NextRequest): Promise<string> {

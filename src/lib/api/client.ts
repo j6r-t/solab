@@ -10,9 +10,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
     const body = await res.json().catch(() => null)
 
     if (!res.ok) {
-        const message = body?.error
-            ? (typeof body.error === 'string' ? body.error : JSON.stringify(body.error))
-            : `Request failed (${res.status})`
+        const message = body?.message || (body?.fields ? JSON.stringify(body.fields) : `Request failed (${res.status})`)
         throw new Error(message)
     }
 

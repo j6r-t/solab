@@ -1,13 +1,13 @@
 import { NextRequest } from 'next/server'
 import type { ZodSchema } from 'zod'
-import { ValidationError } from '@/lib/errors'
+import { BadRequestError } from '@/errors'
 
 export async function parseBody<T>(request: NextRequest, schema?: ZodSchema<T>): Promise<T> {
     const body = await request.json()
     if (schema) {
         const parsed = schema.safeParse(body)
         if (!parsed.success) {
-            throw new ValidationError('Validation failed', parsed.error.flatten().fieldErrors)
+            throw new BadRequestError('Validation failed', parsed.error.flatten().fieldErrors)
         }
         return parsed.data
     }

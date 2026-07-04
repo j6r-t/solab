@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { ok, created, noContent } from '@/lib/api/response'
-import { handleError } from '@/lib/api/error-handler'
+import { handleError } from '@/middlewares/errorHandler'
 import { parseBody } from '@/lib/api/parse'
 import { listLensBrands, createLensBrand, updateLensBrand, deleteLensBrand } from './lens-brand.service'
 import { toLensBrandResponse } from './lens-brand.dto'

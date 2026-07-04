@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { ok, created, noContent } from '@/lib/api/response'
-import { handleError } from '@/lib/api/error-handler'
+import { handleError } from '@/middlewares/errorHandler'
 import { parseBody, parseQuery } from '@/lib/api/parse'
 import { listFournisseurs, createFournisseur, updateFournisseur, deleteFournisseur } from './fournisseur.service'
 import { toFournisseurResponse } from './fournisseur.dto'

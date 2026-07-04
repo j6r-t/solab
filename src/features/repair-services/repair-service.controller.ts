@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { ok, created, noContent } from '@/lib/api/response'
-import { handleError } from '@/lib/api/error-handler'
+import { handleError } from '@/middlewares/errorHandler'
 import { parseBody } from '@/lib/api/parse'
 import { listRepairServices, createRepairService, updateRepairService, deleteRepairService } from './repair-service.service'
 import { toRepairServiceResponse } from './repair-service.dto'

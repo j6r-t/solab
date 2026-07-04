@@ -1,12 +1,12 @@
 import { lensBrandRepo } from '@/lib/database/repositories'
-import { ValidationError, NotFoundError } from '@/lib/errors'
+import { BadRequestError, NotFoundError } from '@/errors'
 
 export async function listLensBrands() {
     return lensBrandRepo.findMany({ orderBy: { name: 'asc' } })
 }
 
 export async function createLensBrand(data: { name: string }) {
-    if (!data.name) throw new ValidationError('Name is required')
+    if (!data.name) throw new BadRequestError('Name is required')
     return lensBrandRepo.create({ data: { name: data.name } })
 }
 
