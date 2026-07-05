@@ -3,7 +3,8 @@ import { ok, noContent } from '@/lib/api/response'
 import { handleError } from '@/middlewares/errorHandler'
 import { parseBody, parseQuery } from '@/lib/api/parse'
 import { listRepairs, updateRepairStatus, deleteRepair } from './repair.service'
-import { toRepairResponse } from './repair.dto'
+import { toRepairResponse } from '@/mappers/repair.mapper'
+import type { UpdateRepairInput } from '@/dtos/repairs/repair.dto'
 
 export async function GET(request: NextRequest) {
     try {
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id } = await params
-        const body = await parseBody<{ status: string }>(request)
+        const body = await parseBody<UpdateRepairInput>(request)
         const repair = await updateRepairStatus(id, body.status)
         return ok(toRepairResponse(repair))
     } catch (error) {

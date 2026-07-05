@@ -1,6 +1,7 @@
 import { productRepo } from '@/lib/database/repositories'
 import { Prisma } from '@prisma/client'
 import { PRODUCT_CATEGORIES, QR_CODE_PREFIX, STOCK_THRESHOLDS } from '@/lib/constants'
+import { auditService } from '@/modules/audit'
 
 interface StockQuery {
     search?: string
@@ -73,7 +74,7 @@ export async function createProduct(data: {
 }) {
     const code = `${QR_CODE_PREFIX}-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
 
-    return productRepo.create({
+    const product = await productRepo.create({
         data: {
             ...data,
             category: data.category || 'lunette',
@@ -82,6 +83,8 @@ export async function createProduct(data: {
             qrcode: { create: { code } },
         } as any,
     })
+    await auditService.log({ action: 'PRODUCT_CREATED', entityType: 'PRODUCT', entityId: product.id, metadata: { name: data.name, quantity: data.quantity } })
+    return product
 }
 
 export async function updateProduct(id: string, data: Partial<{
@@ -94,9 +97,12 @@ export async function updateProduct(id: string, data: Partial<{
     lensType: string
     fournisseurId: string
 }>) {
-    return productRepo.update({ where: { id }, data: data as any })
+    const result = await productRepo.update({ where: { id }, data: data as any })
+    await auditService.log({ action: 'PRODUCT_UPDATED', entityType: 'PRODUCT', entityId: id })
+    return result
 }
 
 export async function deleteProduct(id: string) {
     await productRepo.delete({ where: { id } })
+    await auditService.log({ action: 'PRODUCT_DELETED', entityType: 'PRODUCT', entityId: id })
 }

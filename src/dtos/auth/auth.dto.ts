@@ -1,3 +1,13 @@
+export interface LoginInput {
+    email: string
+    password: string
+}
+
+export interface ChangePasswordInput {
+    currentPassword: string
+    newPassword: string
+}
+
 export interface LoginResponse {
     success: true
     token: string

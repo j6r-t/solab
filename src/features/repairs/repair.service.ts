@@ -2,6 +2,7 @@ import { repairRepo } from '@/lib/database/repositories'
 import { sendRepairReadySms } from '@/lib/services/sms'
 import { Prisma } from '@prisma/client'
 import { BadRequestError } from '@/errors'
+import { auditService } from '@/modules/audit'
 
 export async function listRepairs(params?: { status?: string; search?: string }) {
     const where: Prisma.RepairWhereInput = { repairServiceId: { not: null } }
@@ -36,6 +37,7 @@ export async function updateRepairStatus(id: string, status: string) {
     if (status === 'completed') {
         const repair = await repairRepo.update({ where: { id }, data: { status: 'completed' } })
         await sendRepairReadySms(id)
+        await auditService.log({ action: 'REPAIR_COMPLETED', entityType: 'REPAIR', entityId: id })
         return repair
     }
     if (status) {

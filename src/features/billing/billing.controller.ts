@@ -3,7 +3,7 @@ import { ok } from '@/lib/api/response'
 import { handleError } from '@/middlewares/errorHandler'
 import { parseQuery } from '@/lib/api/parse'
 import { listBilling } from './billing.service'
-import { toBillingResponse } from './billing.dto'
+import { toBillingResponse } from '@/mappers/billing.mapper'
 
 export async function GET(request: NextRequest) {
     try {

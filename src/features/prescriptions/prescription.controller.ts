@@ -4,7 +4,7 @@ import { handleError } from '@/middlewares/errorHandler'
 import { parseBody, parseQuery } from '@/lib/api/parse'
 import { prescriptionSchema } from './prescription.schema'
 import { listPrescriptions, createPrescription, updatePrescription, deletePrescription } from './prescription.service'
-import { toPrescriptionResponse } from './prescription.dto'
+import { toPrescriptionResponse } from '@/mappers/prescription.mapper'
 
 export async function GET(request: NextRequest) {
     try {

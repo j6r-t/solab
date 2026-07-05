@@ -4,7 +4,8 @@ import { handleError } from '@/middlewares/errorHandler'
 import { parseBody, parseQuery } from '@/lib/api/parse'
 import { BadRequestError } from '@/errors'
 import { listOrders, createOrder, getOrderById, updateOrderStatus, addOrderPayments, deleteOrder } from './order.service'
-import { toOrderListItem } from './order.dto'
+import { toOrderListItem, toOrderDetail } from '@/mappers/order.mapper'
+import type { CreateOrderInput } from '@/dtos/orders/order.dto'
 
 export async function GET(request: NextRequest) {
     try {
@@ -18,9 +19,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const body = await parseBody<Record<string, unknown>>(request)
+        const body = await parseBody<CreateOrderInput>(request)
         const order = await createOrder(body as any)
-        return created(order)
+        return created(toOrderDetail(order))
     } catch (error) {
         return handleError(error)
     }
@@ -30,7 +31,7 @@ export async function GET_ID(_request: NextRequest, { params }: { params: Promis
     try {
         const { id } = await params
         const order = await getOrderById(id)
-        return ok(order)
+        return ok(toOrderDetail(order))
     } catch (error) {
         return handleError(error)
     }
@@ -39,7 +40,7 @@ export async function GET_ID(_request: NextRequest, { params }: { params: Promis
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id } = await params
-        const body = await parseBody<{ status?: string; payments?: { amount: number; type: string }[] }>(request)
+        const body: any = await parseBody(request)
 
         if (body.status) {
             const result = await updateOrderStatus(id, body.status)

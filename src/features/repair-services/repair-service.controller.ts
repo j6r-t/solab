@@ -3,7 +3,8 @@ import { ok, created, noContent } from '@/lib/api/response'
 import { handleError } from '@/middlewares/errorHandler'
 import { parseBody } from '@/lib/api/parse'
 import { listRepairServices, createRepairService, updateRepairService, deleteRepairService } from './repair-service.service'
-import { toRepairServiceResponse } from './repair-service.dto'
+import { toRepairServiceResponse } from '@/mappers/repair-service.mapper'
+import type { CreateRepairServiceInput, UpdateRepairServiceInput } from '@/dtos/repair-services/repair-service.dto'
 
 export async function GET() {
     try {
@@ -16,7 +17,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
     try {
-        const body = await parseBody<{ name: string; defaultPrice: number }>(request)
+        const body = await parseBody<CreateRepairServiceInput>(request)
         const service = await createRepairService(body)
         return created(toRepairServiceResponse(service))
     } catch (error) {
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id } = await params
-        const body = await parseBody<{ name?: string; defaultPrice?: number }>(request)
+        const body = await parseBody<UpdateRepairServiceInput>(request)
         const service = await updateRepairService(id, body)
         return ok(toRepairServiceResponse(service))
     } catch (error) {

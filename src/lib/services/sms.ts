@@ -1,4 +1,5 @@
 import { db } from '../database/db'
+import { logger } from '../logger'
 
 const smsConfig = {
     enabled: false,
@@ -18,7 +19,7 @@ export async function sendSms(phone: string, message: string, clientId: string):
         })
         return { success: true }
     } catch (error) {
-        console.error('SMS send error:', error)
+        logger.error('SMS send error', { error: error instanceof Error ? error.message : String(error), phone, clientId })
         try {
             await db.smsLog.create({
                 data: { clientId, phone, message, status: 'failed' },

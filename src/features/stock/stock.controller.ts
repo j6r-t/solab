@@ -4,7 +4,7 @@ import { handleError } from '@/middlewares/errorHandler'
 import { parseBody, parseQuery } from '@/lib/api/parse'
 import { productSchema } from './stock.schema'
 import { listProducts, createProduct, updateProduct, deleteProduct } from './stock.service'
-import { toProductResponse } from './stock.dto'
+import { toProductResponse } from '@/mappers/stock.mapper'
 
 export async function GET(request: NextRequest) {
     try {

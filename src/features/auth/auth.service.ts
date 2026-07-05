@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import { userRepo } from '@/lib/database/repositories'
 import { JWT_SECRET_FALLBACK } from '@/lib/constants'
 import { BadRequestError, UnauthorizedError, NotFoundError, ForbiddenError } from '@/errors'
+import { auditService } from '@/modules/audit'
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || JWT_SECRET_FALLBACK)
 
@@ -39,6 +40,7 @@ export async function authenticateUser(email: string, password: string) {
     }
 
     const token = await createToken(user.email)
+    await auditService.log({ userId: user.id, action: 'USER_LOGIN', entityType: 'USER', entityId: user.id, metadata: { email: user.email } })
     return { token, user: { id: user.id, email: user.email, name: user.name } }
 }
 
@@ -51,6 +53,7 @@ export async function setupAdmin() {
         data: { email: 'owner@sofien.tn', name: 'Sofien', password: hashedPassword },
     })
 
+    await auditService.log({ userId: user.id, action: 'ADMIN_SETUP', entityType: 'USER', entityId: user.id, metadata: { email: user.email } })
     return { user: { id: user.id, email: user.email, name: user.name }, defaultPassword: 'admin123' }
 }
 
@@ -66,5 +69,6 @@ export async function changePassword(email: string, currentPassword: string, new
 
     const hashedPassword = await bcrypt.hash(newPassword, 10)
     await userRepo.update({ where: { email }, data: { password: hashedPassword } })
+    await auditService.log({ userId: user.id, action: 'PASSWORD_CHANGED', entityType: 'USER', entityId: user.id })
     return { success: true }
 }

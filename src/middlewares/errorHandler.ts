@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { AppError } from '@/errors'
+import { logger } from '@/lib/logger'
 
 interface ErrorResponse {
     success: false
@@ -24,7 +25,7 @@ export function handleError(error: unknown) {
         return NextResponse.json(body, { status: error.statusCode })
     }
 
-    console.error('Unhandled error:', error)
+    logger.error('Unhandled error', { error: error instanceof Error ? error.message : String(error) })
 
     const isDev = process.env.NODE_ENV !== 'production'
     const body: ErrorResponse = {

@@ -2,6 +2,7 @@ import { orderRepo, clientRepo, productRepo, paymentRepo, stockAdjustmentRepo } 
 import { db } from '@/lib/database/db'
 import { Prisma } from '@prisma/client'
 import { BadRequestError, NotFoundError } from '@/errors'
+import { auditService } from '@/modules/audit'
 
 function generateOrderNumber(): Promise<number> {
     return db.$transaction(async (tx) => {
@@ -142,6 +143,7 @@ export async function createOrder(data: {
         }
     }
 
+    await auditService.log({ action: 'ORDER_CREATED', entityType: 'ORDER', entityId: order.id, metadata: { orderNumber: order.orderNumber, totalAmount: Number(order.totalAmount), itemsCount: items?.length || 0, orderType } })
     return order
 }
 
@@ -151,7 +153,9 @@ export async function updateOrderStatus(id: string, status: string) {
     }
 
     if (status === 'completed') {
-        return orderRepo.update({ where: { id }, data: { status: 'completed' } })
+        const result = await orderRepo.update({ where: { id }, data: { status: 'completed' } })
+        await auditService.log({ action: 'ORDER_COMPLETED', entityType: 'ORDER', entityId: id })
+        return result
     }
 
     if (status === 'cancelled') {
@@ -163,7 +167,9 @@ export async function updateOrderStatus(id: string, status: string) {
                 data: { quantity: { increment: item.quantity } },
             })
         }
-        return orderRepo.update({ where: { id }, data: { status: 'cancelled' } })
+        const result = await orderRepo.update({ where: { id }, data: { status: 'cancelled' } })
+        await auditService.log({ action: 'ORDER_CANCELLED', entityType: 'ORDER', entityId: id })
+        return result
     }
 
     throw new BadRequestError('No valid updates')
@@ -184,6 +190,7 @@ export async function addOrderPayments(id: string, payments: { amount: number; t
         }
     }
 
+    await auditService.log({ action: 'PAYMENT_ADDED', entityType: 'ORDER', entityId: id, metadata: { paymentsCount: payments.length } })
     return { success: true }
 }
 
@@ -199,4 +206,5 @@ export async function deleteOrder(id: string) {
     }
 
     await orderRepo.delete({ where: { id } })
+    await auditService.log({ action: 'ORDER_DELETED', entityType: 'ORDER', entityId: id })
 }

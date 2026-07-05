@@ -4,7 +4,7 @@ import { handleError } from '@/middlewares/errorHandler'
 import { parseBody, parseQuery } from '@/lib/api/parse'
 import { clientSchema } from './client.schema'
 import { listClients, createClient, updateClient, deleteClient } from './client.service'
-import { toClientResponse } from './client.dto'
+import { toClientResponse } from '@/mappers/client.mapper'
 
 export async function GET(request: NextRequest) {
     try {

@@ -1,18 +1,4 @@
-export interface ProductResponse {
-    id: string
-    name: string
-    brand: string | null
-    model: string | null
-    category: string
-    lensType: string | null
-    price: number
-    quantity: number
-    fournisseurId: string | null
-    createdAt: Date
-    fournisseur: { id: string; name: string } | null
-    _count: { orderItems: number }
-    qrcode: { code: string } | null
-}
+import type { ProductResponse } from '@/dtos/stock/stock.dto'
 
 export function toProductResponse(product: any): ProductResponse {
     return {
@@ -22,7 +8,7 @@ export function toProductResponse(product: any): ProductResponse {
         model: product.model,
         category: product.category,
         lensType: product.lensType,
-        price: product.price,
+        price: typeof product.price === 'number' ? product.price : Number(product.price.toString()),
         quantity: product.quantity,
         fournisseurId: product.fournisseurId,
         createdAt: product.createdAt,

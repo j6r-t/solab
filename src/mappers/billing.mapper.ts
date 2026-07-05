@@ -1,20 +1,4 @@
-export interface BillingResponse {
-    id: string
-    orderNumber: number
-    client: any
-    totalAmount: string
-    totalPaid: string
-    balance: string
-    paymentStatus: string
-    status: string
-    orderType: string
-    createdAt: Date
-    items: { productName: string; brand: string; quantity: number; unitPrice: string }[]
-    payments: { amount: string; type: string; createdAt: Date }[]
-    repairs: { type: string; price: string }[]
-    turnaroundDays: number | null
-    prescription: any
-}
+import type { BillingResponse } from '@/dtos/billing/billing.dto'
 
 export function toBillingResponse(order: any): BillingResponse {
     const totalPaid = order.payments?.reduce((s: number, p: any) => s + parseFloat(p.amount.toString()), 0) || 0
@@ -22,7 +6,8 @@ export function toBillingResponse(order: any): BillingResponse {
     return {
         id: order.id,
         orderNumber: order.orderNumber,
-        client: order.client,
+        clientName: order.client?.name || '',
+        clientPhone: order.client?.phone || '',
         totalAmount: total.toString(),
         totalPaid: totalPaid.toString(),
         balance: (total - totalPaid).toFixed(3),

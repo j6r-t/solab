@@ -3,7 +3,8 @@ import { ok, created, noContent } from '@/lib/api/response'
 import { handleError } from '@/middlewares/errorHandler'
 import { parseBody } from '@/lib/api/parse'
 import { listLensBrands, createLensBrand, updateLensBrand, deleteLensBrand } from './lens-brand.service'
-import { toLensBrandResponse } from './lens-brand.dto'
+import { toLensBrandResponse } from '@/mappers/lens-brand.mapper'
+import type { CreateLensBrandInput, UpdateLensBrandInput } from '@/dtos/lens-brands/lens-brand.dto'
 
 export async function GET() {
     try {
@@ -16,7 +17,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
     try {
-        const body = await parseBody<{ name: string }>(request)
+        const body = await parseBody<CreateLensBrandInput>(request)
         const item = await createLensBrand(body)
         return created(toLensBrandResponse(item))
     } catch (error) {
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id } = await params
-        const body = await parseBody<{ name?: string }>(request)
+        const body = await parseBody<UpdateLensBrandInput>(request)
         const item = await updateLensBrand(id, body)
         return ok(toLensBrandResponse(item))
     } catch (error) {

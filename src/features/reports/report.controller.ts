@@ -3,7 +3,7 @@ import { ok } from '@/lib/api/response'
 import { handleError } from '@/middlewares/errorHandler'
 import { parseQuery } from '@/lib/api/parse'
 import { getReports } from './report.service'
-import { toReportResponse } from './report.dto'
+import { toReportResponse } from '@/mappers/report.mapper'
 
 export async function GET(request: NextRequest) {
     try {
