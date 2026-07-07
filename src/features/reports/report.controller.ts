@@ -7,8 +7,8 @@ import { toReportResponse } from '@/mappers/report.mapper'
 
 export async function GET(request: NextRequest) {
     try {
-        const { period } = parseQuery(request, 'period')
-        const data = await getReports(period || 'month')
+        const { period, entity } = parseQuery(request, 'period', 'entity')
+        const data = await getReports(period || 'month', entity || 'shop')
         return ok(toReportResponse(data))
     } catch (error) {
         return handleError(error)

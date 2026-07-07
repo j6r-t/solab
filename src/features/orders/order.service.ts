@@ -11,9 +11,10 @@ function generateOrderNumber(): Promise<number> {
     })
 }
 
-export async function listOrders(params?: { status?: string; search?: string }) {
+export async function listOrders(params?: { status?: string; search?: string; clientId?: string }) {
     const where: Prisma.OrderWhereInput = {}
     if (params?.status) where.status = params.status as any
+    if (params?.clientId) where.clientId = params.clientId
     if (params?.search) {
         where.client = {
             OR: [
@@ -29,7 +30,7 @@ export async function listOrders(params?: { status?: string; search?: string }) 
             client: { select: { id: true, name: true, familyName: true, phone: true } },
             items: { include: { product: { select: { name: true, brand: true } } } },
             payments: true,
-            repairs: { include: { repairService: true } },
+            workOrders: { include: { repairService: true } },
             prescription: true,
         },
         orderBy: { createdAt: 'desc' },
@@ -47,7 +48,7 @@ export async function getOrderById(id: string) {
                 },
             },
             payments: { orderBy: { createdAt: 'asc' } },
-            repairs: { include: { repairService: true } },
+            workOrders: { include: { repairService: true } },
             prescription: true,
         },
     })
@@ -59,7 +60,7 @@ export async function createOrder(data: {
     clientId: string
     orderType?: string
     items?: { productId: string; quantity: number; unitPrice?: number }[]
-    payments?: { amount: number; type: string }[]
+    payments?: { amount: number; type: string; method?: string; chequeId?: string; dueDate?: string }[]
     repairs?: { type: string; price: number; expectedCompletionDate?: string; repairServiceId?: string }[]
     prescriptionId?: string
     turnaroundDays?: number
@@ -107,15 +108,25 @@ export async function createOrder(data: {
             prescriptionId: prescriptionId || null,
             turnaroundDays: turnaroundDays || null,
             items: orderItemsData.length > 0 ? { create: orderItemsData } : undefined,
-            payments: payments && payments.length > 0
-                ? { create: payments.map((p) => ({ amount: p.amount, type: p.type as any })) }
-                : undefined,
-            repairs: repairs && repairs.length > 0
+            payments: orderType === 'direct_sale' && totalAmount > 0
+                ? { create: { amount: totalAmount, type: 'full', method: 'cash' } }
+                : payments && payments.length > 0
+                    ? { create: payments.map((p) => ({
+                        amount: p.amount,
+                        type: p.type as any,
+                        method: (p.method as any) || 'cash',
+                        chequeId: p.chequeId || null,
+                        dueDate: p.dueDate ? new Date(p.dueDate) : null,
+                    })) }
+                    : undefined,
+            workOrders: repairs && repairs.length > 0
                 ? {
                     create: repairs.map((r) => ({
-                        type: r.type as any,
-                        price: r.price,
+                        type: 'repair',
+                        source: 'internal',
+                        servicePrice: r.price,
                         status: 'pending' as any,
+                        dueDate: new Date(r.expectedCompletionDate || Date.now()),
                         expectedCompletionDate: new Date(r.expectedCompletionDate || Date.now()),
                         repairServiceId: r.repairServiceId || null,
                     })),
@@ -126,7 +137,7 @@ export async function createOrder(data: {
             client: { select: { id: true, name: true, familyName: true, phone: true } },
             items: { include: { product: { select: { name: true, brand: true } } } },
             payments: true,
-            repairs: { include: { repairService: true } },
+            workOrders: { include: { repairService: true } },
             prescription: true,
         },
     })
@@ -175,11 +186,20 @@ export async function updateOrderStatus(id: string, status: string) {
     throw new BadRequestError('No valid updates')
 }
 
-export async function addOrderPayments(id: string, payments: { amount: number; type: string }[]) {
+export async function addOrderPayments(id: string, payments: { amount: number; type: string; method?: string; chequeId?: string; dueDate?: string }[]) {
     if (!payments?.length) throw new BadRequestError('No valid updates')
 
     for (const payment of payments) {
-        await paymentRepo.create({ data: { orderId: id, amount: payment.amount, type: payment.type as any } })
+        await paymentRepo.create({
+            data: {
+                orderId: id,
+                amount: payment.amount,
+                type: payment.type as any,
+                method: (payment.method as any) || 'cash',
+                chequeId: payment.chequeId || null,
+                dueDate: payment.dueDate ? new Date(payment.dueDate) : null,
+            },
+        })
     }
 
     const order: any = await orderRepo.findUnique({ where: { id }, include: { payments: true } })

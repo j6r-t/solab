@@ -5,7 +5,7 @@ export type {
     Order,
     OrderItem,
     Payment,
-    Repair,
+    AtelierWorkOrder,
     RepairService,
     Prescription,
     Doctor,
@@ -18,5 +18,5 @@ export type {
     OrderType,
     PaymentType,
     ProductCategory,
-    RepairStatus,
+    AtelierWorkOrderStatus,
 } from '@prisma/client'

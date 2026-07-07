@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +9,8 @@ import { Separator } from '@/components/ui/separator'
 import { SearchSelect, type SearchSelectOption } from '@/components/ui/search-select'
 import { fetchDoctors } from '@/features/doctors/doctors.api'
 import { prescriptionSchema, type PrescriptionFormData } from './prescription.schema'
+import { Upload, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface ClientOption {
     id: string
@@ -54,6 +56,8 @@ export function PrescriptionForm({ defaultValues, onSubmit, onCancel, saving: ex
     })
     const [errors, setErrors] = useState<Record<string, string[]>>({})
     const [internalSaving, setInternalSaving] = useState(false)
+    const [ocrLoading, setOcrLoading] = useState(false)
+    const fileInputRef = useRef<HTMLInputElement>(null)
     const loading = internalSaving || externalSaving || false
 
     useEffect(() => {
@@ -122,6 +126,72 @@ export function PrescriptionForm({ defaultValues, onSubmit, onCancel, saving: ex
         }
     }
 
+    async function handleOcrUpload(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        setOcrLoading(true)
+        try {
+            const base64 = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader()
+                reader.onload = () => resolve(reader.result as string)
+                reader.onerror = () => reject(new Error('Failed to read file'))
+                reader.readAsDataURL(file)
+            })
+
+            const commaIndex = base64.indexOf(',')
+            const header = base64.slice(0, commaIndex)
+            const rawData = base64.slice(commaIndex + 1)
+            const detectedMime = header.replace('data:', '').replace(';base64', '')
+
+            const res = await fetch('/api/ocr-prescription', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageData: rawData, mimeType: detectedMime }),
+            })
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}))
+                throw new Error(err.error || 'Erreur lors de la lecture de l\'ordonnance. Veuillez réessayer.')
+            }
+
+            const data = await res.json()
+
+            const fieldMap: Array<{ apiKey: string; formField: keyof PrescriptionFormData }> = [
+                { apiKey: 'od_sph', formField: 'sphRight' },
+                { apiKey: 'od_cyl', formField: 'cylRight' },
+                { apiKey: 'od_axis', formField: 'axisRight' },
+                { apiKey: 'os_sph', formField: 'sphLeft' },
+                { apiKey: 'os_cyl', formField: 'cylLeft' },
+                { apiKey: 'os_axis', formField: 'axisLeft' },
+            ]
+
+            for (const { apiKey, formField } of fieldMap) {
+                const val = data[apiKey as keyof typeof data]
+                if (val != null) {
+                    handleChange(formField, val)
+                }
+            }
+
+            if (data.add != null) {
+                handleChange('addRight', data.add)
+                handleChange('addLeft', data.add)
+            }
+            if (data.pd != null) {
+                handleChange('pdRight', data.pd)
+                handleChange('pdLeft', data.pd)
+            }
+
+            toast.success(t('common.ocrSuccess'))
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Erreur lors de la lecture de l\'ordonnance. Veuillez réessayer.'
+            toast.error(message)
+        } finally {
+            setOcrLoading(false)
+            if (fileInputRef.current) fileInputRef.current.value = ''
+        }
+    }
+
     return (
         <form onSubmit={handleSubmit} className="space-y-5">
             {preselectedClientId ? (
@@ -171,6 +241,30 @@ export function PrescriptionForm({ defaultValues, onSubmit, onCancel, saving: ex
                     />
                 </div>
             </div>
+
+            <Separator />
+
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleOcrUpload}
+            />
+            <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={ocrLoading}
+                className="w-full h-10"
+            >
+                {ocrLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                    <Upload className="h-4 w-4 mr-2" />
+                )}
+                {ocrLoading ? t('common.loading') : t('prescriptions.uploadPrescription')}
+            </Button>
 
             <Separator />
 

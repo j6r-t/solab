@@ -26,6 +26,7 @@ export function toOrderDetail(order: any): OrderDetailDto {
         clientId: order.clientId,
         totalAmount: total.toString(),
         totalPaid: totalPaid.toString(),
+        paymentStatus: totalPaid >= total ? 'fullyPaid' : totalPaid > 0 ? 'partiallyPaid' : 'unpaid',
         orderType: order.orderType,
         status: order.status,
         createdAt: order.createdAt,
@@ -43,7 +44,7 @@ export function toOrderDetail(order: any): OrderDetailDto {
             type: p.type,
             createdAt: p.createdAt,
         })),
-        repairs: (order.repairs || []).map((r: any) => ({
+        repairs: (order.workOrders || []).map((r: any) => ({
             id: r.id,
             type: r.type,
             price: r.price.toString(),

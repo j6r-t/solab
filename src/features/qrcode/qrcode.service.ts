@@ -10,6 +10,7 @@ export async function lookupProductByCode(code: string) {
                 include: {
                     fournisseur: { select: { id: true, name: true } },
                     _count: { select: { orderItems: true } },
+                    qrcode: true,
                 },
             },
         },

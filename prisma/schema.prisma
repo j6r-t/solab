@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,11 +7,132 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ───────────────────────────────
+// Enums
+// ───────────────────────────────
+
+enum Gender {
+  female
+  male
+}
+
+enum UserRole {
+  admin
+  shop
+  atelier
+}
+
+enum OrderType {
+  standard
+  remounting
+  direct_sale
+}
+
+enum OrderStatus {
+  pending
+  ready
+  completed
+  cancelled
+}
+
+enum PaymentType {
+  deposit
+  balance
+  full
+}
+
+enum PaymentMethod {
+  cash
+  cheque
+  traite
+  card
+  transfer
+}
+
+enum ChequeStatus {
+  pending
+  deposited
+  cashed
+  bounced
+}
+
+enum TraiteStatus {
+  pending
+  paid
+  overdue
+  cancelled
+}
+
+enum ProductCategory {
+  lunette
+  lentille
+  verre
+  accessory
+  nettoyant_lentilles
+  nettoyant_monture
+}
+
+enum LensType {
+  singleVision
+  progressive
+  bifocal
+  office
+  photochromic
+}
+
+enum LensMaterial {
+  cr39
+  polycarbonate
+  highIndex
+  trivex
+}
+
+enum LensCoating {
+  none
+  ar
+  scratchResistant
+  blueBlock
+  arScratch
+  arBlueBlock
+}
+
+enum AtelierWorkOrderStatus {
+  pending
+  in_progress
+  completed
+  delivered
+  cancelled
+}
+
+enum StockAdjustmentReason {
+  restock
+  damage
+  adjustment
+  sale
+}
+
+enum LensBlankAdjustmentReason {
+  purchased
+  used_in_mounting
+  used_in_repair
+  broken_during_mounting
+}
+
+enum SmsStatus {
+  sent
+  failed
+}
+
+// ───────────────────────────────
+// Models
+// ───────────────────────────────
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
   name      String?
   password  String
+  role      UserRole @default(admin)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -28,16 +144,14 @@ model Client {
   phone        String         @unique
   address      String?
   gender       Gender?
+  birthDate    String?
+  notes        String?
+  organization String?
   prescription Prescription[]
   orders       Order[]
   smsLogs      SmsLog[]
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
-}
-
-enum Gender {
-  female
-  male
 }
 
 model Doctor {
@@ -52,13 +166,29 @@ model Doctor {
 }
 
 model Fournisseur {
-  id        String    @id @default(cuid())
-  name      String
-  phone     String
-  address   String?
-  products  Product[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id              String             @id @default(cuid())
+  name            String
+  phone           String
+  address         String?
+  email           String?
+  taxId           String?
+  entity          String             @default("shop")
+  products        Product[]
+  purchaseInvoices PurchaseInvoice[]
+  lensBlanks      LensBlank[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+}
+
+model OpticianShop {
+  id         String             @id @default(cuid())
+  name       String
+  phone      String
+  address    String?
+  notes      String?
+  workOrders AtelierWorkOrder[]
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
 }
 
 model Prescription {
@@ -66,14 +196,12 @@ model Prescription {
   clientId String
   client   Client @relation(fields: [clientId], references: [id], onDelete: Restrict)
 
-  //right eye prescription 
   sphRight  Decimal
   cylRight  Decimal
   axisRight Int
   addRight  Decimal
   pdRight   Int
 
-  //left eye prescription 
   sphLeft  Decimal
   cylLeft  Decimal
   axisLeft Int
@@ -110,42 +238,10 @@ model Product {
   qrcode           QRCode?
   orderItems       OrderItem[]
   StockAdjustments StockAdjustment[]
+  purchaseInvoiceItems PurchaseInvoiceItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-enum ProductCategory {
-  lunette
-  lentille
-  verre
-  accessory
-  nettoyant_lentilles
-  nettoyant_monture
-}
-
-enum LensType {
-  singleVision
-  progressive
-  bifocal
-  office
-  photochromic
-}
-
-enum LensMaterial {
-  cr39
-  polycarbonate
-  highIndex
-  trivex
-}
-
-enum LensCoating {
-  none
-  ar
-  scratchResistant
-  blueBlock
-  arScratch
-  arBlueBlock
 }
 
 model QRCode {
@@ -166,26 +262,13 @@ model Order {
   status      OrderStatus @default(pending)
   items       OrderItem[]
   payments    Payment[]
-  repairs     Repair[]
+  workOrders  AtelierWorkOrder[]
   prescription   Prescription? @relation(fields: [prescriptionId], references: [id])
   prescriptionId String?
   turnaroundDays Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-enum OrderType {
-  standard //Standard purchase (eyewear + lenses)
-  remounting //Remounting(client's own frame + new lenses)
-  direct_sale //Direct sale (accessories,lens only or glasses only)
-}
-
-enum OrderStatus {
-  pending
-  ready
-  completed
-  cancelled
 }
 
 model OrderItem {
@@ -199,47 +282,184 @@ model OrderItem {
 }
 
 model Payment {
-  id        String      @id @default(cuid())
+  id        String         @id @default(cuid())
   orderId   String
-  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order     Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   amount    Decimal
   type      PaymentType
-  createdAt DateTime    @default(now())
+  method    PaymentMethod? @default(cash)
+  chequeId  String?
+  cheque    Cheque?        @relation(fields: [chequeId], references: [id])
+  dueDate   DateTime?
+  createdAt DateTime       @default(now())
 }
 
-enum PaymentType {
-  deposit
-  balance
-  full
+model Cheque {
+  id          String        @id @default(cuid())
+  number      String
+  bankName    String
+  amount      Decimal
+  issueDate   DateTime      @default(now())
+  dueDate     DateTime
+  status      ChequeStatus  @default(pending)
+  entityType  String        // 'client_payment' | 'supplier_payment' | 'shop_to_atelier'
+  entityId    String?       // FK to the payment record
+  payments    Payment[]
+  supplierPayments SupplierPayment[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
-model Repair {
-  id                     String         @id @default(cuid())
-  orderId                String
-  order                  Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  type                   String
-  status                 RepairStatus   @default(pending)
-  expectedCompletionDate DateTime
-  repairServiceId        String?
-  repairService          RepairService? @relation(fields: [repairServiceId], references: [id])
-  price                  Decimal
-  createdAt              DateTime       @default(now())
-  updatedAt              DateTime       @updatedAt
+model Traite {
+  id                String             @id @default(cuid())
+  number            String
+  amount            Decimal
+  issueDate         DateTime           @default(now())
+  dueDate           DateTime
+  status            TraiteStatus       @default(pending)
+  purchaseInvoiceId String             // FK → PurchaseInvoice
+  purchaseInvoice   PurchaseInvoice    @relation(fields: [purchaseInvoiceId], references: [id])
+  supplierPayments  SupplierPayment[]
+  notes             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+}
+
+model PurchaseInvoice {
+  id              String                 @id @default(cuid())
+  invoiceNumber   String
+  fournisseurId   String
+  fournisseur     Fournisseur            @relation(fields: [fournisseurId], references: [id])
+  entity          String                 // 'shop' | 'atelier'
+  date            DateTime               @default(now())
+  totalAmount     Decimal
+  paidAmount      Decimal                @default(0)
+  notes           String?
+  items           PurchaseInvoiceItem[]
+  payments        SupplierPayment[]
+  traites         Traite[]
+  lensBlankAdjustments LensBlankAdjustment[]
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+}
+
+model PurchaseInvoiceItem {
+  id          String           @id @default(cuid())
+  invoiceId   String
+  invoice     PurchaseInvoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product?         @relation(fields: [productId], references: [id])
+  lensBlankId String?
+  lensBlank   LensBlank?       @relation(fields: [lensBlankId], references: [id])
+  description String?
+  category    String?
+  quantity    Int
+  unitPrice   Decimal
+}
+
+model SupplierPayment {
+  id                String           @id @default(cuid())
+  purchaseInvoiceId String
+  purchaseInvoice   PurchaseInvoice  @relation(fields: [purchaseInvoiceId], references: [id], onDelete: Cascade)
+  amount            Decimal
+  method            PaymentMethod
+  chequeId          String?
+  cheque            Cheque?          @relation(fields: [chequeId], references: [id])
+  traiteId          String?
+  traite            Traite?          @relation(fields: [traiteId], references: [id])
+  paidAt            DateTime         @default(now())
+}
+
+model LensBlank {
+  id            String    @id @default(cuid())
+  brand         String
+  lensType      LensType
+  material      LensMaterial
+  coating       LensCoating
+  thickness     String
+  sphMin        Decimal
+  sphMax        Decimal
+  cylMin        Decimal
+  cylMax        Decimal
+  costPrice     Decimal
+  sellingPrice  Decimal
+  quantity      Int       @default(0)
+  fournisseurId String?
+  fournisseur   Fournisseur?           @relation(fields: [fournisseurId], references: [id])
+  adjustments   LensBlankAdjustment[]
+  invoiceItems  PurchaseInvoiceItem[]
+  workOrdersLeft      AtelierWorkOrder[]  @relation("lensBlankLeft")
+  workOrdersRight     AtelierWorkOrder[]  @relation("lensBlankRight")
+  replacementLeftFor  AtelierWorkOrder[]  @relation("replacementLeft")
+  replacementRightFor AtelierWorkOrder[]  @relation("replacementRight")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model LensBlankAdjustment {
+  id          String                    @id @default(cuid())
+  lensBlankId String
+  lensBlank   LensBlank                 @relation(fields: [lensBlankId], references: [id], onDelete: Cascade)
+  quantity    Int
+  reason      LensBlankAdjustmentReason
+  workOrderId String?
+  workOrder   AtelierWorkOrder?         @relation(fields: [workOrderId], references: [id])
+  invoiceId   String?
+  invoice     PurchaseInvoice?          @relation(fields: [invoiceId], references: [id])
+  createdAt   DateTime                  @default(now())
+}
+
+model AtelierWorkOrder {
+  id              String                 @id @default(cuid())
+  orderId         String?
+  order           Order?                 @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  opticianShopId  String?
+  opticianShop    OpticianShop?          @relation(fields: [opticianShopId], references: [id], onDelete: SetNull)
+  source          String                 // 'internal' | 'optician'
+  type            String                 // 'mounting' | 'repair'
+
+  status          AtelierWorkOrderStatus @default(pending)
+
+  // Lens details
+  lensBlankLeftId  String?
+  lensBlankLeft    LensBlank?            @relation("lensBlankLeft", fields: [lensBlankLeftId], references: [id])
+  lensBlankRightId String?
+  lensBlankRight   LensBlank?            @relation("lensBlankRight", fields: [lensBlankRightId], references: [id])
+  frameFrom        String?               // 'shop' | 'optician' | 'client'
+
+  // Pricing
+  lensBlankPrice   Decimal?
+  servicePrice     Decimal               @default(0)
+
+  // Timing
+  startedAt        DateTime?
+  completedAt      DateTime?
+  dueDate          DateTime
+  expectedCompletionDate DateTime?
+  repairServiceId  String?
+  repairService    RepairService?        @relation(fields: [repairServiceId], references: [id])
+
+  // Breakage
+  brokenLensBlank  String?               // 'none' | 'left' | 'right' | 'both'
+  replacementLeftId  String?
+  replacementLeft    LensBlank?          @relation("replacementLeft", fields: [replacementLeftId], references: [id])
+  replacementRightId String?
+  replacementRight   LensBlank?          @relation("replacementRight", fields: [replacementRightId], references: [id])
+
+  // Adjustments linked to this work order
+  adjustments      LensBlankAdjustment[]
+
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
 }
 
 model RepairService {
-  id           String   @id @default(cuid())
+  id           String             @id @default(cuid())
   name         String
   defaultPrice Decimal
-  repairs      Repair[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
-
-enum RepairStatus {
-  pending
-  completed
-  cancelled
+  workOrders   AtelierWorkOrder[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
 }
 
 model LensBrand {
@@ -255,13 +475,6 @@ model StockAdjustment {
   quantity  Int
   reason    StockAdjustmentReason
   createdAt DateTime              @default(now())
-}
-
-enum StockAdjustmentReason {
-  restock
-  damage
-  adjustment
-  sale
 }
 
 model SmsLog {
@@ -282,9 +495,4 @@ model AuditLog {
   entityId   String?
   metadata   String   @default("{}")
   createdAt  DateTime @default(now())
-}
-
-enum SmsStatus {
-  sent
-  failed
 }

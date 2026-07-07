@@ -3,7 +3,7 @@ import { ok, created, noContent } from '@/lib/api/response'
 import { handleError } from '@/middlewares/errorHandler'
 import { parseBody, parseQuery } from '@/lib/api/parse'
 import { clientSchema } from './client.schema'
-import { listClients, createClient, updateClient, deleteClient } from './client.service'
+import { listClients, getClientById, createClient, updateClient, deleteClient } from './client.service'
 import { toClientResponse } from '@/mappers/client.mapper'
 
 export async function GET(request: NextRequest) {
@@ -11,6 +11,16 @@ export async function GET(request: NextRequest) {
         const { search, gender } = parseQuery(request, 'search', 'gender')
         const clients = await listClients({ search, gender })
         return ok(clients.map(toClientResponse))
+    } catch (error) {
+        return handleError(error)
+    }
+}
+
+export async function GET_ID(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    try {
+        const { id } = await params
+        const client = await getClientById(id)
+        return ok(toClientResponse(client))
     } catch (error) {
         return handleError(error)
     }

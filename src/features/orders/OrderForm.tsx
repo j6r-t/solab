@@ -32,6 +32,9 @@ export interface OrderItemInput {
 export interface OrderPaymentInput {
     amount: number
     type: 'full' | 'deposit' | 'balance'
+    method?: 'cash' | 'cheque' | 'traite' | 'card' | 'transfer'
+    chequeId?: string
+    dueDate?: string
 }
 
 export interface OrderRepairInput {
@@ -63,8 +66,8 @@ interface Product {
     name: string
     brand: string
     model: string
-    price: string
-    quantity: number
+    price: string | number
+    quantity?: number
     category: string
 }
 
@@ -91,6 +94,7 @@ interface OrderFormProps {
 
 export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalSaving, forcedOrderType }: OrderFormProps) {
     const { t } = useTranslation()
+    const today = new Date().toISOString().split('T')[0]
     const [clients, setClients] = useState<Client[]>([])
     const [clientSearch, setClientSearch] = useState('')
     const [products, setProducts] = useState<Product[]>([])
@@ -100,6 +104,10 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
     const [items, setItems] = useState<OrderItemInput[]>(defaultValues?.items || [])
     const [repairs, setRepairs] = useState<OrderRepairInput[]>(defaultValues?.repairs || [])
     const [paymentType, setPaymentType] = useState<'full' | 'deposit'>('full')
+    const [paymentMethod, setPaymentMethod] = useState<'cash' | 'cheque' | 'traite' | 'card' | 'transfer'>('cash')
+    const [chequeNumber, setChequeNumber] = useState('')
+    const [chequeBank, setChequeBank] = useState('')
+    const [chequeDueDate, setChequeDueDate] = useState('')
     const [depositAmount, setDepositAmount] = useState('')
     const [internalSaving, setInternalSaving] = useState(false)
     const saving = internalSaving || externalSaving
@@ -127,9 +135,10 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
     async function handleQrScan(result: string) {
         setQrScanning(false)
         try {
-            const product = await lookupQRCode(result)
-            addItem(product)
-            toast.success(`${product.name} added`)
+            const data = await lookupQRCode(result)
+            if (!data.product) { toast.error('Product not found'); return }
+            addItem(data.product)
+            toast.success(`${data.product.name} added`)
             setQrScanOpen(false)
         } catch {
             toast.error('Failed to look up QR code')
@@ -220,7 +229,7 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
     }, [forcedOrderType])
 
     function addItem(product: Product) {
-        setItems((prev) => [...prev, { productId: product.id, quantity: 1, unitPrice: parseFloat(product.price) }])
+        setItems((prev) => [...prev, { productId: product.id, quantity: 1, unitPrice: Number(product.price) || 0 }])
     }
 
     function updateItem(index: number, field: keyof OrderItemInput, value: number) {
@@ -292,12 +301,16 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
         setInternalSaving(true)
         try {
             const payments: OrderPaymentInput[] = []
+            const basePayment = {
+                method: paymentMethod,
+                ...(paymentMethod === 'cheque' ? { dueDate: chequeDueDate || undefined } : {}),
+            }
             if (orderType === 'direct_sale') {
-                payments.push({ amount: 0, type: 'full' })
+                payments.push({ amount: 0, type: 'full', ...basePayment })
             } else if (paymentType === 'full') {
-                payments.push({ amount: 0, type: 'full' })
+                payments.push({ amount: 0, type: 'full', ...basePayment })
             } else {
-                payments.push({ amount: parseFloat(depositAmount) || 0, type: 'deposit' })
+                payments.push({ amount: parseFloat(depositAmount) || 0, type: 'deposit', ...basePayment })
             }
             await onSubmit({
                 clientId: selectedClientId,
@@ -324,11 +337,11 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
     }))
 
     const productOptions: SearchSelectOption[] = products
-        .filter((p) => p.quantity > 0)
+        .filter((p) => (p.quantity ?? 0) > 0)
         .map((p) => ({
             value: p.id,
             label: `${p.name} (${p.brand})`,
-            secondary: `${parseFloat(p.price).toFixed(3)} TND · ${p.quantity} in stock`,
+            secondary: `${Number(p.price).toFixed(3)} TND · ${p.quantity ?? 0} in stock`,
         }))
 
     const prescriptionOptions: SearchSelectOption[] = prescriptions.map((p) => ({
@@ -450,6 +463,7 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                     <Label>{t('orders.expectedCompletion')}</Label>
                     <Input
                         type="date"
+                        min={today}
                         value={expectedCompletionDate}
                         onChange={(e) => setExpectedCompletionDate(e.target.value)}
                         className="h-9"
@@ -535,6 +549,7 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                                         {checked && (
                                             <Input
                                                 type="date"
+                                                min={today}
                                                 value={repairObj?.expectedCompletionDate || ''}
                                                 onChange={(e) => updateServiceRepairDate(service.id, e.target.value)}
                                                 className="w-36 h-7 text-xs"
@@ -566,6 +581,7 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                                         />
                                         <Input
                                             type="date"
+                                            min={today}
                                             value={r.expectedCompletionDate}
                                             onChange={(e) => updateRepair(i, 'expectedCompletionDate', e.target.value)}
                                             className="w-34 h-7 text-xs"
@@ -598,6 +614,61 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                         <Button type="button" variant={paymentType === 'deposit' ? 'default' : 'outline'} size="sm" onClick={() => setPaymentType('deposit')} className="flex-1 sm:flex-none">
                             {t('orders.deposit')}
                         </Button>
+                    </div>
+                )}
+                <div className="flex flex-wrap gap-2 mt-2">
+                    {(['cash', 'cheque', 'traite', 'card', 'transfer'] as const).map((m) => (
+                        <Button
+                            key={m}
+                            type="button"
+                            variant={paymentMethod === m ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setPaymentMethod(m)}
+                            className="flex-1 sm:flex-none text-xs"
+                        >
+                            {m === 'cash' ? 'Cash' : m === 'cheque' ? 'Chèque' : m === 'traite' ? 'Traite' : m === 'card' ? 'Carte' : 'Virement'}
+                        </Button>
+                    ))}
+                </div>
+                {paymentMethod === 'cheque' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
+                        <Input
+                            type="text"
+                            value={chequeNumber}
+                            onChange={(e) => setChequeNumber(e.target.value)}
+                            placeholder="Chèque N°"
+                            className="h-9"
+                        />
+                        <Input
+                            type="text"
+                            value={chequeBank}
+                            onChange={(e) => setChequeBank(e.target.value)}
+                            placeholder="Banque"
+                            className="h-9"
+                        />
+                        <Input
+                            type="date"
+                            value={chequeDueDate}
+                            onChange={(e) => setChequeDueDate(e.target.value)}
+                            className="h-9"
+                        />
+                    </div>
+                )}
+                {paymentMethod === 'traite' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                        <Input
+                            type="text"
+                            value={chequeNumber}
+                            onChange={(e) => setChequeNumber(e.target.value)}
+                            placeholder="Traite N°"
+                            className="h-9"
+                        />
+                        <Input
+                            type="date"
+                            value={chequeDueDate}
+                            onChange={(e) => setChequeDueDate(e.target.value)}
+                            className="h-9"
+                        />
                     </div>
                 )}
                 {paymentType === 'deposit' && (

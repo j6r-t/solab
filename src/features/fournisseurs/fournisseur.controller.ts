@@ -8,8 +8,8 @@ import type { CreateFournisseurInput, UpdateFournisseurInput } from '@/dtos/four
 
 export async function GET(request: NextRequest) {
     try {
-        const { search } = parseQuery(request, 'search')
-        const items = await listFournisseurs({ search })
+        const { search, entity } = parseQuery(request, 'search', 'entity')
+        const items = await listFournisseurs({ search, entity })
         return ok(items.map(toFournisseurResponse))
     } catch (error) {
         return handleError(error)

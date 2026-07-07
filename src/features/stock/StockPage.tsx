@@ -4,26 +4,14 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { useDebounce } from '@/lib/hooks/useDebounce'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { ProductForm } from './ProductForm'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
-import { Plus, Search, Package, Pencil, Trash2, Loader2, Box, QrCode } from 'lucide-react'
+import { Plus, Box, Search, Loader2 } from 'lucide-react'
+import { ProductForm } from './ProductForm'
+import { StockFilters } from './StockFilters'
+import { StockTable } from './StockTable'
+import { StockQrDialog } from './StockQrDialog'
 import type { ProductFormData } from './stock.schema'
-import { formatCurrency } from '@/lib/utils/currency'
 import { fetchStockProducts, createStockProduct, updateStockProduct, deleteStockProduct } from './stock.api'
 import { fetchFournisseurs } from '@/features/fournisseurs/fournisseurs.api'
 import type { StockProduct as Product } from './stock.api'
@@ -43,6 +31,15 @@ export function StockPage() {
     const [stockStatus, setStockStatus] = useState('')
     const [brandFilter, setBrandFilter] = useState('')
     const [lensTypeFilter, setLensTypeFilter] = useState('')
+    const [materialFilter, setMaterialFilter] = useState('')
+    const [coatingFilter, setCoatingFilter] = useState('')
+    const [thicknessFilter, setThicknessFilter] = useState('')
+    const [sphFrom, setSphFrom] = useState('')
+    const [sphTo, setSphTo] = useState('')
+    const [cylFrom, setCylFrom] = useState('')
+    const [cylTo, setCylTo] = useState('')
+    const [addFrom, setAddFrom] = useState('')
+    const [addTo, setAddTo] = useState('')
     const [fournisseurFilter, setFournisseurFilter] = useState('')
     const [fournisseurs, setFournisseurs] = useState<{ id: string; name: string }[]>([])
     const [dialogOpen, setDialogOpen] = useState(false)
@@ -53,47 +50,52 @@ export function StockPage() {
     const [saving, setSaving] = useState(false)
     const debouncedSearch = useDebounce(search, 300)
 
+    const filterParams = {
+        search: debouncedSearch || undefined,
+        category: category || undefined,
+        stockStatus: stockStatus || undefined,
+        brand: brandFilter || undefined,
+        lensType: lensTypeFilter || undefined,
+        material: materialFilter || undefined,
+        coating: coatingFilter || undefined,
+        thickness: thicknessFilter || undefined,
+        sphFrom: sphFrom || undefined,
+        sphTo: sphTo || undefined,
+        cylFrom: cylFrom || undefined,
+        cylTo: cylTo || undefined,
+        addFrom: addFrom || undefined,
+        addTo: addTo || undefined,
+        fournisseurId: fournisseurFilter || undefined,
+    }
+
     useEffect(() => {
         fetchFournisseurs().then((data) => setFournisseurs(data || [])).catch(() => {})
     }, [])
 
-    useEffect(() => {
-        async function load() {
-            setLoading(true)
-            try {
-                const data = await fetchStockProducts({
-                    search: debouncedSearch || undefined,
-                    category: category || undefined,
-                    stockStatus: stockStatus || undefined,
-                    brand: brandFilter || undefined,
-                    lensType: lensTypeFilter || undefined,
-                    fournisseurId: fournisseurFilter || undefined,
-                })
-                setProducts(data)
-            } catch (error) {
-                console.error('Failed to fetch products:', error)
-                toast.error(error instanceof Error ? error.message : 'Failed to load stock')
-            } finally {
-                setLoading(false)
-            }
+    async function loadProducts() {
+        setLoading(true)
+        try {
+            const data = await fetchStockProducts(filterParams)
+            setProducts(data)
+        } catch (error) {
+            console.error('Failed to fetch products:', error)
+            toast.error(error instanceof Error ? error.message : 'Failed to load stock')
+        } finally {
+            setLoading(false)
         }
-        load()
-    }, [debouncedSearch, category, stockStatus, brandFilter, lensTypeFilter, fournisseurFilter])
+    }
+
+    useEffect(() => { loadProducts() }, [
+        debouncedSearch, category, stockStatus, brandFilter,
+        lensTypeFilter, materialFilter, coatingFilter, thicknessFilter,
+        sphFrom, sphTo, cylFrom, cylTo, addFrom, addTo, fournisseurFilter,
+    ])
 
     async function reFetch() {
         try {
-            const data = await fetchStockProducts({
-                search: debouncedSearch || undefined,
-                category: category || undefined,
-                stockStatus: stockStatus || undefined,
-                brand: brandFilter || undefined,
-                lensType: lensTypeFilter || undefined,
-                fournisseurId: fournisseurFilter || undefined,
-            })
+            const data = await fetchStockProducts(filterParams)
             setProducts(data)
-        } catch (error) {
-            console.error('reFetch error:', error)
-        }
+        } catch { /* silent */ }
     }
 
     async function handleCreate(data: ProductFormData) {
@@ -101,9 +103,10 @@ export function StockPage() {
         try {
             await createStockProduct(data)
             toast.success(t('stock.created'))
-            await delay(1500)
             setDialogOpen(false)
             await reFetch()
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to create product')
         } finally {
             setSaving(false)
         }
@@ -115,29 +118,28 @@ export function StockPage() {
         try {
             await updateStockProduct(editProduct.id, data)
             toast.success(t('stock.updated'))
-            await delay(1500)
             setEditProduct(null)
+            setDialogOpen(false)
             await reFetch()
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to update product')
         } finally {
             setSaving(false)
         }
     }
 
     async function handleDelete(product: Product) {
-        await deleteStockProduct(product.id)
-        setDeleteTarget(null)
-        await reFetch()
-        toast.success(t('stock.deleted'))
+        try {
+            await deleteStockProduct(product.id)
+            toast.success(t('stock.deleted'))
+            setDeleteTarget(null)
+            await reFetch()
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to delete product')
+        }
     }
 
-    function delay(ms: number) {
-        return new Promise((resolve) => setTimeout(resolve, ms))
-    }
-
-    const categoryLabel = (cat: string | null) => {
-        if (!cat) return '—'
-        return t(`stock.${cat}`)
-    }
+    const categoryLabel = (cat: string | null) => (cat ? t(`stock.${cat}`) : '—')
 
     const showEmptyState = !loading && products.length === 0 && !debouncedSearch
     const showNoResults = !loading && products.length === 0 && debouncedSearch
@@ -146,92 +148,32 @@ export function StockPage() {
         <div className="space-y-6 max-w-[1000px]">
             <div>
                 <h1 className="text-[22px] font-medium">{t('stock.title')}</h1>
-                <p className="text-sm text-muted-foreground mt-1">Track inventory and manage products</p>
+                <p className="text-sm text-muted-foreground mt-1">{t('stock.description')}</p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1 min-w-[200px]">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search products by name, brand or model..."
-                        className="pl-10 h-10"
-                    />
-                </div>
-                <Select value={category} onValueChange={(val) => setCategory(val === '__all__' ? '' : val)}>
-                    <SelectTrigger className="w-full sm:w-44 h-10">
-                        <SelectValue placeholder={t('common.all')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="__all__">{t('common.all')}</SelectItem>
-                        <SelectItem value="lunette">{t('stock.lunette')}</SelectItem>
-                        <SelectItem value="lentille">{t('stock.lentille')}</SelectItem>
-                        <SelectItem value="verre">{t('stock.verre')}</SelectItem>
-                        <SelectItem value="accessory">{t('stock.accessory')}</SelectItem>
-                        <SelectItem value="nettoyant_lentilles">{t('stock.nettoyant_lentilles')}</SelectItem>
-                        <SelectItem value="nettoyant_monture">{t('stock.nettoyant_monture')}</SelectItem>
-                    </SelectContent>
-                </Select>
-                <Select value={stockStatus} onValueChange={setStockStatus}>
-                    <SelectTrigger className="w-full sm:w-40 h-10">
-                        <SelectValue placeholder={t('common.all')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="">{t('common.all')}</SelectItem>
-                        <SelectItem value="inStock">{t('stock.inStock')}</SelectItem>
-                        <SelectItem value="lowStock">{t('stock.lowStock')}</SelectItem>
-                        <SelectItem value="outOfStock">{t('stock.outOfStock')}</SelectItem>
-                    </SelectContent>
-                </Select>
-                <Button className="w-full sm:w-auto" onClick={() => { setEditProduct(null); setDialogOpen(true) }}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    {t('stock.newProduct')}
-                </Button>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3">
-                {category === 'verre' ? (
-                    <Select value={lensTypeFilter} onValueChange={setLensTypeFilter}>
-                        <SelectTrigger className="w-full sm:w-44 h-9">
-                            <SelectValue placeholder={t('stock.lensType')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="">{t('common.all')}</SelectItem>
-                            <SelectItem value="singleVision">{t('stock.singleVision')}</SelectItem>
-                            <SelectItem value="progressive">{t('stock.progressive')}</SelectItem>
-                            <SelectItem value="bifocal">{t('stock.bifocal')}</SelectItem>
-                            <SelectItem value="office">{t('stock.office')}</SelectItem>
-                            <SelectItem value="photochromic">{t('stock.photochromic')}</SelectItem>
-                        </SelectContent>
-                    </Select>
-                ) : (
-                    <div className="relative flex-1 min-w-[150px]">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            value={brandFilter}
-                            onChange={(e) => setBrandFilter(e.target.value)}
-                            placeholder={t('stock.brand')}
-                            className="pl-10 h-9 text-sm"
-                        />
-                    </div>
-                )}
-                <Select value={fournisseurFilter} onValueChange={setFournisseurFilter}>
-                    <SelectTrigger className="w-full sm:w-44 h-9">
-                        <SelectValue placeholder={t('stock.fournisseur')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="">{t('common.all')}</SelectItem>
-                        {fournisseurs.map((f) => (
-                            <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
+            <StockFilters
+                search={search} onSearchChange={setSearch}
+                category={category} onCategoryChange={setCategory}
+                stockStatus={stockStatus} onStockStatusChange={setStockStatus}
+                brandFilter={brandFilter} onBrandFilterChange={setBrandFilter}
+                lensTypeFilter={lensTypeFilter} onLensTypeFilterChange={setLensTypeFilter}
+                materialFilter={materialFilter} onMaterialFilterChange={setMaterialFilter}
+                coatingFilter={coatingFilter} onCoatingFilterChange={setCoatingFilter}
+                thicknessFilter={thicknessFilter} onThicknessFilterChange={setThicknessFilter}
+                sphFrom={sphFrom} onSphFromChange={setSphFrom}
+                sphTo={sphTo} onSphToChange={setSphTo}
+                cylFrom={cylFrom} onCylFromChange={setCylFrom}
+                cylTo={cylTo} onCylToChange={setCylTo}
+                addFrom={addFrom} onAddFromChange={setAddFrom}
+                addTo={addTo} onAddToChange={setAddTo}
+                fournisseurFilter={fournisseurFilter} onFournisseurFilterChange={setFournisseurFilter}
+                fournisseurs={fournisseurs}
+                onNewProduct={() => { setEditProduct(null); setDialogOpen(true) }}
+            />
 
             {loading && products.length === 0 ? (
                 <div className="flex items-center justify-center py-16">
-                    <Loader2 className="h-6 w-6 animate-spinner text-muted-foreground" />
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
             ) : showEmptyState ? (
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center max-w-[600px] mx-auto">
@@ -249,100 +191,14 @@ export function StockPage() {
                     <h2 className="text-lg font-medium text-foreground mb-2">{t('common.noResults')}</h2>
                 </div>
             ) : (
-                <div className="border rounded-xl bg-card overflow-x-auto">
-                    <table className="w-full">
-                        <thead>
-                            <tr className="bg-muted/30 border-b">
-                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('stock.name')}</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('stock.category')}</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Details</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('stock.title')}</th>
-                                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">{t('stock.sellingPrice')}</th>
-                                <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">QR</th>
-                                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                            {products.map((product) => {
-                                const status = getStockStatus(product.quantity)
-                                return (
-                                    <tr key={product.id} className="row-hover">
-                                        <td className="py-3 px-4">
-                                            <p className="font-medium text-foreground">{product.name}</p>
-                                            {product.category === 'lentille' ? (
-                                                <p className="text-xs text-muted-foreground">{product.brand}</p>
-                                            ) : product.category === 'lunette' ? (
-                                                <p className="text-xs text-muted-foreground">{product.brand} &mdash; Ref: {product.model}</p>
-                                            ) : product.category === 'verre' ? (
-                                                <p className="text-xs text-muted-foreground">{product.brand}{product.thickness ? ` (${product.thickness})` : ''}</p>
-                                            ) : product.category === 'nettoyant_lentilles' || product.category === 'nettoyant_monture' ? (
-                                                <p className="text-xs text-muted-foreground">{product.thickness || '—'}</p>
-                                            ) : null}
-                                        </td>
-                                        <td className="py-3 px-4 text-sm text-muted-foreground">
-                                            {categoryLabel(product.category)}
-                                        </td>
-                                        <td className="py-3 px-4 text-sm">
-                                            {(product.category === 'lentille' || product.category === 'verre') ? (
-                                                <div className="space-y-0.5">
-                                                    {product.lensType && <p className="text-xs text-muted-foreground">{t(`stock.${product.lensType}`)}</p>}
-                                                    {product.material && <p className="text-xs text-muted-foreground">{t(`stock.${product.material}`)}</p>}
-                                                    {product.coating && product.coating !== 'none' && <p className="text-xs text-muted-foreground">{t(`stock.${product.coating}`)}</p>}
-                                                    {(product.sph || product.cyl || product.add) && (
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {product.sph && `SPH ${product.sph}`}{product.cyl && ` / CYL ${product.cyl}`}{product.add && ` / ADD ${product.add}`}
-                                                        </p>
-                                                    )}
-                                                    {product.costPrice && (
-                                                        <p className="text-xs text-muted-foreground">Cost: {formatCurrency(product.costPrice)}</p>
-                                                    )}
-                                                    {product.fournisseur && (
-                                                        <p className="text-xs text-muted-foreground">Supplier: {product.fournisseur.name}</p>
-                                                    )}
-                                                </div>
-                                            ) : product.category === 'lunette' ? (
-                                                product.costPrice ? <p className="text-xs text-muted-foreground">Cost: {formatCurrency(product.costPrice)}</p> : <span className="text-xs text-muted-foreground">—</span>
-                                            ) : product.category === 'nettoyant_lentilles' || product.category === 'nettoyant_monture' ? (
-                                                <div className="space-y-0.5">
-                                                    {product.costPrice && <p className="text-xs text-muted-foreground">Cost: {formatCurrency(product.costPrice)}</p>}
-                                                </div>
-                                            ) : (
-                                                <span className="text-xs text-muted-foreground">—</span>
-                                            )}
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <div className="flex items-center gap-2">
-                                                <Badge variant={status.variant} className={`${status.className} gap-1 text-xs`}>
-                                                    <Package className="h-3 w-3" />
-                                                    {t(`stock.${status.label}`)}
-                                                </Badge>
-                                                <span className="text-xs text-muted-foreground">Qty: {product.quantity}</span>
-                                            </div>
-                                        </td>
-                                        <td className="py-3 px-4 text-right font-semibold">
-                                            {formatCurrency(product.price)}
-                                        </td>
-                                        <td className="py-3 px-4 text-center">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setQrProduct(product)} title={t('stock.qrCode')}>
-                                                <QrCode className="h-4 w-4" />
-                                            </Button>
-                                        </td>
-                                        <td className="py-3 px-4 text-right">
-                                            <div className="flex items-center justify-end gap-1">
-                                                <Button variant="ghost" size="icon" onClick={() => { setEditProduct(product); setDialogOpen(true) }} title={t('common.edit')}>
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(product)} title={t('common.delete')}>
-                                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )
-                            })}
-                        </tbody>
-                    </table>
-                </div>
+                <StockTable
+                    products={products}
+                    onEdit={(p) => { setEditProduct(p); setDialogOpen(true) }}
+                    onDelete={setDeleteTarget}
+                    onShowQr={setQrProduct}
+                    categoryLabel={categoryLabel}
+                    getStockStatus={getStockStatus}
+                />
             )}
 
             <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) setEditProduct(null); setDialogOpen(open) }}>
@@ -355,15 +211,15 @@ export function StockPage() {
                             name: editProduct.name, brand: editProduct.brand, model: editProduct.model,
                             category: (editProduct.category || undefined) as ProductFormData['category'],
                             price: parseFloat(editProduct.price),
-                            costPrice: editProduct.costPrice ? parseFloat(editProduct.costPrice) : undefined,
+                            costPrice: editProduct.costPrice != null ? parseFloat(editProduct.costPrice) : undefined,
                             quantity: editProduct.quantity,
                             thickness: editProduct.thickness || undefined,
                             lensType: editProduct.lensType as ProductFormData['lensType'],
                             material: editProduct.material as ProductFormData['material'],
                             coating: editProduct.coating as ProductFormData['coating'],
-                            sph: editProduct.sph ? parseFloat(editProduct.sph) : undefined,
-                            cyl: editProduct.cyl ? parseFloat(editProduct.cyl) : undefined,
-                            add: editProduct.add ? parseFloat(editProduct.add) : undefined,
+                            sph: editProduct.sph != null ? parseFloat(editProduct.sph) : undefined,
+                            cyl: editProduct.cyl != null ? parseFloat(editProduct.cyl) : undefined,
+                            add: editProduct.add != null ? parseFloat(editProduct.add) : undefined,
                             fournisseurId: editProduct.fournisseur?.id || undefined,
                         } : undefined}
                         onSubmit={editProduct ? handleUpdate : handleCreate}
@@ -373,24 +229,7 @@ export function StockPage() {
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={!!qrProduct} onOpenChange={(open) => { if (!open) setQrProduct(null) }}>
-                <DialogContent className="sm:max-w-xs">
-                    <DialogHeader>
-                        <DialogTitle>{t('stock.qrCode')} — {qrProduct?.name}</DialogTitle>
-                    </DialogHeader>
-                    {qrProduct?.qrcode?.code && (
-                        <div className="flex flex-col items-center gap-3 py-4">
-                            <p className="text-sm font-semibold">{qrProduct.model || qrProduct.name}</p>
-                            <img
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrProduct.qrcode.code)}`}
-                                alt={qrProduct.qrcode.code}
-                                className="rounded-lg border"
-                            />
-                            <p className="text-xs text-muted-foreground font-mono select-all">{qrProduct.qrcode.code}</p>
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
+            <StockQrDialog product={qrProduct} onClose={() => setQrProduct(null)} />
 
             <ConfirmDialog
                 open={!!deleteTarget}

@@ -46,6 +46,13 @@ export interface ProductResponse {
     fournisseurId: string | null
     createdAt: Date
     fournisseur: { id: string; name: string } | null
+    costPrice: number | null
+    thickness: string | null
+    material: string | null
+    coating: string | null
+    sph: number | null
+    cyl: number | null
+    add: number | null
     _count: { orderItems: number }
     qrcode: { code: string } | null
 }

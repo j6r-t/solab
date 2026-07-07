@@ -8,10 +8,10 @@ import { toProductResponse } from '@/mappers/stock.mapper'
 
 export async function GET(request: NextRequest) {
     try {
-        const { search, category, fournisseurId, stockStatus, brand, lensType } = parseQuery(
-            request, 'search', 'category', 'fournisseurId', 'stockStatus', 'brand', 'lensType'
+        const { search, category, fournisseurId, stockStatus, brand, lensType, material, coating, thickness, sphFrom, sphTo, cylFrom, cylTo, addFrom, addTo } = parseQuery(
+            request, 'search', 'category', 'fournisseurId', 'stockStatus', 'brand', 'lensType', 'material', 'coating', 'thickness', 'sphFrom', 'sphTo', 'cylFrom', 'cylTo', 'addFrom', 'addTo'
         )
-        const products = await listProducts({ search, category, fournisseurId, stockStatus, brand, lensType })
+        const products = await listProducts({ search, category, fournisseurId, stockStatus, brand, lensType, material, coating, thickness, sphFrom, sphTo, cylFrom, cylTo, addFrom, addTo })
         return ok(products.map(toProductResponse))
     } catch (error) {
         return handleError(error)

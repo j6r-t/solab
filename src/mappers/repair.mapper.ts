@@ -1,14 +1,25 @@
-import type { RepairResponse } from '@/dtos/repairs/repair.dto'
+import type { AtelierWorkOrderResponse } from '@/dtos/repairs/repair.dto'
 
-export function toRepairResponse(repair: any): RepairResponse {
+export function toRepairResponse(repair: any): AtelierWorkOrderResponse {
     return {
         id: repair.id,
-        orderId: repair.orderId,
+        orderId: repair.orderId || null,
+        opticianShopId: repair.opticianShopId || null,
+        source: repair.opticianShopId ? 'optician' : 'internal',
         type: repair.type,
         status: repair.status,
-        price: repair.price.toString(),
+        servicePrice: (repair.servicePrice || 0).toString(),
+        lensBlankPrice: repair.lensBlankPrice != null ? repair.lensBlankPrice.toString() : null,
         expectedCompletionDate: repair.expectedCompletionDate,
+        frameFrom: repair.frameFrom || null,
+        lensBlankLeft: repair.lensBlankLeft || null,
+        lensBlankRight: repair.lensBlankRight || null,
+        brokenLensBlank: repair.brokenLensBlank || null,
+        replacementLeft: repair.replacementLeft || null,
+        replacementRight: repair.replacementRight || null,
         repairService: repair.repairService || null,
+        opticianShop: repair.opticianShop || null,
+        order: repair.order || null,
         createdAt: repair.createdAt,
     }
 }

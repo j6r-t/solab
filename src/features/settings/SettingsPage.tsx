@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Globe, User, Smartphone, Wrench, Plus, Pencil, Trash2, Eye, KeyRound, Loader2 } from 'lucide-react'
 import { changePassword } from '@/features/auth/auth.api'
+import { useAuthStore } from '@/stores/auth-store'
 import { fetchRepairServices, createRepairService, updateRepairService, deleteRepairService } from './settings.api'
 import { toast } from 'sonner'
 
@@ -148,6 +149,9 @@ function NamedItemCard({ title, icon: Icon, description, apiPath, tPrefix }: {
 export function SettingsPage() {
     const { t } = useTranslation()
     const { locale, setLocale } = useLocaleStore()
+    const { user } = useAuthStore()
+    const role = user?.role || 'admin'
+    const showAtelierSettings = role === 'admin' || role === 'atelier'
     const [userName, setUserName] = useState('Sofien')
     const [userEmail, setUserEmail] = useState('')
     const [services, setServices] = useState<RepairService[]>([])
@@ -272,67 +276,71 @@ export function SettingsPage() {
                 </CardContent>
             </Card>
 
-            <NamedItemCard
-                title={t('settings.lensBrands')}
-                icon={Eye}
-                description={t('settings.lensBrandsDesc')}
-                apiPath="/api/lens-brands"
-                tPrefix="settings"
-            />
+            {showAtelierSettings && (
+                <>
+                    <h2 className="text-lg font-semibold pt-4 border-t">{t('role.atelier')}</h2>
 
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center gap-2 text-lg">
-                            <Wrench className="h-5 w-5" />
-                            {t('settings.repairServices')}
-                        </CardTitle>
-                        <Button size="sm" onClick={openNewService}><Plus className="h-4 w-4 mr-1" />{t('settings.newService')}</Button>
-                    </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                    <p className="text-sm text-muted-foreground">{t('settings.repairServicesDesc')}</p>
-                    {services.length === 0 ? (
-                        <p className="text-sm text-muted-foreground italic">{t('settings.noServices')}</p>
-                    ) : (
-                        <div className="border rounded-lg divide-y">
-                            {services.map((service) => (
-                                <div key={service.id} className="flex items-center justify-between px-4 py-3">
-                                    <div className="flex items-center gap-3">
-                                        <Wrench className="h-4 w-4 text-muted-foreground shrink-0" />
-                                        <span className="text-sm font-medium">{service.name}</span>
-                                        <span className="text-sm text-muted-foreground">{parseFloat(service.defaultPrice).toFixed(3)} TND</span>
-                                    </div>
-                                    <div className="flex gap-1">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditService(service)}><Pencil className="h-4 w-4" /></Button>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteTarget(service)}><Trash2 className="h-4 w-4" /></Button>
-                                    </div>
+                    <NamedItemCard
+                        title={t('settings.lensBrands')}
+                        icon={Eye}
+                        description={t('settings.lensBrandsDesc')}
+                        apiPath="/api/lens-brands"
+                        tPrefix="settings"
+                    />
+
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="flex items-center gap-2 text-lg">
+                                    <Wrench className="h-5 w-5" />
+                                    {t('settings.repairServices')}
+                                </CardTitle>
+                                <Button size="sm" onClick={openNewService}><Plus className="h-4 w-4 mr-1" />{t('settings.newService')}</Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <p className="text-sm text-muted-foreground">{t('settings.repairServicesDesc')}</p>
+                            {services.length === 0 ? (
+                                <p className="text-sm text-muted-foreground italic">{t('settings.noServices')}</p>
+                            ) : (
+                                <div className="border rounded-lg divide-y">
+                                    {services.map((service) => (
+                                        <div key={service.id} className="flex items-center justify-between px-4 py-3">
+                                            <div className="flex items-center gap-3">
+                                                <Wrench className="h-4 w-4 text-muted-foreground shrink-0" />
+                                                <span className="text-sm font-medium">{service.name}</span>
+                                                <span className="text-sm text-muted-foreground">{parseFloat(service.defaultPrice).toFixed(3)} TND</span>
+                                            </div>
+                                            <div className="flex gap-1">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditService(service)}><Pencil className="h-4 w-4" /></Button>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteTarget(service)}><Trash2 className="h-4 w-4" /></Button>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                            )}
+                        </CardContent>
+                    </Card>
 
-            <Dialog open={serviceDialogOpen} onOpenChange={setServiceDialogOpen}>
-                <DialogContent className="w-full sm:max-w-sm">
-                    <DialogHeader><DialogTitle>{editingService ? t('settings.editService') : t('settings.newService')}</DialogTitle></DialogHeader>
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>{t('settings.serviceName')}</Label>
-                            <Input value={serviceName} onChange={(e) => setServiceName(e.target.value)} placeholder="e.g. Frame Adjustment" />
+                    <Dialog open={serviceDialogOpen} onOpenChange={setServiceDialogOpen}>
+                    <DialogContent className="w-full sm:max-w-sm">
+                        <DialogHeader><DialogTitle>{editingService ? t('settings.editService') : t('settings.newService')}</DialogTitle></DialogHeader>
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>{t('settings.serviceName')}</Label>
+                                <Input value={serviceName} onChange={(e) => setServiceName(e.target.value)} placeholder="e.g. Frame Adjustment" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>{t('settings.defaultPrice')}</Label>
+                                <Input type="number" step="0.001" value={servicePrice} onChange={(e) => setServicePrice(e.target.value)} placeholder="0.000" />
+                            </div>
+                            <Button onClick={handleSaveService} disabled={saving || !serviceName.trim() || !servicePrice} className="w-full">
+                                {saving ? t('common.saving') : t('common.save')}
+                            </Button>
                         </div>
-                        <div className="space-y-2">
-                            <Label>{t('settings.defaultPrice')}</Label>
-                            <Input type="number" step="0.001" value={servicePrice} onChange={(e) => setServicePrice(e.target.value)} placeholder="0.000" />
-                        </div>
-                        <Button onClick={handleSaveService} disabled={saving || !serviceName.trim() || !servicePrice} className="w-full">
-                            {saving ? t('common.saving') : t('common.save')}
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
+                    </DialogContent>
+                </Dialog>
+                </>)}
             <ConfirmDialog
                 open={!!deleteTarget}
                 onOpenChange={() => setDeleteTarget(null)}

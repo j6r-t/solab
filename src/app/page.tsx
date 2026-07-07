@@ -8,6 +8,7 @@ import { useViewStore } from '@/stores/view-store'
 import { AppShell } from '@/components/layouts/AppShell'
 import { DashboardPage } from '@/features/dashboard/dashboardPage'
 import { ClientsPage } from '@/features/clients/ClientsPage'
+import { ClientDetailPage } from '@/features/clients/ClientDetailPage'
 import { StockPage } from '@/features/stock/StockPage'
 import { PrescriptionsPage } from '@/features/prescriptions/PrescriptionsPage'
 import { OrdersPage } from '@/features/orders/OrdersPage'
@@ -17,11 +18,17 @@ import { ReportsPage } from '@/features/reports/ReportsPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 import { DoctorsPage } from '@/features/doctors/DoctorsPage'
 import { FournisseursPage } from '@/features/fournisseurs/FournisseursPage'
+import { OpticianShopsPage } from '@/features/optician-shops/OpticianShopsPage'
 import { QRCodePage } from '@/features/qrcode/QRCodePage'
+import { ImportPage } from '@/features/import/ImportPage'
+import { PurchaseInvoicesPage } from '@/features/purchase-invoices/PurchaseInvoicesPage'
+import { LensBlanksPage } from '@/features/lens-blanks/LensBlanksPage'
+import { AtelierWorkOrdersPage } from '@/features/atelier-work-orders/AtelierWorkOrdersPage'
 
 const views: Record<string, React.FC> = {
   dashboard: DashboardPage,
   clients: ClientsPage,
+  'client-detail': ClientDetailPage,
   stock: StockPage,
   prescriptions: PrescriptionsPage,
   orders: OrdersPage,
@@ -31,7 +38,12 @@ const views: Record<string, React.FC> = {
   settings: SettingsPage,
   doctors: DoctorsPage,
   fournisseurs: FournisseursPage,
+  'optician-shops': OpticianShopsPage,
   qrcode: QRCodePage,
+  import: ImportPage,
+  'purchase-invoices': PurchaseInvoicesPage,
+  'lens-blanks': LensBlanksPage,
+  'atelier-work-orders': AtelierWorkOrdersPage,
 }
 
 export default function Home() {

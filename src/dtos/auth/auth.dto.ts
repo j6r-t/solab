@@ -11,11 +11,18 @@ export interface ChangePasswordInput {
 export interface LoginResponse {
     success: true
     token: string
-    user: { id: string; email: string; name: string }
+    user: UserDto
 }
 
 export interface SetupResponse {
     message: string
-    user: { id: string; email: string; name: string }
+    user: UserDto
     defaultPassword: string
+}
+
+export interface UserDto {
+    id: string
+    email: string
+    name: string | null
+    role: string
 }

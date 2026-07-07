@@ -1,6 +1,6 @@
 import type { DoctorResponse } from '@/dtos/doctors/doctor.dto'
 
-export function toDoctorResponse(doctor: { id: string; name: string; phone: string; address: string | null; specialization: string | null; createdAt: Date }): DoctorResponse {
+export function toDoctorResponse(doctor: { id: string; name: string; phone: string; address: string | null; specialization: string | null; createdAt: Date; _count?: { prescriptions: number } }): DoctorResponse {
     return {
         id: doctor.id,
         name: doctor.name,
@@ -8,5 +8,6 @@ export function toDoctorResponse(doctor: { id: string; name: string; phone: stri
         address: doctor.address,
         specialization: doctor.specialization,
         createdAt: doctor.createdAt,
+        _count: { prescriptions: doctor._count?.prescriptions ?? 0 },
     }
 }

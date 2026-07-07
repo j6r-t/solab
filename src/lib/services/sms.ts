@@ -30,7 +30,7 @@ export async function sendSms(phone: string, message: string, clientId: string):
 }
 
 export async function sendRepairReadySms(repairId: string): Promise<{ success: boolean }> {
-    const repair = await db.repair.findUnique({
+    const repair = await db.atelierWorkOrder.findUnique({
         where: { id: repairId },
         include: {
             order: {
@@ -39,7 +39,8 @@ export async function sendRepairReadySms(repairId: string): Promise<{ success: b
             repairService: true,
         },
     })
-    if (!repair || !repair.order?.client) return { success: false }
+    if (!repair) return { success: false }
+    if (repair.opticianShopId || !repair.order?.client) return { success: true }
     const client = repair.order.client
     const serviceName = repair.repairService?.name || repair.type
     const message = `Bonjour ${client.name} ${client.familyName}, votre réparation (${serviceName}) est terminée. Vous pouvez venir la récupérer chez Sofien Optic. Merci.`

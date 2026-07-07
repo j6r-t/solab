@@ -19,4 +19,5 @@ export interface DoctorResponse {
     address: string | null
     specialization: string | null
     createdAt: Date
+    _count: { prescriptions: number }
 }

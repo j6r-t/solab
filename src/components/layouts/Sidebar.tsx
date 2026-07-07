@@ -14,32 +14,51 @@ import {
     LogOut,
     Stethoscope,
     Truck,
+    Store,
+    Upload,
+    ClipboardList,
+    PackageOpen,
 } from 'lucide-react'
+import { NotificationBell } from '@/features/notifications/NotificationBell'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { useViewStore, type ViewName } from '@/stores/view-store'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils/cn'
 
-const navItems = [
-    { icon: LayoutDashboard, view: 'dashboard' as ViewName, labelKey: 'dashboard' },
-    { icon: Users, view: 'clients' as ViewName, labelKey: 'clients' },
-    { icon: Package, view: 'stock' as ViewName, labelKey: 'stock' },
-    { icon: FileText, view: 'prescriptions' as ViewName, labelKey: 'prescriptions' },
-    { icon: ShoppingCart, view: 'orders' as ViewName, labelKey: 'orders' },
-    { icon: Wrench, view: 'repairs' as ViewName, labelKey: 'repairs' },
-    { icon: Receipt, view: 'billing' as ViewName, labelKey: 'billing' },
-    { icon: BarChart3, view: 'reports' as ViewName, labelKey: 'reports' },
-    { icon: Stethoscope, view: 'doctors' as ViewName, labelKey: 'doctors' },
-    { icon: Truck, view: 'fournisseurs' as ViewName, labelKey: 'fournisseurs' },
-    { icon: Settings, view: 'settings' as ViewName, labelKey: 'settings' },
+interface NavItem {
+    icon: any
+    view: ViewName
+    labelKey: string
+    roles: string[]
+}
+
+const navItems: NavItem[] = [
+    { icon: LayoutDashboard, view: 'dashboard', labelKey: 'dashboard', roles: ['admin', 'shop', 'atelier'] },
+    { icon: Users, view: 'clients', labelKey: 'clients', roles: ['admin', 'shop'] },
+    { icon: Package, view: 'stock', labelKey: 'stock', roles: ['admin', 'shop'] },
+    { icon: FileText, view: 'prescriptions', labelKey: 'prescriptions', roles: ['admin', 'shop'] },
+    { icon: ShoppingCart, view: 'orders', labelKey: 'orders', roles: ['admin', 'shop'] },
+    { icon: Wrench, view: 'atelier-work-orders', labelKey: 'atelierWorkOrders', roles: ['admin', 'atelier'] },
+    { icon: Receipt, view: 'billing', labelKey: 'billing', roles: ['admin', 'shop'] },
+    { icon: BarChart3, view: 'reports', labelKey: 'reports', roles: ['admin', 'shop', 'atelier'] },
+    { icon: Stethoscope, view: 'doctors', labelKey: 'doctors', roles: ['admin', 'shop'] },
+    { icon: Truck, view: 'fournisseurs', labelKey: 'fournisseurs', roles: ['admin', 'shop', 'atelier'] },
+    { icon: PackageOpen, view: 'lens-blanks', labelKey: 'lensBlanks', roles: ['admin', 'atelier'] },
+    { icon: ClipboardList, view: 'purchase-invoices', labelKey: 'purchaseInvoices', roles: ['admin', 'shop', 'atelier'] },
+    { icon: Store, view: 'optician-shops', labelKey: 'opticianShops', roles: ['admin', 'atelier'] },
+    { icon: Upload, view: 'import', labelKey: 'import', roles: ['admin', 'shop'] },
+    { icon: Settings, view: 'settings', labelKey: 'settings', roles: ['admin', 'shop', 'atelier'] },
 ]
 
 export function Sidebar() {
     const { t } = useTranslation()
     const { currentView, setView } = useViewStore()
-    const { logout } = useAuthStore()
+    const { user, logout } = useAuthStore()
     const router = useRouter()
+
+    const role = user?.role || 'admin'
+    const visibleItems = navItems.filter((item) => item.roles.includes(role))
 
     return (
         <aside className="hidden md:flex w-64 flex-col border-r bg-card h-screen sticky top-0">
@@ -51,7 +70,7 @@ export function Sidebar() {
             </div>
 
             <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-                {navItems.map((item) => {
+                {visibleItems.map((item) => {
                     const isActive = currentView === item.view
                     return (
                         <button
@@ -74,7 +93,8 @@ export function Sidebar() {
                 })}
             </nav>
 
-            <div className="p-4 border-t">
+            <div className="p-3 border-t space-y-0.5">
+                <NotificationBell variant="nav" />
                 <button
                     onClick={() => {
                         logout()

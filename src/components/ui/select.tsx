@@ -73,6 +73,7 @@ function SelectContent({
         position={position}
         align={align}
         {...props}
+        onCloseAutoFocus={(e) => e.preventDefault()}
       >
         <SelectScrollUpButton />
         <SelectPrimitive.Viewport

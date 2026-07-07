@@ -16,12 +16,8 @@ interface Product {
     name: string
     brand: string
     model: string
-    category: string | null
-    price: string
-    quantity: number
-    fournisseur: { id: string; name: string } | null
-    _count: { orderItems: number }
-    qrcode: { code: string } | null
+    category: string
+    price: number
 }
 
 export function QRCodePage() {
@@ -38,12 +34,12 @@ export function QRCodePage() {
         setProduct(null)
         setSearched(true)
         try {
-            const result = await lookupQRCode(trimmed)
-            if (!result) {
+            const data = await lookupQRCode(trimmed)
+            if (!data.product) {
                 toast.error('Product not found for this QR code')
                 return
             }
-            setProduct(result)
+            setProduct(data.product)
         } catch {
             toast.error('Failed to look up QR code')
         } finally {
@@ -63,10 +59,10 @@ export function QRCodePage() {
                     <QrCode className="h-5 w-5" />
                     {t('stock.qrCode')}
                 </h1>
-                <p className="text-sm text-muted-foreground mt-1">Scan or enter a QR code to look up a product</p>
+                <p className="text-sm text-muted-foreground mt-1">{t('qrcode.description')}</p>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
                 <div className="relative flex-1">
                     <Scan className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -110,20 +106,19 @@ export function QRCodePage() {
                             <div><span className="text-muted-foreground">{t('stock.brand')}:</span> {product.brand || '—'}</div>
                             <div><span className="text-muted-foreground">{t('stock.model')}:</span> {product.model || '—'}</div>
                             <div><span className="text-muted-foreground">{t('stock.category')}:</span> {categoryLabel(product.category)}</div>
-                            <div><span className="text-muted-foreground">{t('stock.quantity')}:</span> {product.quantity}</div>
-                            <div><span className="text-muted-foreground">{t('stock.sellingPrice')}:</span> {formatCurrency(product.price)}</div>
-                            <div><span className="text-muted-foreground">{t('stock.fournisseur')}:</span> {product.fournisseur?.name || '—'}</div>
+                            <div><span className="text-muted-foreground">{t('stock.sellingPrice')}:</span> {formatCurrency(product.price.toString())}</div>
+                            <div><span className="text-muted-foreground">QR Code:</span> <span className="font-mono text-xs">{code}</span></div>
                         </div>
 
-                        {product.qrcode?.code && (
+                        {code && (
                             <div className="flex flex-col items-center gap-2 pt-2 border-t">
                                 <p className="text-sm font-semibold">{product.model || product.name}</p>
                                 <img
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(product.qrcode.code)}`}
-                                    alt={product.qrcode.code}
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(code)}`}
+                                    alt={code}
                                     className="rounded-lg border"
                                 />
-                                <p className="text-xs text-muted-foreground font-mono select-all">{product.qrcode.code}</p>
+                                <p className="text-xs text-muted-foreground font-mono select-all">{code}</p>
                             </div>
                         )}
                     </CardContent>

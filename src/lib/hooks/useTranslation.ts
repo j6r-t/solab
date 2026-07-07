@@ -9,7 +9,7 @@ type NestedObject = { [key: string]: string | NestedObject }
 export function useTranslation() {
     const locale = useLocaleStore((state) => state.locale)
 
-    function t(key: string): string {
+    function t(key: string, vars?: Record<string, string | number>): string {
         const keys = key.split('.')
         let result: unknown = translations[locale]
 
@@ -21,7 +21,13 @@ export function useTranslation() {
             }
         }
 
-        return typeof result === 'string' ? result : key
+        const str = typeof result === 'string' ? result : key
+        if (!vars) return str
+        let out = str
+        for (const [k, v] of Object.entries(vars)) {
+            out = out.replace(`{${k}}`, String(v))
+        }
+        return out
     }
 
     return { t, locale }

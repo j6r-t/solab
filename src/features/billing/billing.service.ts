@@ -22,7 +22,7 @@ export async function listBilling(params?: { status?: string; search?: string; s
             client: { select: { id: true, name: true, familyName: true, phone: true, address: true } },
             items: { include: { product: { select: { id: true, name: true, brand: true, model: true, category: true } } } },
             payments: { orderBy: { createdAt: 'asc' } },
-            repairs: { include: { repairService: true } },
+            workOrders: { include: { repairService: true } },
             prescription: { include: { doctor: { select: { name: true } } } },
         },
         orderBy: { createdAt: 'desc' },

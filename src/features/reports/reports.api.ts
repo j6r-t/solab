@@ -16,5 +16,5 @@ interface ReportData {
 
 export type { ReportData }
 
-export const fetchReports = (period?: string) =>
-    api.get<ReportData>('/api/reports', { period: period || 'month' })
+export const fetchReports = (period?: string, entity?: string) =>
+    api.get<ReportData>('/api/reports', { period: period || 'month', entity: entity || 'shop' })

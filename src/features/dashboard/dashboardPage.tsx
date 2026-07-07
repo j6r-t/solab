@@ -16,10 +16,17 @@ import {
     CheckCircle2,
     Clock,
     TrendingUp,
+    Eye,
+    Store,
+    Plus,
 } from 'lucide-react'
 import { fetchDashboard, fetchReadyOrders } from './dashboard.api'
+import { fetchOrderById, type Order } from '@/features/orders/orders.api'
+import { OrderViewDialog } from './OrderViewDialog'
+import { useViewStore } from '@/stores/view-store'
 import { cn } from '@/lib/utils/cn'
 import { formatCurrency } from '@/lib/utils/currency'
+import { toast } from 'sonner'
 
 interface DashboardData {
     totalClients: number
@@ -70,8 +77,11 @@ const kpiLabels: Record<KpiKey, string> = {
 
 export function DashboardPage() {
     const { t } = useTranslation()
+    const { setView } = useViewStore()
     const [data, setData] = useState<DashboardData | null>(null)
     const [readyOrders, setReadyOrders] = useState<ReadyOrder[]>([])
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+    const [detailOpen, setDetailOpen] = useState(false)
 
     useEffect(() => {
         async function load() {
@@ -105,6 +115,16 @@ export function DashboardPage() {
             value: values[cfg.key],
         }))
     }, [data, t])
+
+    async function openDetail(orderId: string) {
+        try {
+            const full = await fetchOrderById(orderId)
+            setSelectedOrder(full)
+            setDetailOpen(true)
+        } catch (error) {
+            toast.error('Failed to load order details')
+        }
+    }
 
     if (!data) {
         return (
@@ -143,6 +163,21 @@ export function DashboardPage() {
                 ))}
             </div>
 
+            <div className="flex flex-wrap gap-2">
+                <Button variant="outline" className="gap-2" onClick={() => setView('repairs')}>
+                    <Wrench className="h-4 w-4" />
+                    {t('nav.repairs')}
+                </Button>
+                <Button variant="outline" className="gap-2" onClick={() => setView('optician-shops')}>
+                    <Store className="h-4 w-4" />
+                    {t('nav.opticianShops')}
+                </Button>
+                <Button className="gap-2" onClick={() => setView('orders')}>
+                    <Plus className="h-4 w-4" />
+                    {t('orders.newOrder')}
+                </Button>
+            </div>
+
             <Card>
                 <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
@@ -174,8 +209,12 @@ export function DashboardPage() {
                                             {order.client.phone} · {new Date(order.createdAt).toLocaleDateString()}
                                         </p>
                                     </div>
-                                    <div className="flex items-center gap-3 shrink-0 ml-3">
+                                    <div className="flex items-center gap-2 shrink-0 ml-3">
                                         <span className="text-sm font-semibold">{formatCurrency(order.totalAmount)}</span>
+                                        <Button size="sm" variant="outline" className="gap-1.5 h-8" onClick={() => openDetail(order.id)}>
+                                            <Eye className="h-3.5 w-3.5" />
+                                            {t('common.view')}
+                                        </Button>
                                         <Button size="sm" variant="outline" className="gap-1.5 h-8">
                                             <Smartphone className="h-3.5 w-3.5" />
                                             SMS
@@ -187,6 +226,12 @@ export function DashboardPage() {
                     )}
                 </CardContent>
             </Card>
+
+            <OrderViewDialog
+                order={selectedOrder}
+                open={detailOpen}
+                onOpenChange={(open) => { setDetailOpen(open); if (!open) setSelectedOrder(null) }}
+            />
         </div>
     )
 }

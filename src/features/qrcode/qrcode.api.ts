@@ -2,20 +2,20 @@
 
 import { api } from '@/lib/api/client'
 
-interface QRProduct {
+interface QRCodeData {
     id: string
-    name: string
-    brand: string
-    model: string
-    category: string
-    price: string
-    quantity: number
-    fournisseur: { id: string; name: string } | null
-    _count: { orderItems: number }
-    qrcode: { code: string } | null
+    code: string
+    product: {
+        id: string
+        name: string
+        brand: string
+        model: string
+        category: string
+        price: number
+    } | null
 }
 
-export type { QRProduct }
+export type { QRCodeData }
 
 export const lookupQRCode = (code: string) =>
-    api.get<QRProduct>('/api/qrcode', { code })
+    api.get<QRCodeData>('/api/qrcode', { code })

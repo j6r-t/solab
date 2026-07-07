@@ -9,6 +9,9 @@ interface Client {
     phone: string
     address: string | null
     gender: 'male' | 'female' | null
+    birthDate: string | null
+    notes: string | null
+    organization: string | null
     createdAt: string
 }
 

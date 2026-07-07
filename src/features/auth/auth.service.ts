@@ -15,17 +15,18 @@ export async function comparePassword(password: string, hash: string): Promise<b
     return bcrypt.compare(password, hash)
 }
 
-export async function createToken(email: string): Promise<string> {
-    return new SignJWT({ email })
+export async function createToken(user: { email: string; role: string }): Promise<string> {
+    return new SignJWT({ email: user.email, role: user.role })
         .setProtectedHeader({ alg: 'HS256' })
         .setExpirationTime('7d')
         .sign(secret)
 }
 
-export async function verifyToken(token: string): Promise<string | null> {
+export async function verifyToken(token: string): Promise<{ email: string; role: string } | null> {
     try {
         const { payload } = await jwtVerify(token, secret)
-        return payload.email as string
+        if (!payload.email) return null
+        return { email: payload.email as string, role: (payload.role as string) || 'admin' }
     } catch {
         return null
     }
@@ -39,9 +40,9 @@ export async function authenticateUser(email: string, password: string) {
         throw new UnauthorizedError('Invalid email or password')
     }
 
-    const token = await createToken(user.email)
+    const token = await createToken({ email: user.email, role: user.role })
     await auditService.log({ userId: user.id, action: 'USER_LOGIN', entityType: 'USER', entityId: user.id, metadata: { email: user.email } })
-    return { token, user: { id: user.id, email: user.email, name: user.name } }
+    return { token, user: { id: user.id, email: user.email, name: user.name, role: user.role } }
 }
 
 export async function setupAdmin() {
@@ -54,7 +55,7 @@ export async function setupAdmin() {
     })
 
     await auditService.log({ userId: user.id, action: 'ADMIN_SETUP', entityType: 'USER', entityId: user.id, metadata: { email: user.email } })
-    return { user: { id: user.id, email: user.email, name: user.name }, defaultPassword: 'admin123' }
+    return { user: { id: user.id, email: user.email, name: user.name, role: user.role }, defaultPassword: 'admin123' }
 }
 
 export async function changePassword(email: string, currentPassword: string, newPassword: string) {

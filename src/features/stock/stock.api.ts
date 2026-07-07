@@ -32,6 +32,15 @@ export const fetchStockProducts = (params?: {
     stockStatus?: string
     brand?: string
     lensType?: string
+    material?: string
+    coating?: string
+    thickness?: string
+    sphFrom?: string
+    sphTo?: string
+    cylFrom?: string
+    cylTo?: string
+    addFrom?: string
+    addTo?: string
     fournisseurId?: string
 }) => api.get<StockProduct[]>('/api/stock', params as Record<string, string | undefined>)
 

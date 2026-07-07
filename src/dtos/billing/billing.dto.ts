@@ -34,8 +34,7 @@ export interface BillingPrescriptionResponse {
 export interface BillingResponse {
     id: string
     orderNumber: number
-    clientName: string
-    clientPhone: string
+    client: { name: string; familyName: string; phone: string; address: string | null }
     totalAmount: string
     totalPaid: string
     balance: string

@@ -6,15 +6,10 @@ import { useDebounce } from '@/lib/hooks/useDebounce'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Search, Stethoscope, Plus, Pencil, Trash2, Loader2, Users, Calendar } from 'lucide-react'
+import { DoctorFormDialog } from './DoctorFormDialog'
+import { DoctorPatientsDialog } from './DoctorPatientsDialog'
+import { Search, Stethoscope, Plus, Pencil, Trash2, Loader2, Users } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Doctor {
@@ -26,12 +21,6 @@ interface Doctor {
     _count: { prescriptions: number }
 }
 
-interface PatientPrescription {
-    id: string
-    client: { name: string; familyName: string; phone: string }
-    createdAt: string
-}
-
 export function DoctorsPage() {
     const { t } = useTranslation()
     const [doctors, setDoctors] = useState<Doctor[]>([])
@@ -41,7 +30,7 @@ export function DoctorsPage() {
     const [editDoctor, setEditDoctor] = useState<Doctor | null>(null)
     const [deleteTarget, setDeleteTarget] = useState<Doctor | null>(null)
     const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null)
-    const [patients, setPatients] = useState<PatientPrescription[]>([])
+    const [patients, setPatients] = useState<{ id: string; client: { name: string; familyName: string; phone: string }; createdAt: string }[]>([])
     const [patientsLoading, setPatientsLoading] = useState(false)
     const [patientsOpen, setPatientsOpen] = useState(false)
     const [saving, setSaving] = useState(false)
@@ -154,7 +143,7 @@ export function DoctorsPage() {
         <div className="space-y-6 max-w-[900px]">
             <div>
                 <h1 className="text-[22px] font-medium">{t('nav.doctors') || 'Doctors'}</h1>
-                <p className="text-sm text-muted-foreground mt-1">Manage doctors and view their patients</p>
+                <p className="text-sm text-muted-foreground mt-1">{t('doctors.description')}</p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
@@ -229,38 +218,21 @@ export function DoctorsPage() {
                 </div>
             )}
 
-            <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) { setDialogOpen(false); setEditDoctor(null) } }}>
-                <DialogContent className="w-full sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>{editDoctor ? 'Edit Doctor' : 'Add Doctor'}</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>Name *</Label>
-                            <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Dr. ..." />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Phone</Label>
-                            <Input value={formPhone} onChange={(e) => setFormPhone(e.target.value)} placeholder="Phone number" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Specialization</Label>
-                            <Input value={formSpecialization} onChange={(e) => setFormSpecialization(e.target.value)} placeholder="e.g. Ophthalmologist" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Address</Label>
-                            <Input value={formAddress} onChange={(e) => setFormAddress(e.target.value)} placeholder="Address" />
-                        </div>
-                        <div className="flex justify-end gap-2 pt-2">
-                            <Button variant="outline" onClick={() => { setDialogOpen(false); setEditDoctor(null) }}>Cancel</Button>
-                            <Button onClick={handleSave} disabled={saving}>
-                                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spinner" />}
-                                Save
-                            </Button>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            <DoctorFormDialog
+                open={dialogOpen}
+                onOpenChange={(open) => { if (!open) { setDialogOpen(false); setEditDoctor(null) }}}
+                editingDoctor={editDoctor}
+                formName={formName}
+                onFormNameChange={setFormName}
+                formPhone={formPhone}
+                onFormPhoneChange={setFormPhone}
+                formSpecialization={formSpecialization}
+                onFormSpecializationChange={setFormSpecialization}
+                formAddress={formAddress}
+                onFormAddressChange={setFormAddress}
+                onSave={handleSave}
+                saving={saving}
+            />
 
             <ConfirmDialog
                 open={!!deleteTarget}
@@ -272,38 +244,12 @@ export function DoctorsPage() {
                 onConfirm={() => deleteTarget && handleDelete(deleteTarget)}
             />
 
-            <Dialog open={patientsOpen} onOpenChange={setPatientsOpen}>
-                <DialogContent className="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <Stethoscope className="h-5 w-5 text-primary" />
-                            Patients of {selectedDoctor?.name}
-                        </DialogTitle>
-                    </DialogHeader>
-                    {patientsLoading ? (
-                        <div className="flex items-center justify-center py-12">
-                            <Loader2 className="h-6 w-6 animate-spinner text-muted-foreground" />
-                        </div>
-                    ) : patients.length === 0 ? (
-                        <p className="text-center py-8 text-muted-foreground">No patients linked to this doctor</p>
-                    ) : (
-                        <div className="space-y-2">
-                            {patients.map((p) => (
-                                <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
-                                    <div>
-                                        <p className="font-medium text-sm">{p.client.name} {p.client.familyName}</p>
-                                        <p className="text-xs text-muted-foreground">{p.client.phone}</p>
-                                    </div>
-                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                        <Calendar className="h-3 w-3" />
-                                        {new Date(p.createdAt).toLocaleDateString()}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
+            <DoctorPatientsDialog
+                open={patientsOpen}
+                onOpenChange={setPatientsOpen}
+                doctor={selectedDoctor}
+                patients={patients}
+            />
         </div>
     )
 }

@@ -23,6 +23,9 @@ export function ClientForm({ defaultValues, onSubmit, onCancel, saving: external
         phone: defaultValues?.phone || '',
         address: defaultValues?.address || '',
         gender: defaultValues?.gender || undefined,
+        birthDate: defaultValues?.birthDate || '',
+        notes: defaultValues?.notes || '',
+        organization: defaultValues?.organization || '',
     })
     const [errors, setErrors] = useState<Record<string, string[]>>({})
     const [internalSaving, setInternalSaving] = useState(false)
@@ -130,6 +133,37 @@ export function ClientForm({ defaultValues, onSubmit, onCancel, saving: external
                         {t('clients.female')}
                     </label>
                 </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="birthDate">{t('clients.birthDate')}</Label>
+                    <Input
+                        id="birthDate"
+                        type="date"
+                        value={formData.birthDate || ''}
+                        onChange={(e) => handleChange('birthDate', e.target.value)}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="organization">{t('clients.organization')}</Label>
+                    <Input
+                        id="organization"
+                        value={formData.organization || ''}
+                        onChange={(e) => handleChange('organization', e.target.value)}
+                        placeholder="CNAM, CNSS, assurance..."
+                    />
+                </div>
+            </div>
+
+            <div className="space-y-2">
+                <Label htmlFor="notes">{t('clients.notes')}</Label>
+                <Input
+                    id="notes"
+                    value={formData.notes || ''}
+                    onChange={(e) => handleChange('notes', e.target.value)}
+                    placeholder={t('clients.notesPlaceholder')}
+                />
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 pt-2">

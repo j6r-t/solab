@@ -7,6 +7,8 @@ interface Fournisseur {
     name: string
     phone: string
     address: string | null
+    email: string | null
+    taxId: string | null
     _count: { products: number }
 }
 
@@ -23,7 +25,7 @@ interface FournisseurProduct {
 
 export type { Fournisseur, FournisseurProduct }
 
-export const fetchFournisseurs = (params?: { search?: string }) =>
+export const fetchFournisseurs = (params?: { search?: string; entity?: string }) =>
     api.get<Fournisseur[]>('/api/fournisseurs', params as Record<string, string | undefined>)
 
 export const createFournisseur = (data: { name: string; phone: string; address: string }) =>

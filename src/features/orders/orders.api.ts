@@ -58,8 +58,11 @@ interface Order {
 
 export type { Order, OrderItem, Payment, Repair, Prescription }
 
-export const fetchOrders = (params?: { search?: string; status?: string }) =>
+export const fetchOrders = (params?: { search?: string; status?: string; clientId?: string }) =>
     api.get<Order[]>('/api/orders', params as Record<string, string | undefined>)
+
+export const fetchOrderById = (id: string) =>
+    api.get<Order>(`/api/orders/${id}`)
 
 export const createOrder = (data: any) =>
     api.post<Order>('/api/orders', data)

@@ -15,7 +15,11 @@ export async function listPrescriptions(params?: { clientId?: string; doctorId?:
 }
 
 export async function createPrescription(data: Record<string, unknown>) {
-    return prescriptionRepo.create({ data: data as any })
+    const record = { ...data }
+    if (record.dateWritten && typeof record.dateWritten === 'string' && record.dateWritten.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        record.dateWritten = new Date(record.dateWritten).toISOString()
+    }
+    return prescriptionRepo.create({ data: record as any })
 }
 
 export async function updatePrescription(id: string, data: Record<string, unknown>) {

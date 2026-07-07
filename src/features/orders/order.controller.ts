@@ -9,8 +9,8 @@ import type { CreateOrderInput } from '@/dtos/orders/order.dto'
 
 export async function GET(request: NextRequest) {
     try {
-        const { status, search } = parseQuery(request, 'status', 'search')
-        const orders = await listOrders({ status, search })
+        const { status, search, clientId } = parseQuery(request, 'status', 'search', 'clientId')
+        const orders = await listOrders({ status, search, clientId })
         return ok(orders.map(toOrderListItem))
     } catch (error) {
         return handleError(error)

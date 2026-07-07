@@ -5,23 +5,40 @@ import { useTranslation } from '@/lib/hooks/useTranslation'
 import { useDebounce } from '@/lib/hooks/useDebounce'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Wrench, Search, CheckCircle, Clock, AlertTriangle, Loader2 } from 'lucide-react'
+import { RepairCreateDialog } from './RepairCreateDialog'
+import { Wrench, Search, CheckCircle, Clock, AlertTriangle, Loader2, Plus, Store } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface RepairItem {
     id: string
     type: string
     status: string
-    price: string
+    servicePrice: string
+    source: 'internal' | 'optician'
     expectedCompletionDate: string
     createdAt: string
     repairService: { name: string; defaultPrice: string } | null
+    opticianShop: { id: string; name: string } | null
     order: {
         id: string
         orderNumber: number
         client: { id: string; name: string; familyName: string; phone: string }
-    }
+    } | null
+}
+
+interface OpticianShop {
+    id: string
+    name: string
+    phone: string
+    address: string | null
 }
 
 function getDaysRemaining(dateStr: string): number {
@@ -44,8 +61,17 @@ export function RepairsPage() {
     const [repairs, setRepairs] = useState<RepairItem[]>([])
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('')
+    const [sourceFilter, setSourceFilter] = useState('')
     const [loading, setLoading] = useState(true)
     const debouncedSearch = useDebounce(search, 300)
+    const [createOpen, setCreateOpen] = useState(false)
+    const [shops, setShops] = useState<OpticianShop[]>([])
+    const [saving, setSaving] = useState(false)
+    const [formShopId, setFormShopId] = useState('')
+    const [formServiceId, setFormServiceId] = useState('')
+    const [formPrice, setFormPrice] = useState('')
+    const [formDate, setFormDate] = useState('')
+    const [repairServices, setRepairServices] = useState<{ id: string; name: string; defaultPrice: string }[]>([])
 
     useEffect(() => {
         async function load() {
@@ -53,22 +79,84 @@ export function RepairsPage() {
             const params = new URLSearchParams()
             if (debouncedSearch) params.set('search', debouncedSearch)
             if (statusFilter) params.set('status', statusFilter)
+            if (sourceFilter) params.set('source', sourceFilter)
             const res = await fetch(`/api/repairs?${params}`)
             if (res.ok) setRepairs(await res.json())
             setLoading(false)
         }
         load()
-    }, [debouncedSearch, statusFilter])
+    }, [debouncedSearch, statusFilter, sourceFilter])
 
     async function markComplete(repairId: string) {
-        await fetch(`/api/repairs/${repairId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: 'completed' }),
-        })
-        const res = await fetch(`/api/repairs?status=${statusFilter}&search=${debouncedSearch}`)
-        if (res.ok) setRepairs(await res.json())
-        toast.success(t('repairs.markedComplete'))
+        try {
+            const res = await fetch(`/api/repairs/${repairId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'completed' }),
+            })
+            if (!res.ok) throw new Error('Failed to complete repair')
+            toast.success(t('repairs.markedComplete'))
+            const params = new URLSearchParams()
+            if (debouncedSearch) params.set('search', debouncedSearch)
+            if (statusFilter) params.set('status', statusFilter)
+            if (sourceFilter) params.set('source', sourceFilter)
+            const refresh = await fetch(`/api/repairs?${params}`)
+            if (refresh.ok) setRepairs(await refresh.json())
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to complete repair')
+        }
+    }
+
+    async function openCreate() {
+        setFormShopId('')
+        setFormServiceId('')
+        setFormPrice('')
+        setFormDate(new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0])
+        setCreateOpen(true)
+        try {
+            const [shopsRes, servicesRes] = await Promise.all([
+                fetch('/api/optician-shops'),
+                fetch('/api/repair-services'),
+            ])
+            if (shopsRes.ok) setShops(await shopsRes.json())
+            if (servicesRes.ok) setRepairServices(await servicesRes.json())
+        } catch {}
+    }
+
+    async function handleCreate() {
+        if (!formShopId) return toast.error('Select an optician shop')
+        if (!formPrice) return toast.error('Price is required')
+        setSaving(true)
+        try {
+            const service = repairServices.find((s) => s.id === formServiceId)
+            const res = await fetch('/api/repairs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    opticianShopId: formShopId,
+                    type: service?.name || '',
+                    servicePrice: parseFloat(formPrice),
+                    expectedCompletionDate: formDate,
+                    repairServiceId: formServiceId || undefined,
+                }),
+            })
+            if (!res.ok) {
+                const body = await res.json()
+                throw new Error(body.message || 'Failed to create repair')
+            }
+            toast.success('Repair created')
+            setCreateOpen(false)
+            const params = new URLSearchParams()
+            if (debouncedSearch) params.set('search', debouncedSearch)
+            if (statusFilter) params.set('status', statusFilter)
+            if (sourceFilter) params.set('source', sourceFilter)
+            const refresh = await fetch(`/api/repairs?${params}`)
+            if (refresh.ok) setRepairs(await refresh.json())
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to create repair')
+        } finally {
+            setSaving(false)
+        }
     }
 
     const showEmptyState = !loading && repairs.length === 0 && !debouncedSearch
@@ -76,9 +164,16 @@ export function RepairsPage() {
 
     return (
         <div className="space-y-6 max-w-[900px]">
-            <div>
-                <h1 className="text-[22px] font-medium">{t('nav.repairs')}</h1>
-                <p className="text-sm text-muted-foreground mt-1">Track repairs and client notifications</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-[22px] font-medium">{t('nav.repairs')}</h1>
+                    <p className="text-sm text-muted-foreground mt-1">{t('repairs.description')}</p>
+                </div>
+                <Button onClick={openCreate}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    <Store className="h-4 w-4 mr-1" />
+                    Optician Repair
+                </Button>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
@@ -87,19 +182,30 @@ export function RepairsPage() {
                     <Input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search by client name..."
+                        placeholder="Search by client or optician..."
                         className="pl-10 h-10"
                     />
                 </div>
-                <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="h-10 px-3 rounded-md border bg-background text-sm"
-                >
-                    <option value="">{t('common.all')}</option>
-                    <option value="pending">{t('common.pending')}</option>
-                    <option value="completed">{t('common.completed')}</option>
-                </select>
+                <Select value={sourceFilter} onValueChange={(v) => setSourceFilter(v)}>
+                    <SelectTrigger className="w-[160px] h-10">
+                        <SelectValue placeholder={t('common.all')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="">{t('common.all')}</SelectItem>
+                        <SelectItem value="internal">Our shop</SelectItem>
+                        <SelectItem value="optician">Optician</SelectItem>
+                    </SelectContent>
+                </Select>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-full sm:w-40 h-10">
+                        <SelectValue placeholder={t('common.all')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="">{t('common.all')}</SelectItem>
+                        <SelectItem value="pending">{t('common.pending')}</SelectItem>
+                        <SelectItem value="completed">{t('common.completed')}</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
 
             {loading && repairs.length === 0 ? (
@@ -122,7 +228,7 @@ export function RepairsPage() {
                     <table className="w-full">
                         <thead>
                             <tr className="bg-muted/30 border-b">
-                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('orders.client')}</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Source / Client</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('repairs.type')}</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('orders.status')}</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Due Date</th>
@@ -134,13 +240,40 @@ export function RepairsPage() {
                                 const days = getDaysRemaining(repair.expectedCompletionDate)
                                 const badge = getTurnaroundBadge(days)
                                 const BadgeIcon = badge.icon
+                                const isOptician = repair.source === 'optician'
                                 return (
                                     <tr key={repair.id} className="row-hover">
                                         <td className="py-3 px-4">
-                                            <p className="font-medium text-foreground">
-                                                {repair.order.client.name} {repair.order.client.familyName}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">#{repair.order.orderNumber}</p>
+                                            <div className="flex items-center gap-2">
+                                                {isOptician ? (
+                                                    <>
+                                                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 gap-1 shrink-0">
+                                                            <Store className="h-3 w-3" />
+                                                            Optician
+                                                        </Badge>
+                                                        <div className="min-w-0">
+                                                            <p className="font-medium text-foreground truncate">
+                                                                {repair.opticianShop?.name || 'Unknown shop'}
+                                                            </p>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 gap-1 shrink-0">
+                                                            <Wrench className="h-3 w-3" />
+                                                            Internal
+                                                        </Badge>
+                                                        <div className="min-w-0">
+                                                            <p className="font-medium text-foreground truncate">
+                                                                {repair.order?.client?.name} {repair.order?.client?.familyName}
+                                                            </p>
+                                                            {repair.order && (
+                                                                <p className="text-xs text-muted-foreground">#{repair.order.orderNumber}</p>
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="py-3 px-4 text-sm text-muted-foreground">
                                             {repair.repairService?.name || repair.type}
@@ -176,6 +309,23 @@ export function RepairsPage() {
                     </table>
                 </div>
             )}
+
+            <RepairCreateDialog
+                open={createOpen}
+                onOpenChange={setCreateOpen}
+                onSubmit={handleCreate}
+                saving={saving}
+                repairServices={repairServices}
+                formShopId={formShopId}
+                onFormShopIdChange={setFormShopId}
+                formServiceId={formServiceId}
+                onFormServiceIdChange={setFormServiceId}
+                formPrice={formPrice}
+                onFormPriceChange={setFormPrice}
+                formDate={formDate}
+                onFormDateChange={setFormDate}
+                opticianShops={shops}
+            />
         </div>
     )
 }

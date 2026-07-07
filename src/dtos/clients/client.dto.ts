@@ -4,6 +4,9 @@ export interface CreateClientInput {
     phone: string
     address?: string | null
     gender?: 'male' | 'female' | null
+    birthDate?: string | null
+    notes?: string | null
+    organization?: string | null
 }
 
 export interface UpdateClientInput {
@@ -12,6 +15,9 @@ export interface UpdateClientInput {
     phone?: string
     address?: string | null
     gender?: 'male' | 'female' | null
+    birthDate?: string | null
+    notes?: string | null
+    organization?: string | null
 }
 
 export interface ClientResponse {
@@ -21,5 +27,8 @@ export interface ClientResponse {
     phone: string
     address: string | null
     gender: string | null
+    birthDate: string | null
+    notes: string | null
+    organization: string | null
     createdAt: Date
 }

@@ -6,8 +6,12 @@ export function toBillingResponse(order: any): BillingResponse {
     return {
         id: order.id,
         orderNumber: order.orderNumber,
-        clientName: order.client?.name || '',
-        clientPhone: order.client?.phone || '',
+        client: {
+            name: order.client?.name || '',
+            familyName: order.client?.familyName || '',
+            phone: order.client?.phone || '',
+            address: order.client?.address || null,
+        },
         totalAmount: total.toString(),
         totalPaid: totalPaid.toString(),
         balance: (total - totalPaid).toFixed(3),
@@ -26,9 +30,9 @@ export function toBillingResponse(order: any): BillingResponse {
             type: p.type,
             createdAt: p.createdAt,
         })),
-        repairs: (order.repairs || []).map((r: any) => ({
+        repairs: (order.workOrders || []).map((r: any) => ({
             type: r.type,
-            price: r.price.toString(),
+            price: r.servicePrice.toString(),
         })),
         turnaroundDays: order.turnaroundDays,
         prescription: order.prescription

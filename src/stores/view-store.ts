@@ -21,7 +21,12 @@ export type ViewName =
   | 'settings'
   | 'doctors'
   | 'fournisseurs'
+  | 'optician-shops'
   | 'qrcode'
+  | 'import'
+  | 'purchase-invoices'
+  | 'lens-blanks'
+  | 'atelier-work-orders'
 
 interface ViewState {
   currentView: ViewName

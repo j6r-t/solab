@@ -1,10 +1,10 @@
 import { clientRepo } from '@/lib/database/repositories'
-import { Prisma } from '@prisma/client'
-import { ConflictError } from '@/errors'
+import { db } from '@/lib/database/db'
+import { ConflictError, NotFoundError } from '@/errors'
 import { auditService } from '@/modules/audit'
 
 export async function listClients(params?: { search?: string; gender?: string }) {
-    const where: Prisma.ClientWhereInput = {}
+    const where: Record<string, unknown> = {}
     if (params?.search) {
         where.OR = [
             { name: { contains: params.search } },
@@ -12,26 +12,32 @@ export async function listClients(params?: { search?: string; gender?: string })
             { phone: { contains: params.search } },
         ]
     }
-    if (params?.gender) {
-        where.gender = params.gender as 'male' | 'female'
-    }
+    if (params?.gender) where.gender = params.gender
     return clientRepo.findMany({ where, orderBy: { createdAt: 'desc' } })
 }
 
-export async function createClient(data: { name: string; familyName: string; phone: string; address?: string; gender?: 'male' | 'female' }) {
-    const existing = await clientRepo.findUnique({ where: { phone: data.phone } })
-    if (existing) {
-        throw new ConflictError('A client with this phone already exists')
-    }
-    const client = await clientRepo.create({ data: data as any })
-    await auditService.log({ action: 'CLIENT_CREATED', entityType: 'CLIENT', entityId: client.id, metadata: { name: data.name, phone: data.phone } })
+export async function getClientById(id: string) {
+    const client = await clientRepo.findUnique({ where: { id } })
+    if (!client) throw new NotFoundError('Client not found')
     return client
 }
 
-export async function updateClient(id: string, data: Partial<{ name: string; familyName: string; phone: string; address?: string; gender?: 'male' | 'female' }>) {
-    const result = await clientRepo.update({ where: { id }, data: data as any })
-    await auditService.log({ action: 'CLIENT_UPDATED', entityType: 'CLIENT', entityId: id })
-    return result
+export async function createClient(data: Record<string, unknown>) {
+    const existing = await clientRepo.findUnique({ where: { phone: data.phone as string } })
+    if (existing) throw new ConflictError('A client with this phone number already exists')
+    const client = await clientRepo.create({ data: data as any })
+    await auditService.log({ action: 'CLIENT_CREATED', entityType: 'CLIENT', entityId: client.id, metadata: data as any })
+    return client
+}
+
+export async function updateClient(id: string, data: Record<string, unknown>) {
+    if (data.phone) {
+        const duplicate = await db.client.findFirst({ where: { phone: data.phone as string, NOT: { id } } })
+        if (duplicate) throw new ConflictError('A client with this phone number already exists')
+    }
+    const client = await clientRepo.update({ where: { id }, data: data as any })
+    await auditService.log({ action: 'CLIENT_UPDATED', entityType: 'CLIENT', entityId: id, metadata: data as any })
+    return client
 }
 
 export async function deleteClient(id: string) {

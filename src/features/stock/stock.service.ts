@@ -10,6 +10,15 @@ interface StockQuery {
     stockStatus?: string
     brand?: string
     lensType?: string
+    material?: string
+    coating?: string
+    thickness?: string
+    sphFrom?: string
+    sphTo?: string
+    cylFrom?: string
+    cylTo?: string
+    addFrom?: string
+    addTo?: string
 }
 
 export async function listProducts(params?: StockQuery) {
@@ -41,6 +50,42 @@ export async function listProducts(params?: StockQuery) {
 
     if (params?.lensType) {
         where.lensType = params.lensType as any
+    }
+
+    if (params?.material) {
+        where.material = params.material as any
+    }
+
+    if (params?.coating) {
+        where.coating = params.coating as any
+    }
+
+    if (params?.thickness) {
+        where.thickness = { contains: params.thickness }
+    }
+
+    const sphGte = params?.sphFrom ? parseFloat(params.sphFrom) : NaN
+    const sphLte = params?.sphTo ? parseFloat(params.sphTo) : NaN
+    if (!isNaN(sphGte) || !isNaN(sphLte)) {
+        where.sph = {}
+        if (!isNaN(sphGte)) (where.sph as any).gte = sphGte
+        if (!isNaN(sphLte)) (where.sph as any).lte = sphLte
+    }
+
+    const cylGte = params?.cylFrom ? parseFloat(params.cylFrom) : NaN
+    const cylLte = params?.cylTo ? parseFloat(params.cylTo) : NaN
+    if (!isNaN(cylGte) || !isNaN(cylLte)) {
+        where.cyl = {}
+        if (!isNaN(cylGte)) (where.cyl as any).gte = cylGte
+        if (!isNaN(cylLte)) (where.cyl as any).lte = cylLte
+    }
+
+    const addGte = params?.addFrom ? parseFloat(params.addFrom) : NaN
+    const addLte = params?.addTo ? parseFloat(params.addTo) : NaN
+    if (!isNaN(addGte) || !isNaN(addLte)) {
+        where.add = {}
+        if (!isNaN(addGte)) (where.add as any).gte = addGte
+        if (!isNaN(addLte)) (where.add as any).lte = addLte
     }
 
     if (params?.stockStatus === 'outOfStock') {

@@ -7,6 +7,9 @@ export interface CreateOrderItemInput {
 export interface CreateOrderPaymentInput {
     amount: number
     type: 'deposit' | 'balance' | 'full'
+    method?: 'cash' | 'cheque' | 'traite' | 'card' | 'transfer'
+    chequeId?: string
+    dueDate?: string
 }
 
 export interface CreateOrderRepairInput {
@@ -31,7 +34,13 @@ export interface UpdateOrderStatusInput {
 }
 
 export interface AddOrderPaymentsInput {
-    payments: { amount: number; type: string }[]
+    payments: {
+        amount: number
+        type: string
+        method?: 'cash' | 'cheque' | 'traite' | 'card' | 'transfer'
+        chequeId?: string
+        dueDate?: string
+    }[]
 }
 
 export interface OrderListItemDto {
@@ -92,6 +101,7 @@ export interface OrderDetailDto {
     clientId: string
     totalAmount: string
     totalPaid: string
+    paymentStatus: 'unpaid' | 'partiallyPaid' | 'fullyPaid'
     orderType: string
     status: string
     createdAt: Date
