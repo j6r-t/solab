@@ -14,6 +14,7 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { WorkOrderDetailDialog } from './WorkOrderDetailDialog'
+import { NewWorkOrderDialog } from './NewWorkOrderDialog'
 
 interface WorkOrder {
     id: string
@@ -56,6 +57,7 @@ export function AtelierWorkOrdersPage() {
     const [typeFilter, setTypeFilter] = useState('')
     const [selectedWO, setSelectedWO] = useState<WorkOrder | null>(null)
     const [detailOpen, setDetailOpen] = useState(false)
+    const [newWOOpen, setNewWOOpen] = useState(false)
 
     useEffect(() => {
         const timer = setTimeout(() => setDebouncedSearch(search), 300)
@@ -89,7 +91,7 @@ export function AtelierWorkOrdersPage() {
                     <h1 className="text-[22px] font-medium">Atelier Work Orders</h1>
                     <p className="text-sm text-muted-foreground mt-1">Manage mounting and repair jobs from shop and opticians</p>
                 </div>
-                <Button onClick={() => {}}>
+                <Button onClick={() => setNewWOOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     New Work Order
                 </Button>
@@ -217,6 +219,12 @@ export function AtelierWorkOrdersPage() {
                 open={detailOpen}
                 onOpenChange={(open) => { if (!open) setSelectedWO(null); setDetailOpen(open) }}
                 onUpdated={load}
+            />
+
+            <NewWorkOrderDialog
+                open={newWOOpen}
+                onOpenChange={setNewWOOpen}
+                onCreated={load}
             />
         </div>
     )

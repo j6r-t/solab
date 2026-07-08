@@ -186,7 +186,7 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                         </div>
                     </div>
 
-                    {isMounting && (
+                    {(isMounting || workOrder.type === 'repair') && (
                         <div className="space-y-3 p-4 bg-muted/20 rounded-lg border">
                             <h3 className="text-sm font-medium">Lens Blanks</h3>
                             {!hasLensBlanks ? (
@@ -232,6 +232,7 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                                                     <SelectItem value="shop">Shop</SelectItem>
                                                     <SelectItem value="optician">Optician</SelectItem>
                                                     <SelectItem value="client">Client</SelectItem>
+                                                    <SelectItem value="external">External Service</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -254,7 +255,7 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                         </div>
                     )}
 
-                    {workOrder.lensBlankLeft && !isMounting && (
+                    {workOrder.lensBlankLeft && (
                         <div className="space-y-1 text-sm">
                             <p className="text-muted-foreground text-xs">Assigned Lens Blanks</p>
                             <p>Left: {workOrder.lensBlankLeft.brand} ({workOrder.lensBlankLeft.thickness})</p>

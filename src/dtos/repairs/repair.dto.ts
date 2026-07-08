@@ -4,6 +4,10 @@ export interface CreateRepairInput {
     servicePrice: number
     expectedCompletionDate: string
     repairServiceId?: string
+    lensBlankLeftId?: string
+    lensBlankRightId?: string
+    lensBlankPrice?: number
+    frameFrom?: 'shop' | 'optician' | 'client' | 'external'
 }
 
 export interface UpdateRepairInput {

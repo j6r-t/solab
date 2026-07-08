@@ -57,8 +57,12 @@ export async function createRepair(data: {
     servicePrice: number
     expectedCompletionDate: string
     repairServiceId?: string
+    lensBlankLeftId?: string
+    lensBlankRightId?: string
+    lensBlankPrice?: number
+    frameFrom?: string
 }) {
-    const { opticianShopId, type, servicePrice, expectedCompletionDate, repairServiceId } = data
+    const { opticianShopId, type, servicePrice, expectedCompletionDate, repairServiceId, lensBlankLeftId, lensBlankRightId, lensBlankPrice, frameFrom } = data
     if (!opticianShopId) throw new BadRequestError('Optician shop is required')
 
     const shop = await opticianShopRepo.findUnique({ where: { id: opticianShopId } })
@@ -74,6 +78,10 @@ export async function createRepair(data: {
             dueDate: new Date(expectedCompletionDate || Date.now()),
             expectedCompletionDate: new Date(expectedCompletionDate || Date.now()),
             repairServiceId: repairServiceId || null,
+            lensBlankLeftId: lensBlankLeftId || null,
+            lensBlankRightId: lensBlankRightId || null,
+            lensBlankPrice: lensBlankPrice || null,
+            frameFrom: frameFrom || null,
         },
         include: { ...WORK_ORDER_INCLUDE },
     })

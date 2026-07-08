@@ -272,13 +272,16 @@ model Order {
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
-  quantity  Int
-  unitPrice Decimal
+  id           String     @id @default(cuid())
+  orderId      String
+  order        Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String?
+  product      Product?   @relation(fields: [productId], references: [id], onDelete: Restrict)
+  lensBlankId  String?
+  lensBlank    LensBlank? @relation(fields: [lensBlankId], references: [id], onDelete: Restrict)
+  name         String?
+  quantity     Int
+  unitPrice    Decimal
 }
 
 model Payment {
@@ -388,6 +391,7 @@ model LensBlank {
   fournisseur   Fournisseur?           @relation(fields: [fournisseurId], references: [id])
   adjustments   LensBlankAdjustment[]
   invoiceItems  PurchaseInvoiceItem[]
+  orderItems    OrderItem[]
   workOrdersLeft      AtelierWorkOrder[]  @relation("lensBlankLeft")
   workOrdersRight     AtelierWorkOrder[]  @relation("lensBlankRight")
   replacementLeftFor  AtelierWorkOrder[]  @relation("replacementLeft")

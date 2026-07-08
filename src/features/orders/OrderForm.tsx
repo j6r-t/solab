@@ -25,7 +25,8 @@ import { useAuthStore } from '@/stores/auth-store'
 import { Html5Qrcode } from 'html5-qrcode'
 
 export interface OrderItemInput {
-    productId: string
+    productId?: string
+    lensBlankId?: string
     quantity: number
     unitPrice: number
     name?: string
@@ -78,6 +79,10 @@ interface PrescriptionOption {
     doctor: { name: string } | null
     createdAt: string
     client: { name: string; familyName: string }
+    sphRight: string
+    cylRight: string
+    sphLeft: string
+    cylLeft: string
 }
 
 interface RepairService {
@@ -337,11 +342,11 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
         const isShop = user?.role === 'shop'
         const price = isShop ? Number(blank.costPrice) || 0 : Number(blank.sellingPrice) || 0
         const displayName = `${blank.brand} ${blank.lensType} ${blank.material} ${blank.thickness}`
-        const existingIndex = items.findIndex((item) => item.productId === blank.id)
+        const existingIndex = items.findIndex((item) => item.lensBlankId === blank.id)
         if (existingIndex >= 0) {
             updateItem(existingIndex, 'quantity', items[existingIndex].quantity + 1)
         } else {
-            setItems((prev) => [...prev, { productId: blank.id, quantity: 1, unitPrice: price, name: displayName }])
+            setItems((prev) => [...prev, { lensBlankId: blank.id, quantity: 1, unitPrice: price, name: displayName }])
         }
         toast.success(`${blank.brand} added to order`)
     }

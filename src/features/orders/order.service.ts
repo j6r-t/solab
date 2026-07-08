@@ -1,4 +1,4 @@
-import { orderRepo, clientRepo, productRepo, paymentRepo, stockAdjustmentRepo } from '@/lib/database/repositories'
+import { orderRepo, clientRepo, productRepo, paymentRepo, stockAdjustmentRepo, lensBlankRepo } from '@/lib/database/repositories'
 import { db } from '@/lib/database/db'
 import { Prisma } from '@prisma/client'
 import { BadRequestError, NotFoundError } from '@/errors'
@@ -28,7 +28,12 @@ export async function listOrders(params?: { status?: string; search?: string; cl
         where,
         include: {
             client: { select: { id: true, name: true, familyName: true, phone: true } },
-            items: { include: { product: { select: { name: true, brand: true } } } },
+            items: {
+                include: {
+                    product: { select: { name: true, brand: true } },
+                    lensBlank: { select: { id: true, brand: true, lensType: true } },
+                },
+            },
             payments: true,
             workOrders: { include: { repairService: true } },
             prescription: true,
@@ -45,6 +50,7 @@ export async function getOrderById(id: string) {
             items: {
                 include: {
                     product: { select: { id: true, name: true, brand: true, model: true, category: true } },
+                    lensBlank: { select: { id: true, brand: true, lensType: true, material: true, thickness: true, sellingPrice: true } },
                 },
             },
             payments: { orderBy: { createdAt: 'asc' } },
@@ -59,7 +65,7 @@ export async function getOrderById(id: string) {
 export async function createOrder(data: {
     clientId: string
     orderType?: string
-    items?: { productId: string; quantity: number; unitPrice?: number }[]
+    items?: { productId?: string; lensBlankId?: string; name?: string; quantity: number; unitPrice?: number }[]
     payments?: { amount: number; type: string; method?: string; chequeId?: string; dueDate?: string }[]
     repairs?: { type: string; price: number; expectedCompletionDate?: string; repairServiceId?: string }[]
     prescriptionId?: string
@@ -73,18 +79,34 @@ export async function createOrder(data: {
     if (!client) throw new NotFoundError('Client not found')
 
     let totalAmount = 0
-    const orderItemsData: { productId: string; quantity: number; unitPrice: number }[] = []
+    const orderItemsData: { productId?: string; lensBlankId?: string; name?: string; quantity: number; unitPrice: number }[] = []
 
     if (items && items.length > 0) {
         for (const item of items) {
-            const product = await productRepo.findUnique({ where: { id: item.productId } })
-            if (!product) throw new NotFoundError(`Product ${item.productId} not found`)
-            if (product.quantity < item.quantity) {
-                throw new BadRequestError(`Insufficient stock for ${product.name}`)
+            if (item.lensBlankId) {
+                const blank = await lensBlankRepo.findUnique({ where: { id: item.lensBlankId } })
+                if (!blank) throw new NotFoundError(`Lens blank ${item.lensBlankId} not found`)
+                if (blank.quantity < item.quantity) {
+                    throw new BadRequestError(`Insufficient stock for ${blank.brand} ${blank.lensType}`)
+                }
+                const price = item.unitPrice || parseFloat(blank.sellingPrice.toString())
+                totalAmount += price * item.quantity
+                orderItemsData.push({
+                    lensBlankId: item.lensBlankId,
+                    name: item.name || `${blank.brand} ${blank.lensType} ${blank.material} ${blank.thickness}`,
+                    quantity: item.quantity,
+                    unitPrice: price,
+                })
+            } else if (item.productId) {
+                const product = await productRepo.findUnique({ where: { id: item.productId } })
+                if (!product) throw new NotFoundError(`Product ${item.productId} not found`)
+                if (product.quantity < item.quantity) {
+                    throw new BadRequestError(`Insufficient stock for ${product.name}`)
+                }
+                const price = item.unitPrice || parseFloat(product.price.toString())
+                totalAmount += price * item.quantity
+                orderItemsData.push({ productId: item.productId, quantity: item.quantity, unitPrice: price })
             }
-            const price = item.unitPrice || parseFloat(product.price.toString())
-            totalAmount += price * item.quantity
-            orderItemsData.push({ productId: item.productId, quantity: item.quantity, unitPrice: price })
         }
     }
 
@@ -135,7 +157,12 @@ export async function createOrder(data: {
         },
         include: {
             client: { select: { id: true, name: true, familyName: true, phone: true } },
-            items: { include: { product: { select: { name: true, brand: true } } } },
+            items: {
+                include: {
+                    product: { select: { name: true, brand: true } },
+                    lensBlank: { select: { id: true, brand: true, lensType: true, material: true, thickness: true } },
+                },
+            },
             payments: true,
             workOrders: { include: { repairService: true } },
             prescription: true,
@@ -144,13 +171,20 @@ export async function createOrder(data: {
 
     if (items && items.length > 0) {
         for (const item of items) {
-            await productRepo.update({
-                where: { id: item.productId },
-                data: { quantity: { decrement: item.quantity } },
-            })
-            await stockAdjustmentRepo.create({
-                data: { productId: item.productId, quantity: -item.quantity, reason: 'sale' },
-            })
+            if (item.lensBlankId) {
+                await lensBlankRepo.update({
+                    where: { id: item.lensBlankId },
+                    data: { quantity: { decrement: item.quantity } },
+                })
+            } else if (item.productId) {
+                await productRepo.update({
+                    where: { id: item.productId },
+                    data: { quantity: { decrement: item.quantity } },
+                })
+                await stockAdjustmentRepo.create({
+                    data: { productId: item.productId, quantity: -item.quantity, reason: 'sale' },
+                })
+            }
         }
     }
 
@@ -173,10 +207,17 @@ export async function updateOrderStatus(id: string, status: string) {
         const order: any = await orderRepo.findUnique({ where: { id }, include: { items: true } })
         if (!order) throw new NotFoundError('Order not found')
         for (const item of order.items) {
-            await productRepo.update({
-                where: { id: item.productId },
-                data: { quantity: { increment: item.quantity } },
-            })
+            if (item.lensBlankId) {
+                await lensBlankRepo.update({
+                    where: { id: item.lensBlankId },
+                    data: { quantity: { increment: item.quantity } },
+                })
+            } else if (item.productId) {
+                await productRepo.update({
+                    where: { id: item.productId },
+                    data: { quantity: { increment: item.quantity } },
+                })
+            }
         }
         const result = await orderRepo.update({ where: { id }, data: { status: 'cancelled' } })
         await auditService.log({ action: 'ORDER_CANCELLED', entityType: 'ORDER', entityId: id })
@@ -219,10 +260,17 @@ export async function deleteOrder(id: string) {
     if (!order) throw new NotFoundError('Order not found')
 
     for (const item of order.items) {
-        await productRepo.update({
-            where: { id: item.productId },
-            data: { quantity: { increment: item.quantity } },
-        })
+        if (item.lensBlankId) {
+            await lensBlankRepo.update({
+                where: { id: item.lensBlankId },
+                data: { quantity: { increment: item.quantity } },
+            })
+        } else if (item.productId) {
+            await productRepo.update({
+                where: { id: item.productId },
+                data: { quantity: { increment: item.quantity } },
+            })
+        }
     }
 
     await orderRepo.delete({ where: { id } })
