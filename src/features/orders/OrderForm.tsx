@@ -297,11 +297,12 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
         } else {
             setSelectedServiceIds((prev) => [...prev, service.id])
             const date = expectedCompletionDate || new Date().toISOString().split('T')[0]
+            const isShop = user?.role === 'shop'
             setRepairs((prev) => [
                 ...prev,
                 {
                     type: service.name,
-                    price: parseFloat(service.defaultPrice),
+                    price: isShop ? 0 : parseFloat(service.defaultPrice),
                     expectedCompletionDate: date,
                     repairServiceId: service.id,
                 },
@@ -692,7 +693,11 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                                         <label htmlFor={`service-${service.id}`} className="flex-1 flex items-center gap-2 text-sm cursor-pointer">
                                             <Wrench className="h-4 w-4 text-muted-foreground shrink-0" />
                                             <span className="font-medium">{service.name}</span>
-                                            <span className="text-muted-foreground">({parseFloat(service.defaultPrice).toFixed(3)} TND)</span>
+                                            {user?.role === 'shop' ? (
+                                                <span className="text-muted-foreground italic">{t('common.free')}</span>
+                                            ) : (
+                                                <span className="text-muted-foreground">({parseFloat(service.defaultPrice).toFixed(3)} TND)</span>
+                                            )}
                                         </label>
                                         {checked && (
                                             <Input
