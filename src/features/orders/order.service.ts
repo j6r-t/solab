@@ -120,13 +120,15 @@ export async function createOrder(data: {
     }
     totalAmount += repairTotal
 
+    const isFullPayment = orderType === 'direct_sale' || payments?.some((p) => p.type === 'full')
+
     const order = await orderRepo.create({
         data: {
             orderNumber,
             clientId,
             totalAmount,
             orderType: (orderType || 'standard') as any,
-            status: orderType === 'direct_sale' ? 'completed' : 'pending',
+            status: isFullPayment ? 'completed' : 'pending',
             prescriptionId: prescriptionId || null,
             turnaroundDays: turnaroundDays || null,
             items: orderItemsData.length > 0 ? { create: orderItemsData } : undefined,
