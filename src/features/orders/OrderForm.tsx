@@ -21,12 +21,14 @@ import { fetchStockProducts } from '@/features/stock/stock.api'
 import { fetchRepairServices } from '@/features/settings/settings.api'
 import { fetchPrescriptions, createPrescription } from '@/features/prescriptions/prescriptions.api'
 import { lookupQRCode } from '@/features/qrcode/qrcode.api'
+import { useAuthStore } from '@/stores/auth-store'
 import { Html5Qrcode } from 'html5-qrcode'
 
 export interface OrderItemInput {
     productId: string
     quantity: number
     unitPrice: number
+    name?: string
 }
 
 export interface OrderPaymentInput {
@@ -94,6 +96,7 @@ interface OrderFormProps {
 
 export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalSaving, forcedOrderType }: OrderFormProps) {
     const { t } = useTranslation()
+    const user = useAuthStore((s) => s.user)
     const today = new Date().toISOString().split('T')[0]
     const [clients, setClients] = useState<Client[]>([])
     const [clientSearch, setClientSearch] = useState('')
@@ -330,11 +333,14 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
     }
 
     function addLensBlankAsItem(blank: any) {
+        const isShop = user?.role === 'shop'
+        const price = isShop ? Number(blank.costPrice) || 0 : Number(blank.sellingPrice) || 0
+        const displayName = `${blank.brand} ${blank.lensType} ${blank.material} ${blank.thickness}`
         const existingIndex = items.findIndex((item) => item.productId === blank.id)
         if (existingIndex >= 0) {
             updateItem(existingIndex, 'quantity', items[existingIndex].quantity + 1)
         } else {
-            setItems((prev) => [...prev, { productId: blank.id, quantity: 1, unitPrice: Number(blank.sellingPrice) || 0 }])
+            setItems((prev) => [...prev, { productId: blank.id, quantity: 1, unitPrice: price, name: displayName }])
         }
         toast.success(`${blank.brand} added to order`)
     }
@@ -630,10 +636,11 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                         <div className="space-y-1.5">
                             {items.map((item, i) => {
                                 const product = products.find((p) => p.id === item.productId)
+                                const displayName = item.name || product?.name || item.productId
                                 return (
                                     <div key={i} className="flex items-center gap-2 p-2.5 bg-muted/30 rounded-lg border">
                                         <Package className="h-4 w-4 shrink-0 text-muted-foreground" />
-                                        <span className="flex-1 text-sm font-medium truncate">{product?.name || item.productId}</span>
+                                        <span className="flex-1 text-sm font-medium truncate">{displayName}</span>
                                         <Input
                                             type="number"
                                             min={1}
