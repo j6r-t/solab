@@ -637,6 +637,7 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                             {items.map((item, i) => {
                                 const product = products.find((p) => p.id === item.productId)
                                 const displayName = item.name || product?.name || item.productId
+                                const isShop = user?.role === 'shop'
                                 return (
                                     <div key={i} className="flex items-center gap-2 p-2.5 bg-muted/30 rounded-lg border">
                                         <Package className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -648,16 +649,19 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                                             onChange={(e) => updateItem(i, 'quantity', parseInt(e.target.value) || 1)}
                                             className="w-14 h-7 text-xs"
                                         />
-                                        {item.name && user?.role === 'shop' ? (
-                                            <span className="w-22 text-xs text-right text-muted-foreground">{item.unitPrice.toFixed(3)}</span>
+                                        {isShop ? (
+                                            <span className="text-sm font-medium whitespace-nowrap w-22 text-right">{item.unitPrice.toFixed(3)} TND</span>
                                         ) : (
-                                            <Input
-                                                type="number"
-                                                step="0.001"
-                                                value={item.unitPrice}
-                                                onChange={(e) => updateItem(i, 'unitPrice', parseFloat(e.target.value) || 0)}
-                                                className="w-22 h-7 text-xs"
-                                            />
+                                            <div className="flex items-center gap-1">
+                                                <Input
+                                                    type="number"
+                                                    step="0.001"
+                                                    value={item.unitPrice}
+                                                    onChange={(e) => updateItem(i, 'unitPrice', parseFloat(e.target.value) || 0)}
+                                                    className="w-20 h-7 text-xs"
+                                                />
+                                                <span className="text-xs text-muted-foreground">TND</span>
+                                            </div>
                                         )}
                                         <Button type="button" variant="ghost" size="icon" onClick={() => removeItem(i)} className="h-7 w-7 shrink-0">
                                             <Trash2 className="h-3 w-3 text-destructive" />
