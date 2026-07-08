@@ -648,13 +648,17 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                                             onChange={(e) => updateItem(i, 'quantity', parseInt(e.target.value) || 1)}
                                             className="w-14 h-7 text-xs"
                                         />
-                                        <Input
-                                            type="number"
-                                            step="0.001"
-                                            value={item.unitPrice}
-                                            onChange={(e) => updateItem(i, 'unitPrice', parseFloat(e.target.value) || 0)}
-                                            className="w-22 h-7 text-xs"
-                                        />
+                                        {item.name && user?.role === 'shop' ? (
+                                            <span className="w-22 text-xs text-right text-muted-foreground">{item.unitPrice.toFixed(3)}</span>
+                                        ) : (
+                                            <Input
+                                                type="number"
+                                                step="0.001"
+                                                value={item.unitPrice}
+                                                onChange={(e) => updateItem(i, 'unitPrice', parseFloat(e.target.value) || 0)}
+                                                className="w-22 h-7 text-xs"
+                                            />
+                                        )}
                                         <Button type="button" variant="ghost" size="icon" onClick={() => removeItem(i)} className="h-7 w-7 shrink-0">
                                             <Trash2 className="h-3 w-3 text-destructive" />
                                         </Button>
