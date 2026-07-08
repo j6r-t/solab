@@ -171,18 +171,19 @@ export async function createOrder(data: {
 
     if (items && items.length > 0) {
         for (const item of items) {
+            const qty = item.quantity || 1
             if (item.lensBlankId) {
                 await lensBlankRepo.update({
                     where: { id: item.lensBlankId },
-                    data: { quantity: { decrement: item.quantity } },
+                    data: { quantity: { decrement: qty } },
                 })
             } else if (item.productId) {
                 await productRepo.update({
                     where: { id: item.productId },
-                    data: { quantity: { decrement: item.quantity } },
+                    data: { quantity: { decrement: qty } },
                 })
                 await stockAdjustmentRepo.create({
-                    data: { productId: item.productId, quantity: -item.quantity, reason: 'sale' },
+                    data: { productId: item.productId, quantity: -qty, reason: 'sale' },
                 })
             }
         }

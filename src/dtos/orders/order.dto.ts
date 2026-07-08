@@ -1,5 +1,7 @@
 export interface CreateOrderItemInput {
-    productId: string
+    productId?: string
+    lensBlankId?: string
+    name?: string
     quantity: number
     unitPrice?: number
 }
@@ -58,10 +60,13 @@ export interface OrderListItemDto {
 
 export interface OrderDetailItemDto {
     id: string
-    productId: string
+    productId: string | null
+    lensBlankId: string | null
+    name: string | null
     quantity: number
     unitPrice: string
-    product: { id: string; name: string; brand: string; model: string; category: string }
+    product: { id: string; name: string; brand: string; model: string; category: string } | null
+    lensBlank: { id: string; brand: string; lensType: string; material: string; thickness: string } | null
 }
 
 export interface OrderDetailPaymentDto {

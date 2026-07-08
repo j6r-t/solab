@@ -33,10 +33,13 @@ export function toOrderDetail(order: any): OrderDetailDto {
         client: order.client,
         items: (order.items || []).map((i: any) => ({
             id: i.id,
-            productId: i.productId,
+            productId: i.productId || null,
+            lensBlankId: i.lensBlankId || null,
+            name: i.name || null,
             quantity: i.quantity,
             unitPrice: i.unitPrice.toString(),
-            product: i.product,
+            product: i.product || null,
+            lensBlank: i.lensBlank || null,
         })),
         payments: (order.payments || []).map((p: any) => ({
             id: p.id,
