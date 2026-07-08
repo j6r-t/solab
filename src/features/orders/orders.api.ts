@@ -4,10 +4,13 @@ import { api } from '@/lib/api/client'
 
 interface OrderItem {
     id: string
-    productId: string
+    productId: string | null
+    lensBlankId: string | null
+    name: string | null
     quantity: number
     unitPrice: string
-    product: { name: string; brand: string }
+    product: { name: string; brand: string } | null
+    lensBlank: { id: string; brand: string; lensType: string; material: string; thickness: string; sellingPrice: string } | null
 }
 
 interface Payment {
