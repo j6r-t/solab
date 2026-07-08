@@ -1,8 +1,15 @@
 import type { OrderListItemDto, OrderDetailDto } from '@/dtos/orders/order.dto'
 
+function toStr(val: any): string {
+    if (val == null) return '0'
+    if (typeof val === 'string') return val
+    if (typeof val === 'number') return val.toString()
+    return String(val)
+}
+
 export function toOrderListItem(order: any): OrderListItemDto {
-    const totalPaid = order.payments?.reduce((s: number, p: any) => s + parseFloat(p.amount.toString()), 0) || 0
-    const total = parseFloat(order.totalAmount.toString())
+    const totalPaid = order.payments?.reduce((s: number, p: any) => s + parseFloat(toStr(p.amount)), 0) || 0
+    const total = parseFloat(toStr(order.totalAmount))
     return {
         id: order.id,
         orderNumber: order.orderNumber,
@@ -18,8 +25,8 @@ export function toOrderListItem(order: any): OrderListItemDto {
 }
 
 export function toOrderDetail(order: any): OrderDetailDto {
-    const totalPaid = order.payments?.reduce((s: number, p: any) => s + parseFloat(p.amount.toString()), 0) || 0
-    const total = parseFloat(order.totalAmount.toString())
+    const totalPaid = order.payments?.reduce((s: number, p: any) => s + parseFloat(toStr(p.amount)), 0) || 0
+    const total = parseFloat(toStr(order.totalAmount))
     return {
         id: order.id,
         orderNumber: order.orderNumber,
@@ -37,20 +44,20 @@ export function toOrderDetail(order: any): OrderDetailDto {
             lensBlankId: i.lensBlankId || null,
             name: i.name || null,
             quantity: i.quantity,
-            unitPrice: i.unitPrice.toString(),
+            unitPrice: toStr(i.unitPrice),
             product: i.product || null,
             lensBlank: i.lensBlank || null,
         })),
         payments: (order.payments || []).map((p: any) => ({
             id: p.id,
-            amount: p.amount.toString(),
+            amount: toStr(p.amount),
             type: p.type,
             createdAt: p.createdAt,
         })),
         repairs: (order.workOrders || []).map((r: any) => ({
             id: r.id,
             type: r.type,
-            price: r.price.toString(),
+            price: toStr(r.price),
             status: r.status,
             expectedCompletionDate: r.expectedCompletionDate,
             repairService: r.repairService || null,
@@ -58,15 +65,15 @@ export function toOrderDetail(order: any): OrderDetailDto {
         prescription: order.prescription
             ? {
                 id: order.prescription.id,
-                sphRight: order.prescription.sphRight.toString(),
-                cylRight: order.prescription.cylRight.toString(),
+                sphRight: toStr(order.prescription.sphRight),
+                cylRight: toStr(order.prescription.cylRight),
                 axisRight: order.prescription.axisRight,
-                addRight: order.prescription.addRight.toString(),
+                addRight: toStr(order.prescription.addRight),
                 pdRight: order.prescription.pdRight,
-                sphLeft: order.prescription.sphLeft.toString(),
-                cylLeft: order.prescription.cylLeft.toString(),
+                sphLeft: toStr(order.prescription.sphLeft),
+                cylLeft: toStr(order.prescription.cylLeft),
                 axisLeft: order.prescription.axisLeft,
-                addLeft: order.prescription.addLeft.toString(),
+                addLeft: toStr(order.prescription.addLeft),
                 pdLeft: order.prescription.pdLeft,
                 doctor: order.prescription.doctor || null,
             }
