@@ -14,7 +14,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
-import { Trash2, Plus, Package, Wrench, QrCode, Camera, Loader2, X } from 'lucide-react'
+import { Trash2, Plus, Package, Wrench, QrCode, Camera, Loader2, X, Eye, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { fetchClients } from '@/features/clients/client.api'
 import { fetchStockProducts } from '@/features/stock/stock.api'
@@ -126,6 +126,12 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
     const qrReaderId = 'qr-reader-scanner'
     const html5QrRef = useRef<unknown>(null)
     const mountedRef = useRef(false)
+    const [lensBlanks, setLensBlanks] = useState<any[]>([])
+    const [lensBlankLoading, setLensBlankLoading] = useState(false)
+    const [lbFilterThickness, setLbFilterThickness] = useState('')
+    const [lbFilterLensType, setLbFilterLensType] = useState('')
+    const [lbFilterMaterial, setLbFilterMaterial] = useState('')
+    const [lbFilterCoating, setLbFilterCoating] = useState('')
 
     useEffect(() => {
         mountedRef.current = true
@@ -228,6 +234,33 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
         if (forcedOrderType) setOrderType(forcedOrderType)
     }, [forcedOrderType])
 
+    useEffect(() => {
+        if (!selectedPrescriptionId || !prescriptions.length) {
+            setLensBlanks([])
+            return
+        }
+        const rx = prescriptions.find((p) => p.id === selectedPrescriptionId)
+        if (!rx) { setLensBlanks([]); return }
+
+        setLensBlankLoading(true)
+        const params: Record<string, string> = {}
+        if (rx.sphRight && rx.sphRight !== '0') params.sphRight = rx.sphRight
+        if (rx.cylRight && rx.cylRight !== '0') params.cylRight = rx.cylRight
+        if (rx.sphLeft && rx.sphLeft !== '0') params.sphLeft = rx.sphLeft
+        if (rx.cylLeft && rx.cylLeft !== '0') params.cylLeft = rx.cylLeft
+        if (lbFilterThickness) params.thickness = lbFilterThickness
+        if (lbFilterLensType) params.lensType = lbFilterLensType
+        if (lbFilterMaterial) params.material = lbFilterMaterial
+        if (lbFilterCoating) params.coating = lbFilterCoating
+
+        const qs = new URLSearchParams(params).toString()
+        fetch(`/api/lens-blanks?${qs}`)
+            .then((r) => r.json())
+            .then((data) => { if (mountedRef.current) setLensBlanks(data || []) })
+            .catch(() => { if (mountedRef.current) setLensBlanks([]) })
+            .finally(() => { if (mountedRef.current) setLensBlankLoading(false) })
+    }, [selectedPrescriptionId, prescriptions, lbFilterThickness, lbFilterLensType, lbFilterMaterial, lbFilterCoating])
+
     function addItem(product: Product) {
         setItems((prev) => [...prev, { productId: product.id, quantity: 1, unitPrice: Number(product.price) || 0 }])
     }
@@ -295,6 +328,19 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
     function updateServiceRepairDate(serviceId: string, date: string) {
         setRepairs((prev) => prev.map((r) => (r.repairServiceId === serviceId ? { ...r, expectedCompletionDate: date } : r)))
     }
+
+    function addLensBlankAsItem(blank: any) {
+        const existingIndex = items.findIndex((item) => item.productId === blank.id)
+        if (existingIndex >= 0) {
+            updateItem(existingIndex, 'quantity', items[existingIndex].quantity + 1)
+        } else {
+            setItems((prev) => [...prev, { productId: blank.id, quantity: 1, unitPrice: Number(blank.sellingPrice) || 0 }])
+        }
+        toast.success(`${blank.brand} added to order`)
+    }
+
+    const selectedRx = prescriptions.find((p) => p.id === selectedPrescriptionId)
+    const showLensBlankPicker = (orderType === 'standard' || orderType === 'remounting') && selectedPrescriptionId && selectedRx
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
@@ -455,6 +501,93 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                             )}
                         </div>
                     )}
+                </div>
+            )}
+
+            {showLensBlankPicker && (
+                <div className="space-y-3">
+                    <Label className="flex items-center gap-2">
+                        <Eye className="h-4 w-4" />
+                        {t('orders.lensBlanks')}
+                    </Label>
+                    <div className="rounded-lg border bg-muted/20 p-3 space-y-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">{t('stock.thickness')}</Label>
+                                <select value={lbFilterThickness} onChange={(e) => setLbFilterThickness(e.target.value)} className="w-full h-8 rounded-md border bg-background px-2 text-xs">
+                                    <option value="">{t('common.all')}</option>
+                                    {[...new Set(lensBlanks.map((b: any) => b.thickness).filter(Boolean))].map((th) => (
+                                        <option key={th} value={th}>{th}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">{t('stock.lensType')}</Label>
+                                <select value={lbFilterLensType} onChange={(e) => setLbFilterLensType(e.target.value)} className="w-full h-8 rounded-md border bg-background px-2 text-xs">
+                                    <option value="">{t('common.all')}</option>
+                                    {[...new Set(lensBlanks.map((b: any) => b.lensType).filter(Boolean))].map((lt) => (
+                                        <option key={lt} value={lt}>{t(`stock.${lt}`)}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">{t('stock.material')}</Label>
+                                <select value={lbFilterMaterial} onChange={(e) => setLbFilterMaterial(e.target.value)} className="w-full h-8 rounded-md border bg-background px-2 text-xs">
+                                    <option value="">{t('common.all')}</option>
+                                    {[...new Set(lensBlanks.map((b: any) => b.material).filter(Boolean))].map((m) => (
+                                        <option key={m} value={m}>{t(`stock.${m}`)}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">{t('stock.coating')}</Label>
+                                <select value={lbFilterCoating} onChange={(e) => setLbFilterCoating(e.target.value)} className="w-full h-8 rounded-md border bg-background px-2 text-xs">
+                                    <option value="">{t('common.all')}</option>
+                                    {[...new Set(lensBlanks.map((b: any) => b.coating).filter(Boolean))].map((c) => (
+                                        <option key={c} value={c}>{t(`stock.${c}`)}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground flex gap-3">
+                            <span>{t('prescriptions.sph')} R: {selectedRx.sphRight}</span>
+                            <span>{t('prescriptions.cyl')} R: {selectedRx.cylRight}</span>
+                            <span>{t('prescriptions.sph')} L: {selectedRx.sphLeft}</span>
+                            <span>{t('prescriptions.cyl')} L: {selectedRx.cylLeft}</span>
+                        </div>
+                        {lensBlankLoading ? (
+                            <div className="flex items-center justify-center py-4 text-muted-foreground text-sm">
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" /> {t('common.loading')}
+                            </div>
+                        ) : lensBlanks.length === 0 ? (
+                            <p className="text-sm text-muted-foreground italic py-2">{t('orders.noMatchingLensBlanks')}</p>
+                        ) : (
+                            <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                                {lensBlanks.map((blank: any) => {
+                                    const inStock = (blank.quantity ?? 0) > 0
+                                    return (
+                                        <div key={blank.id} className={`flex items-center gap-2 p-2.5 rounded-lg border ${inStock ? 'bg-background' : 'bg-muted/30 opacity-60'}`}>
+                                            <Package className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-medium truncate">{blank.brand}</span>
+                                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">{t(`stock.${blank.lensType}`)}</Badge>
+                                                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{t(`stock.${blank.material}`)}</Badge>
+                                                    {blank.coating !== 'none' && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{t(`stock.${blank.coating}`)}</Badge>}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground mt-0.5">
+                                                    {blank.thickness} · SPH {blank.sphMin}→{blank.sphMax} · CYL {blank.cylMin}→{blank.cylMax} · {Number(blank.sellingPrice).toFixed(3)} TND · {blank.quantity ?? 0} in stock
+                                                </div>
+                                            </div>
+                                            <Button type="button" variant="ghost" size="sm" onClick={() => addLensBlankAsItem(blank)} disabled={!inStock} className="h-7 px-2 shrink-0">
+                                                <Check className="h-3 w-3 mr-1" /> {t('common.add')}
+                                            </Button>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 

@@ -2,7 +2,7 @@ import { lensBlankRepo } from '@/lib/database/repositories'
 import { db } from '@/lib/database/db'
 import { NotFoundError } from '@/errors'
 
-export async function listLensBlanks(params?: { search?: string; brand?: string; lensType?: string; material?: string; coating?: string; thickness?: string; lowStock?: string }) {
+export async function listLensBlanks(params?: { search?: string; brand?: string; lensType?: string; material?: string; coating?: string; thickness?: string; lowStock?: string; sphRight?: string; cylRight?: string; sphLeft?: string; cylLeft?: string }) {
     const where: any = {}
     if (params?.search) {
         where.OR = [
@@ -16,6 +16,30 @@ export async function listLensBlanks(params?: { search?: string; brand?: string;
     if (params?.coating) where.coating = params.coating
     if (params?.thickness) where.thickness = params.thickness
     if (params?.lowStock === 'true') where.quantity = { lte: 3 }
+
+    const hasRxFilter = params?.sphRight != null || params?.cylRight != null || params?.sphLeft != null || params?.cylLeft != null
+    if (hasRxFilter) {
+        const conditions: any[] = []
+        const sphR = params?.sphRight != null ? parseFloat(params.sphRight) : null
+        const cylR = params?.cylRight != null ? parseFloat(params.cylRight) : null
+        const sphL = params?.sphLeft != null ? parseFloat(params.sphLeft) : null
+        const cylL = params?.cylLeft != null ? parseFloat(params.cylLeft) : null
+
+        if (sphR != null && cylR != null) {
+            conditions.push({ AND: [{ sphMin: { lte: sphR } }, { sphMax: { gte: sphR } }, { cylMin: { lte: cylR } }, { cylMax: { gte: cylR } }] })
+        } else if (sphR != null) {
+            conditions.push({ AND: [{ sphMin: { lte: sphR } }, { sphMax: { gte: sphR } }] })
+        }
+        if (sphL != null && cylL != null) {
+            conditions.push({ AND: [{ sphMin: { lte: sphL } }, { sphMax: { gte: sphL } }, { cylMin: { lte: cylL } }, { cylMax: { gte: cylL } }] })
+        } else if (sphL != null) {
+            conditions.push({ AND: [{ sphMin: { lte: sphL } }, { sphMax: { gte: sphL } }] })
+        }
+
+        if (conditions.length > 0) {
+            where.OR = [...(where.OR || []), ...conditions]
+        }
+    }
 
     return lensBlankRepo.findMany({
         where,

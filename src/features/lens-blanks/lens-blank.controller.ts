@@ -8,8 +8,8 @@ import type { CreateLensBlankInput, UpdateLensBlankInput } from '@/dtos/lens-bla
 
 export async function GET(request: NextRequest) {
     try {
-        const { search, brand, lensType, material, coating, thickness, lowStock } = parseQuery(request, 'search', 'brand', 'lensType', 'material', 'coating', 'thickness', 'lowStock')
-        const blanks = await listLensBlanks({ search, brand, lensType, material, coating, thickness, lowStock })
+        const { search, brand, lensType, material, coating, thickness, lowStock, sphRight, cylRight, sphLeft, cylLeft } = parseQuery(request, 'search', 'brand', 'lensType', 'material', 'coating', 'thickness', 'lowStock', 'sphRight', 'cylRight', 'sphLeft', 'cylLeft')
+        const blanks = await listLensBlanks({ search, brand, lensType, material, coating, thickness, lowStock, sphRight, cylRight, sphLeft, cylLeft })
         return ok(blanks.map(toLensBlankResponse))
     } catch (error) {
         return handleError(error)
