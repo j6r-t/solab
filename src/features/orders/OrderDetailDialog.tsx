@@ -101,7 +101,7 @@ export function OrderDetailDialog({ order, open, onOpenChange, onStatusUpdate, o
                             <div className="space-y-1">
                                 {order.items.map((item) => (
                                     <div key={item.id} className="flex justify-between text-sm p-2 bg-muted/30 rounded">
-                                        <span>{item.product.name} ({item.product.brand}) × {item.quantity}</span>
+                                        <span>{item.name || item.product?.name || item.lensBlank?.brand || '—'} ({item.product?.brand || item.lensBlank?.brand || ''}) × {item.quantity}</span>
                                         <span>{formatCurrency(item.unitPrice)}</span>
                                     </div>
                                 ))}

@@ -98,7 +98,7 @@ export function OrdersPage() {
             status: order.status,
             orderType: order.orderType,
             createdAt: order.createdAt,
-            items: order.items.map(i => ({ productName: i.product.name, brand: i.product.brand, quantity: i.quantity, unitPrice: i.unitPrice })),
+            items: order.items.map(i => ({ productName: i.name || i.product?.name || i.lensBlank?.brand || '—', brand: i.product?.brand || i.lensBlank?.brand || '', quantity: i.quantity, unitPrice: i.unitPrice })),
             payments: order.payments.map(p => ({ amount: p.amount, type: p.type, createdAt: '' })),
             repairs: order.repairs.map(r => ({ type: r.type, price: r.price })),
             turnaroundDays: order.turnaroundDays,
