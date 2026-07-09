@@ -85,6 +85,7 @@ export function DashboardPage() {
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
     const [detailOpen, setDetailOpen] = useState(false)
     const entity = user?.role === 'atelier' ? 'atelier' : 'shop'
+    const isAtelier = entity === 'atelier'
 
     useEffect(() => {
         async function load() {
@@ -104,7 +105,6 @@ export function DashboardPage() {
 
     const kpis = useMemo(() => {
         if (!data) return []
-        const isAtelier = entity === 'atelier'
         const values: Record<string, string> = isAtelier ? {
             totalRevenue: (data as any).totalWorkOrders?.toString() || '0',
             totalClients: (data as any).totalOpticianShops?.toString() || '0',
