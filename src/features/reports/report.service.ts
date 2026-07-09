@@ -186,7 +186,7 @@ async function getShopReports(period: string, startDate: Date, dateFilter: any, 
                 _sum: { quantity: true },
                 orderBy: { _sum: { quantity: 'desc' } },
             })
-            const ids = raw.map(r => r.productId)
+            const ids = raw.map(r => r.productId).filter((id): id is string => id != null)
             if (ids.length === 0) return {}
             const products = await db.product.findMany({
                 where: { id: { in: ids } },
