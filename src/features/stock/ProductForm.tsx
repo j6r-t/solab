@@ -23,6 +23,7 @@ interface ProductFormProps {
     onSubmit: (data: ProductFormData) => Promise<void>
     onCancel: () => void
     saving?: boolean
+    role?: string
 }
 
 const lensTypeEnums = ['singleVision', 'progressive', 'bifocal', 'office', 'photochromic'] as const
@@ -30,8 +31,9 @@ const materials = ['cr39', 'polycarbonate', 'highIndex', 'trivex'] as const
 const coatings = ['none', 'ar', 'scratchResistant', 'blueBlock', 'arScratch', 'arBlueBlock'] as const
 const thicknessOptions = ['1.50', '1.53', '1.56', '1.59', '1.60', '1.67', '1.70', '1.74']
 
-export function ProductForm({ defaultValues, onSubmit, onCancel, saving: externalSaving }: ProductFormProps) {
+export function ProductForm({ defaultValues, onSubmit, onCancel, saving: externalSaving, role }: ProductFormProps) {
     const { t } = useTranslation()
+    const isShop = role === 'shop'
     const [formData, setFormData] = useState<ProductFormData>({
         name: defaultValues?.name || '',
         brand: defaultValues?.brand || '',
@@ -158,7 +160,7 @@ export function ProductForm({ defaultValues, onSubmit, onCancel, saving: externa
                     <SelectContent>
                         <SelectItem value="lunette">{t('stock.lunette')}</SelectItem>
                         <SelectItem value="lentille">{t('stock.lentille')}</SelectItem>
-                        <SelectItem value="verre">{t('stock.verre')}</SelectItem>
+                        {!isShop && <SelectItem value="verre">{t('stock.verre')}</SelectItem>}
                         <SelectItem value="accessory">{t('stock.accessory')}</SelectItem>
                         <SelectItem value="nettoyant_lentilles">{t('stock.nettoyant_lentilles')}</SelectItem>
                         <SelectItem value="nettoyant_monture">{t('stock.nettoyant_monture')}</SelectItem>

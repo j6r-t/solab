@@ -16,6 +16,7 @@ import { Loader2, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { fetchOpticianShops, type OpticianShopItem } from '@/features/optician-shops/optician-shops.api'
 import { fetchRepairServices } from '@/features/settings/settings.api'
+import { SearchSelect, type SearchSelectOption } from '@/components/ui/search-select'
 
 interface RepairService {
     id: string
@@ -26,10 +27,17 @@ interface RepairService {
 interface LensBlank {
     id: string
     brand: string
+    lensType: string
+    material: string
+    coating: string
     thickness: string
-    quantity: number
+    sphMin: string
+    sphMax: string
+    cylMin: string
+    cylMax: string
     sellingPrice: string
     costPrice: string
+    quantity: number
 }
 
 interface NewWorkOrderDialogProps {
@@ -206,40 +214,41 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
 
                         <div className="p-3 bg-muted/20 rounded-lg border space-y-3">
                             <Label className="text-sm font-medium">Lens Blanks (Atelier Stock)</Label>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Left Eye</Label>
-                                    <Select value={lensBlankLeftId} onValueChange={setLensBlankLeftId}>
-                                        <SelectTrigger className="h-9">
-                                            <SelectValue placeholder="None" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="">None</SelectItem>
-                                            {lensBlanks.filter((lb) => lb.quantity > 0).map((lb) => (
-                                                <SelectItem key={lb.id} value={lb.id}>
-                                                    {lb.brand} {lb.thickness} ({lb.quantity} left)
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Right Eye</Label>
-                                    <Select value={lensBlankRightId} onValueChange={setLensBlankRightId}>
-                                        <SelectTrigger className="h-9">
-                                            <SelectValue placeholder="None" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="">None</SelectItem>
-                                            {lensBlanks.filter((lb) => lb.quantity > 0).map((lb) => (
-                                                <SelectItem key={lb.id} value={lb.id}>
-                                                    {lb.brand} {lb.thickness} ({lb.quantity} left)
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
+                            {(() => {
+                                const blankOptions: SearchSelectOption[] = lensBlanks
+                                    .filter((lb) => lb.quantity > 0)
+                                    .map((lb) => ({
+                                        value: lb.id,
+                                        label: `${lb.brand} ${lb.lensType} ${lb.thickness} (${lb.quantity})`,
+                                        secondary: `SPH ${lb.sphMin}, ${lb.sphMax}  CYL ${lb.cylMin}, ${lb.cylMax}`,
+                                    }))
+                                return (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <Label className="text-xs text-muted-foreground">Left Eye</Label>
+                                            <SearchSelect
+                                                options={[{ value: '', label: 'None' }, ...blankOptions]}
+                                                value={lensBlankLeftId}
+                                                onChange={setLensBlankLeftId}
+                                                placeholder="None"
+                                                title="Left Eye Lens Blank"
+                                                searchPlaceholder="Search by brand, type..."
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-xs text-muted-foreground">Right Eye</Label>
+                                            <SearchSelect
+                                                options={[{ value: '', label: 'None' }, ...blankOptions]}
+                                                value={lensBlankRightId}
+                                                onChange={setLensBlankRightId}
+                                                placeholder="None"
+                                                title="Right Eye Lens Blank"
+                                                searchPlaceholder="Search by brand, type..."
+                                            />
+                                        </div>
+                                    </div>
+                                )
+                            })()}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div className="space-y-1">
                                     <Label className="text-xs text-muted-foreground">Frame / Blank Source</Label>
@@ -248,7 +257,6 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
                                         <SelectContent>
                                             <SelectItem value="shop">Atelier Shop</SelectItem>
                                             <SelectItem value="optician">Optician Shop</SelectItem>
-                                            <SelectItem value="client">Client</SelectItem>
                                             <SelectItem value="external">External Service</SelectItem>
                                         </SelectContent>
                                     </Select>

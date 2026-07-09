@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { ok, created, noContent } from '@/lib/api/response'
 import { handleError } from '@/middlewares/errorHandler'
 import { parseBody, parseQuery } from '@/lib/api/parse'
-import { listRepairs, getRepair, createRepair, updateRepairStatus, assignLensBlanks, declareBreakage, deleteRepair } from './repair.service'
+import { listRepairs, getRepair, createRepair, updateRepairStatus, assignLensBlanks, declareBreakage, deleteRepair, recordPayment } from './repair.service'
 import { toRepairResponse } from '@/mappers/repair.mapper'
 import type { CreateRepairInput, UpdateRepairInput } from '@/dtos/repairs/repair.dto'
 
@@ -46,6 +46,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         if (action === 'declare-breakage') {
             const body = await request.json()
             const repair = await declareBreakage(id, body)
+            return ok(toRepairResponse(repair))
+        }
+        if (action === 'record-payment') {
+            const { amount } = await request.json()
+            const repair = await recordPayment(id, amount)
             return ok(toRepairResponse(repair))
         }
 

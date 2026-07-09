@@ -10,6 +10,8 @@ export function toRepairResponse(repair: any): AtelierWorkOrderResponse {
         status: repair.status,
         servicePrice: (repair.servicePrice || 0).toString(),
         lensBlankPrice: repair.lensBlankPrice != null ? repair.lensBlankPrice.toString() : null,
+        paymentStatus: repair.paymentStatus || 'pending',
+        amountPaid: (repair.amountPaid || 0).toString(),
         expectedCompletionDate: repair.expectedCompletionDate,
         frameFrom: repair.frameFrom || null,
         lensBlankLeft: repair.lensBlankLeft || null,

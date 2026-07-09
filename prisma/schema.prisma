@@ -436,6 +436,10 @@ model AtelierWorkOrder {
   lensBlankPrice   Decimal?
   servicePrice     Decimal               @default(0)
 
+  // Payment
+  paymentStatus    String                @default("pending")
+  amountPaid       Decimal               @default(0)
+
   // Timing
   startedAt        DateTime?
   completedAt      DateTime?

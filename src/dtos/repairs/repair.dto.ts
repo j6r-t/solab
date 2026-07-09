@@ -23,6 +23,8 @@ export interface AtelierWorkOrderResponse {
     status: string
     servicePrice: string
     lensBlankPrice: string | null
+    paymentStatus: string
+    amountPaid: string
     expectedCompletionDate: Date | null
     frameFrom: string | null
     lensBlankLeft: { id: string; brand: string; thickness: string } | null

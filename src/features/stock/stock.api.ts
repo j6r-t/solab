@@ -42,6 +42,7 @@ export const fetchStockProducts = (params?: {
     addFrom?: string
     addTo?: string
     fournisseurId?: string
+    excludeCategory?: string
 }) => api.get<StockProduct[]>('/api/stock', params as Record<string, string | undefined>)
 
 export const createStockProduct = (data: any) =>

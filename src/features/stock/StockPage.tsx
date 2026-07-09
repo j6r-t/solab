@@ -14,6 +14,7 @@ import { StockQrDialog } from './StockQrDialog'
 import type { ProductFormData } from './stock.schema'
 import { fetchStockProducts, createStockProduct, updateStockProduct, deleteStockProduct } from './stock.api'
 import { fetchFournisseurs } from '@/features/fournisseurs/fournisseurs.api'
+import { useAuthStore } from '@/stores/auth-store'
 import type { StockProduct as Product } from './stock.api'
 import { toast } from 'sonner'
 
@@ -49,6 +50,7 @@ export function StockPage() {
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const debouncedSearch = useDebounce(search, 300)
+    const user = useAuthStore((s) => s.user)
 
     const filterParams = {
         search: debouncedSearch || undefined,
@@ -66,6 +68,7 @@ export function StockPage() {
         addFrom: addFrom || undefined,
         addTo: addTo || undefined,
         fournisseurId: fournisseurFilter || undefined,
+        excludeCategory: user?.role === 'shop' ? 'verre' : undefined,
     }
 
     useEffect(() => {
@@ -169,6 +172,7 @@ export function StockPage() {
                 fournisseurFilter={fournisseurFilter} onFournisseurFilterChange={setFournisseurFilter}
                 fournisseurs={fournisseurs}
                 onNewProduct={() => { setEditProduct(null); setDialogOpen(true) }}
+                role={user?.role}
             />
 
             {loading && products.length === 0 ? (
@@ -225,6 +229,7 @@ export function StockPage() {
                         onSubmit={editProduct ? handleUpdate : handleCreate}
                         onCancel={() => { setEditProduct(null); setDialogOpen(false) }}
                         saving={saving}
+                        role={user?.role}
                     />
                 </DialogContent>
             </Dialog>

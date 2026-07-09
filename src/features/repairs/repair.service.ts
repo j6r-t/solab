@@ -158,3 +158,21 @@ export async function declareBreakage(id: string, data: {
 export async function deleteRepair(id: string) {
     await repairRepo.delete({ where: { id } })
 }
+
+export async function recordPayment(id: string, amount: number) {
+    const repair = await repairRepo.findUnique({ where: { id } })
+    if (!repair) throw new NotFoundError('Work order not found')
+
+    const totalDue = Number(repair.servicePrice) + Number(repair.lensBlankPrice || 0)
+    const newAmountPaid = Number(repair.amountPaid) + amount
+    const paymentStatus = newAmountPaid >= totalDue ? 'paid' : newAmountPaid > 0 ? 'partial' : 'pending'
+
+    return repairRepo.update({
+        where: { id },
+        data: {
+            amountPaid: newAmountPaid,
+            paymentStatus,
+        },
+        include: { ...WORK_ORDER_INCLUDE },
+    })
+}

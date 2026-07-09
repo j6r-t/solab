@@ -1,6 +1,6 @@
 # Sofien Optic — Technical Context
 
-> **Last updated:** 2026-07-07  
+> **Last updated:** 2026-07-09  
 > **Source of truth:** Codebase analysis (not the PRD document)  
 > **Status:** Living document — updated on every architecture-relevant change
 

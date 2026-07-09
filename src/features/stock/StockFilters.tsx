@@ -47,11 +47,13 @@ interface StockFiltersProps {
     onFournisseurFilterChange: (v: string) => void
     fournisseurs: { id: string; name: string }[]
     onNewProduct: () => void
+    role?: string
 }
 
 export function StockFilters(props: StockFiltersProps) {
     const { t } = useTranslation()
-    const { search, onSearchChange, category, onCategoryChange, stockStatus, onStockStatusChange, category: cat } = props
+    const { search, onSearchChange, category, onCategoryChange, stockStatus, onStockStatusChange, category: cat, role } = props
+    const isShop = role === 'shop'
 
     return (
         <>
@@ -68,7 +70,7 @@ export function StockFilters(props: StockFiltersProps) {
                         <SelectItem value="__all__">{t('common.all')}</SelectItem>
                         <SelectItem value="lunette">{t('stock.lunette')}</SelectItem>
                         <SelectItem value="lentille">{t('stock.lentille')}</SelectItem>
-                        <SelectItem value="verre">{t('stock.verre')}</SelectItem>
+                        {!isShop && <SelectItem value="verre">{t('stock.verre')}</SelectItem>}
                         <SelectItem value="accessory">{t('stock.accessory')}</SelectItem>
                         <SelectItem value="nettoyant_lentilles">{t('stock.nettoyant_lentilles')}</SelectItem>
                         <SelectItem value="nettoyant_monture">{t('stock.nettoyant_monture')}</SelectItem>

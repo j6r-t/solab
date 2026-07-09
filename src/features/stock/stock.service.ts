@@ -19,6 +19,7 @@ interface StockQuery {
     cylTo?: string
     addFrom?: string
     addTo?: string
+    excludeCategory?: string
 }
 
 export async function listProducts(params?: StockQuery) {
@@ -43,6 +44,9 @@ export async function listProducts(params?: StockQuery) {
 
     if (params?.category && (PRODUCT_CATEGORIES as readonly string[]).includes(params.category)) {
         where.category = params.category as any
+    }
+    if (params?.excludeCategory) {
+        where.category = { not: params.excludeCategory as any }
     }
     if (params?.fournisseurId) {
         where.fournisseurId = params.fournisseurId

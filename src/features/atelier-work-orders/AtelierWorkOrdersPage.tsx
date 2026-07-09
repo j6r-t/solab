@@ -25,6 +25,8 @@ interface WorkOrder {
     status: string
     servicePrice: string
     lensBlankPrice: string | null
+    paymentStatus: string
+    amountPaid: string
     frameFrom: string | null
     lensBlankLeft: { id: string; brand: string; thickness: string } | null
     lensBlankRight: { id: string; brand: string; thickness: string } | null

@@ -353,7 +353,7 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
     }
 
     const selectedRx = prescriptions.find((p) => p.id === selectedPrescriptionId)
-    const showLensBlankPicker = (orderType === 'standard' || orderType === 'remounting') && selectedPrescriptionId && selectedRx
+    const showLensBlankPicker = user?.role !== 'shop' && (orderType === 'standard' || orderType === 'remounting') && selectedPrescriptionId && selectedRx
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()

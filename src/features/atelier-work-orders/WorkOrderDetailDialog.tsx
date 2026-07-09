@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
@@ -12,6 +13,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
+import { SearchSelect, type SearchSelectOption } from '@/components/ui/search-select'
 import { Loader2, Printer } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -24,6 +26,8 @@ interface WorkOrder {
     status: string
     servicePrice: string
     lensBlankPrice: string | null
+    paymentStatus: string
+    amountPaid: string
     frameFrom: string | null
     lensBlankLeft: { id: string; brand: string; thickness: string } | null
     lensBlankRight: { id: string; brand: string; thickness: string } | null
@@ -39,7 +43,16 @@ interface WorkOrder {
 interface LensBlank {
     id: string
     brand: string
+    lensType: string
+    material: string
+    coating: string
     thickness: string
+    sphMin: string
+    sphMax: string
+    cylMin: string
+    cylMax: string
+    sellingPrice: string
+    costPrice: string
     quantity: number
 }
 
@@ -74,6 +87,7 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
     const [assignRight, setAssignRight] = useState('')
     const [frameFrom, setFrameFrom] = useState('shop')
     const [lensBlankPrice, setLensBlankPrice] = useState(0)
+    const [paymentAmount, setPaymentAmount] = useState('')
 
     useEffect(() => {
         if (open) {
@@ -138,6 +152,28 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
         }
     }
 
+    async function handleRecordPayment() {
+        if (!workOrder || !paymentAmount) return
+        const amount = parseFloat(paymentAmount)
+        if (isNaN(amount) || amount <= 0) { toast.error('Enter a valid amount'); return }
+        setLoading(true)
+        try {
+            const res = await fetch(`/api/repairs/${workOrder.id}?action=record-payment`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount }),
+            })
+            if (!res.ok) throw new Error('Failed to record payment')
+            toast.success('Payment recorded')
+            setPaymentAmount('')
+            onUpdated()
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to record payment')
+        } finally {
+            setLoading(false)
+        }
+    }
+
     if (!workOrder) return null
 
     const isMounting = workOrder.type === 'mounting'
@@ -193,36 +229,39 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                                 <p className="text-sm text-muted-foreground">No lens blanks in stock. Add some first.</p>
                             ) : (
                                 <>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="text-xs text-muted-foreground block mb-1">Left Eye</label>
-                                            <Select value={assignLeft} onValueChange={setAssignLeft}>
-                                                <SelectTrigger className="h-9"><SelectValue placeholder="Select..." /></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="">None</SelectItem>
-                                                    {lensBlanks.map((lb) => (
-                                                        <SelectItem key={lb.id} value={lb.id}>
-                                                            {lb.brand} {lb.thickness} ({lb.quantity} left)
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div>
-                                            <label className="text-xs text-muted-foreground block mb-1">Right Eye</label>
-                                            <Select value={assignRight} onValueChange={setAssignRight}>
-                                                <SelectTrigger className="h-9"><SelectValue placeholder="Select..." /></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="">None</SelectItem>
-                                                    {lensBlanks.map((lb) => (
-                                                        <SelectItem key={lb.id} value={lb.id}>
-                                                            {lb.brand} {lb.thickness} ({lb.quantity} left)
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
+                                    {(() => {
+                                        const blankOptions: SearchSelectOption[] = lensBlanks.map((lb) => ({
+                                            value: lb.id,
+                                            label: `${lb.brand} ${lb.lensType} ${lb.thickness} (${lb.quantity})`,
+                                            secondary: `SPH ${lb.sphMin}, ${lb.sphMax}  CYL ${lb.cylMin}, ${lb.cylMax}`,
+                                        }))
+                                        return (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="text-xs text-muted-foreground block mb-1">Left Eye</label>
+                                                    <SearchSelect
+                                                        options={[{ value: '', label: 'None' }, ...blankOptions]}
+                                                        value={assignLeft}
+                                                        onChange={setAssignLeft}
+                                                        placeholder="Select..."
+                                                        title="Left Eye Lens Blank"
+                                                        searchPlaceholder="Search by brand, type..."
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs text-muted-foreground block mb-1">Right Eye</label>
+                                                    <SearchSelect
+                                                        options={[{ value: '', label: 'None' }, ...blankOptions]}
+                                                        value={assignRight}
+                                                        onChange={setAssignRight}
+                                                        placeholder="Select..."
+                                                        title="Right Eye Lens Blank"
+                                                        searchPlaceholder="Search by brand, type..."
+                                                    />
+                                                </div>
+                                            </div>
+                                        )
+                                    })()}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
                                             <label className="text-xs text-muted-foreground block mb-1">Frame From</label>
@@ -231,7 +270,6 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                                                 <SelectContent>
                                                     <SelectItem value="shop">Shop</SelectItem>
                                                     <SelectItem value="optician">Optician</SelectItem>
-                                                    <SelectItem value="client">Client</SelectItem>
                                                     <SelectItem value="external">External Service</SelectItem>
                                                 </SelectContent>
                                             </Select>
@@ -277,6 +315,57 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                             {workOrder.replacementRight && <p>Replacement R: {workOrder.replacementRight.brand} ({workOrder.replacementRight.thickness})</p>}
                         </div>
                     )}
+
+                    <div className="space-y-2 p-3 bg-muted/20 rounded-lg border">
+                        <h3 className="text-sm font-medium">Payment</h3>
+                        {(() => {
+                            const totalDue = parseFloat(workOrder.servicePrice) + parseFloat(workOrder.lensBlankPrice || '0')
+                            const paid = parseFloat(workOrder.amountPaid)
+                            const remaining = totalDue - paid
+                            const pStatus = workOrder.paymentStatus
+                            return (
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Total Due:</span>
+                                        <span className="font-medium">{totalDue.toFixed(3)} TND</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Paid:</span>
+                                        <span className="font-medium">{paid.toFixed(3)} TND</span>
+                                    </div>
+                                    {remaining > 0 && (
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Remaining:</span>
+                                            <span className="font-medium text-destructive">{remaining.toFixed(3)} TND</span>
+                                        </div>
+                                    )}
+                                    <Badge variant="outline" className={
+                                        pStatus === 'paid' ? 'bg-green-100 text-green-700 border-green-200' :
+                                        pStatus === 'partial' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                                        'bg-red-100 text-red-700 border-red-200'
+                                    }>
+                                        {pStatus === 'paid' ? 'Paid' : pStatus === 'partial' ? 'Partially Paid' : 'Unpaid'}
+                                    </Badge>
+                                    {pStatus !== 'paid' && (
+                                        <div className="flex gap-2 pt-1">
+                                            <Input
+                                                type="number"
+                                                step="0.001"
+                                                min="0"
+                                                placeholder="Amount"
+                                                value={paymentAmount}
+                                                onChange={(e) => setPaymentAmount(e.target.value)}
+                                                className="h-9 flex-1"
+                                            />
+                                            <Button size="sm" onClick={handleRecordPayment} disabled={loading || !paymentAmount}>
+                                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Record Payment'}
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })()}
+                    </div>
 
                     <div className="space-y-2">
                         <h3 className="text-sm font-medium">Actions</h3>
