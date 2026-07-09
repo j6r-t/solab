@@ -339,8 +339,7 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
     }
 
     function addLensBlankAsItem(blank: any) {
-        const isShop = user?.role === 'shop'
-        const price = isShop ? Number(blank.costPrice) || 0 : Number(blank.sellingPrice) || 0
+        const price = Number(blank.sellingPrice) || 0
         const displayName = `${blank.brand} ${blank.lensType} ${blank.material} ${blank.thickness}`
         const existingIndex = items.findIndex((item) => item.lensBlankId === blank.id)
         if (existingIndex >= 0) {
