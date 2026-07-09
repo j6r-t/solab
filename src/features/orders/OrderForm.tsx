@@ -615,7 +615,7 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                 </div>
             )}
 
-            {(orderType === 'standard' || orderType === 'direct_sale') && (
+            {(orderType === 'standard' || orderType === 'direct_sale' || orderType === 'remounting') && (
                 <div className="space-y-3">
                     <Label>{t('orders.items')}</Label>
                     <div className="flex gap-2">
