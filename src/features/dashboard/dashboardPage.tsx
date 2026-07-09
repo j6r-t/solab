@@ -106,7 +106,7 @@ export function DashboardPage() {
     const kpis = useMemo(() => {
         if (!data) return []
         const values: Record<string, string> = isAtelier ? {
-            totalRevenue: (data as any).totalWorkOrders?.toString() || '0',
+            totalRevenue: formatCurrency((data as any).totalRevenue || 0),
             totalClients: (data as any).totalOpticianShops?.toString() || '0',
             todaySales: (data as any).completedWorkOrders?.toString() || '0',
             lowStock: (data as any).lowStockLensBlanks?.toString() || '0',

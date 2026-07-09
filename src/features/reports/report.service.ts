@@ -45,6 +45,7 @@ async function getAtelierReports(period: string, startDate: Date, dateFilter: an
         pendingWorkOrders,
         completedWorkOrders,
         totalOpticianShops,
+        totalRevenue,
         workOrdersByShop,
         monthlyWorkOrders,
         recentWorkOrders,
@@ -55,6 +56,15 @@ async function getAtelierReports(period: string, startDate: Date, dateFilter: an
         repairRepo.count({ where: { status: 'pending', ...dateFilter } }),
         repairRepo.count({ where: { status: 'completed', ...dateFilter } }),
         opticianShopRepo.count(),
+        (async () => {
+            const result = await db.atelierWorkOrder.aggregate({
+                where: { status: 'completed', ...dateFilter },
+                _sum: { servicePrice: true, lensBlankPrice: true },
+            })
+            const service = result._sum.servicePrice ? parseFloat(result._sum.servicePrice.toString()) : 0
+            const blanks = result._sum.lensBlankPrice ? parseFloat(result._sum.lensBlankPrice.toString()) : 0
+            return service + blanks
+        })(),
         (async () => {
             const workOrders = await db.atelierWorkOrder.findMany({
                 where: { ...dateFilter },
@@ -106,6 +116,7 @@ async function getAtelierReports(period: string, startDate: Date, dateFilter: an
         pendingWorkOrders,
         completedWorkOrders,
         totalOpticianShops,
+        totalRevenue,
         workOrdersByShop,
         monthlyWorkOrders,
         recentWorkOrders: recentWorkOrders.map((wo: any) => ({
