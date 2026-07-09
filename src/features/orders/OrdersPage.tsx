@@ -87,18 +87,25 @@ export function OrdersPage() {
 
     function handlePrintInvoice(order: Order) {
         const totalPaid = order.payments.reduce((s, p) => s + parseFloat(p.amount), 0)
+        const invoiceItems = order.items.map(i => {
+            const price = i.sellingPrice || i.unitPrice
+            return { productName: i.name || i.product?.name || i.lensBlank?.brand || '—', brand: i.product?.brand || i.lensBlank?.brand || '', quantity: i.quantity, unitPrice: i.unitPrice, sellingPrice: i.sellingPrice, invoicePrice: parseFloat(price) }
+        })
+        const invoiceTotal = invoiceItems.reduce((s, i) => s + i.invoicePrice * i.quantity, 0)
+        const repairsTotal = order.repairs.reduce((s, r) => s + parseFloat(r.price), 0)
+        const invoiceGrandTotal = invoiceTotal + repairsTotal
         const record: BillingRecord = {
             id: order.id,
             orderNumber: order.orderNumber,
             client: { ...order.client, address: null },
-            totalAmount: order.totalAmount,
+            totalAmount: invoiceGrandTotal.toFixed(3),
             totalPaid: totalPaid.toFixed(3),
-            balance: (parseFloat(order.totalAmount) - totalPaid).toFixed(3),
+            balance: (invoiceGrandTotal - totalPaid).toFixed(3),
             paymentStatus: order.paymentStatus,
             status: order.status,
             orderType: order.orderType,
             createdAt: order.createdAt,
-            items: order.items.map(i => ({ productName: i.name || i.product?.name || i.lensBlank?.brand || '—', brand: i.product?.brand || i.lensBlank?.brand || '', quantity: i.quantity, unitPrice: i.unitPrice })),
+            items: invoiceItems.map(i => ({ productName: i.productName, brand: i.brand, quantity: i.quantity, unitPrice: i.invoicePrice.toFixed(3) })),
             payments: order.payments.map(p => ({ amount: p.amount, type: p.type, createdAt: '' })),
             repairs: order.repairs.map(r => ({ type: r.type, price: r.price })),
             turnaroundDays: order.turnaroundDays,

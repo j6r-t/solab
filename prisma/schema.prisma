@@ -282,6 +282,7 @@ model OrderItem {
   name         String?
   quantity     Int
   unitPrice    Decimal
+  sellingPrice Decimal?
 }
 
 model Payment {

@@ -9,6 +9,7 @@ interface OrderItem {
     name: string | null
     quantity: number
     unitPrice: string
+    sellingPrice: string | null
     product: { name: string; brand: string } | null
     lensBlank: { id: string; brand: string; lensType: string; material: string; thickness: string; sellingPrice: string } | null
 }

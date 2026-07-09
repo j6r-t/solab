@@ -65,7 +65,7 @@ export async function getOrderById(id: string) {
 export async function createOrder(data: {
     clientId: string
     orderType?: string
-    items?: { productId?: string; lensBlankId?: string; name?: string; quantity: number; unitPrice?: number }[]
+    items?: { productId?: string; lensBlankId?: string; name?: string; quantity: number; unitPrice?: number; sellingPrice?: number }[]
     payments?: { amount: number; type: string; method?: string; chequeId?: string; dueDate?: string }[]
     repairs?: { type: string; price: number; expectedCompletionDate?: string; repairServiceId?: string }[]
     prescriptionId?: string
@@ -79,7 +79,7 @@ export async function createOrder(data: {
     if (!client) throw new NotFoundError('Client not found')
 
     let totalAmount = 0
-    const orderItemsData: { productId?: string; lensBlankId?: string; name?: string; quantity: number; unitPrice: number }[] = []
+    const orderItemsData: { productId?: string; lensBlankId?: string; name?: string; quantity: number; unitPrice: number; sellingPrice?: number }[] = []
 
     if (items && items.length > 0) {
         for (const item of items) {
@@ -96,6 +96,7 @@ export async function createOrder(data: {
                     name: item.name || `${blank.brand} ${blank.lensType} ${blank.material} ${blank.thickness}`,
                     quantity: item.quantity,
                     unitPrice: price,
+                    sellingPrice: item.sellingPrice || parseFloat(blank.sellingPrice.toString()),
                 })
             } else if (item.productId) {
                 const product = await productRepo.findUnique({ where: { id: item.productId } })

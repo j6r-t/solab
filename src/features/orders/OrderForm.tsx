@@ -30,6 +30,7 @@ export interface OrderItemInput {
     quantity: number
     unitPrice: number
     name?: string
+    sellingPrice?: number
 }
 
 export interface OrderPaymentInput {
@@ -339,13 +340,14 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
     }
 
     function addLensBlankAsItem(blank: any) {
-        const price = Number(blank.sellingPrice) || 0
+        const isShop = user?.role === 'shop'
+        const price = isShop ? Number(blank.costPrice) || 0 : Number(blank.sellingPrice) || 0
         const displayName = `${blank.brand} ${blank.lensType} ${blank.material} ${blank.thickness}`
         const existingIndex = items.findIndex((item) => item.lensBlankId === blank.id)
         if (existingIndex >= 0) {
             updateItem(existingIndex, 'quantity', items[existingIndex].quantity + 1)
         } else {
-            setItems((prev) => [...prev, { lensBlankId: blank.id, quantity: 1, unitPrice: price, name: displayName }])
+            setItems((prev) => [...prev, { lensBlankId: blank.id, quantity: 1, unitPrice: price, name: displayName, sellingPrice: Number(blank.sellingPrice) || 0 }])
         }
         toast.success(`${blank.brand} added to order`)
     }

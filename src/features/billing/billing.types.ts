@@ -3,6 +3,7 @@ export interface InvoiceItem {
     brand: string
     quantity: number
     unitPrice: string
+    sellingPrice?: string | null
 }
 
 export interface InvoicePayment {

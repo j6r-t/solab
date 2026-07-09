@@ -65,6 +65,7 @@ export interface OrderDetailItemDto {
     name: string | null
     quantity: number
     unitPrice: string
+    sellingPrice: string | null
     product: { id: string; name: string; brand: string; model: string; category: string } | null
     lensBlank: { id: string; brand: string; lensType: string; material: string; thickness: string } | null
 }

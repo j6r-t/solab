@@ -45,6 +45,7 @@ export function toOrderDetail(order: any): OrderDetailDto {
             name: i.name || null,
             quantity: i.quantity,
             unitPrice: toStr(i.unitPrice),
+            sellingPrice: i.sellingPrice != null ? toStr(i.sellingPrice) : null,
             product: i.product || null,
             lensBlank: i.lensBlank || null,
         })),
