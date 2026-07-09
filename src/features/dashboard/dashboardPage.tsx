@@ -23,6 +23,7 @@ import {
 import { fetchDashboard, fetchReadyOrders } from './dashboard.api'
 import { fetchOrderById, type Order } from '@/features/orders/orders.api'
 import { OrderViewDialog } from './OrderViewDialog'
+import { useAuthStore } from '@/stores/auth-store'
 import { useViewStore } from '@/stores/view-store'
 import { cn } from '@/lib/utils/cn'
 import { formatCurrency } from '@/lib/utils/currency'
@@ -78,16 +79,18 @@ const kpiLabels: Record<KpiKey, string> = {
 export function DashboardPage() {
     const { t } = useTranslation()
     const { setView } = useViewStore()
+    const user = useAuthStore((s) => s.user)
     const [data, setData] = useState<DashboardData | null>(null)
     const [readyOrders, setReadyOrders] = useState<ReadyOrder[]>([])
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
     const [detailOpen, setDetailOpen] = useState(false)
+    const entity = user?.role === 'atelier' ? 'atelier' : 'shop'
 
     useEffect(() => {
         async function load() {
             try {
                 const [reportsData, ordersData] = await Promise.all([
-                    fetchDashboard(),
+                    fetchDashboard(entity),
                     fetchReadyOrders(),
                 ])
                 setData(reportsData)

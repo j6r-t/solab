@@ -31,8 +31,8 @@ interface ReadyOrder {
 
 export type { DashboardData, ReadyOrder }
 
-export const fetchDashboard = () =>
-    api.get<DashboardData>('/api/reports')
+export const fetchDashboard = (entity?: string) =>
+    api.get<DashboardData>('/api/reports', { entity: entity || 'shop' })
 
 export const fetchReadyOrders = () =>
     api.get<ReadyOrder[]>('/api/orders', { status: 'ready' })
