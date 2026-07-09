@@ -104,20 +104,28 @@ export function DashboardPage() {
 
     const kpis = useMemo(() => {
         if (!data) return []
-        const values: Record<KpiKey, string> = {
+        const isAtelier = entity === 'atelier'
+        const values: Record<string, string> = isAtelier ? {
+            totalRevenue: (data as any).totalWorkOrders?.toString() || '0',
+            totalClients: (data as any).totalOpticianShops?.toString() || '0',
+            todaySales: (data as any).completedWorkOrders?.toString() || '0',
+            lowStock: (data as any).lowStockLensBlanks?.toString() || '0',
+            pendingRepairs: (data as any).pendingWorkOrders?.toString() || '0',
+            stockTitle: (data as any).totalLensBlanks?.toString() || '0',
+        } : {
             totalRevenue: formatCurrency(data.totalRevenue),
-            totalClients: data.totalClients.toString(),
-            todaySales: data.todayOrders.toString(),
-            lowStock: data.lowStockCount.toString(),
-            pendingRepairs: data.pendingRepairs.toString(),
-            stockTitle: data.totalProducts.toString(),
+            totalClients: data.totalClients?.toString() || '0',
+            todaySales: data.todayOrders?.toString() || '0',
+            lowStock: data.lowStockCount?.toString() || '0',
+            pendingRepairs: data.pendingRepairs?.toString() || '0',
+            stockTitle: data.totalProducts?.toString() || '0',
         }
         return kpiConfig.map((cfg) => ({
             ...cfg,
             label: t(kpiLabels[cfg.key]),
-            value: values[cfg.key],
+            value: values[cfg.key] || '0',
         }))
-    }, [data, t])
+    }, [data, t, entity])
 
     async function openDetail(orderId: string) {
         try {
@@ -144,7 +152,7 @@ export function DashboardPage() {
                 <h1 className="text-2xl font-bold tracking-tight">{t('dashboard.title')}</h1>
                 <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-xs">
                     <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
-                    {data.recentOrders.length} {t('dashboard.recentOrders')}
+                    {isAtelier ? (data as any).recentWorkOrders?.length || 0 : data.recentOrders?.length || 0} {isAtelier ? 'Work Orders' : t('dashboard.recentOrders')}
                 </Badge>
             </div>
 
