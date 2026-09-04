@@ -5,8 +5,8 @@ import { ArrowLeft } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { useViewStore } from '@/stores/view-store'
 import { useAuthStore } from '@/stores/auth-store'
-import { Glasses, LogOut } from 'lucide-react'
-import { NotificationBell } from '@/features/notifications/NotificationBell'
+import { LogOut } from 'lucide-react'
+import { NotificationBell } from '@/modules/system/notifications/NotificationBell'
 
 export function Header() {
     const { t } = useTranslation()
@@ -30,9 +30,8 @@ export function Header() {
                     <div className="w-10" />
                 )}
 
-                <div className="flex items-center gap-1.5">
-                    <Glasses className="h-4 w-4 text-primary" />
-                    <span className="font-semibold">{t('app.name')}</span>
+                <div className="flex items-center">
+                    <img src="/logo.png" alt="Logo" className="h-6 w-auto object-contain" />
                 </div>
 
                 <div className="flex gap-1">

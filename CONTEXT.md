@@ -46,7 +46,7 @@ Database (SQLite via Prisma ORM)
 ```
 solab/
 ├── prisma/
-│   ├── schema.prisma          # 22 models, 13+ enums
+│   ├── schema.prisma          # 28 models, 23 enums
 │   ├── seed.ts                # Seed script
 │   ├── db/                    # SQLite database file
 │   └── migrations/
@@ -176,7 +176,10 @@ solab/
   - Categories: `lunette`, `lentille`, `verre`, `accessory`, `nettoyant_lentilles`, `nettoyant_monture`
   - Low stock threshold: ≤3 units
   - Extensive optical parameter filtering (SPH, CYL, ADD ranges, lensType, material, coating, thickness)
-- **Filters:** 14+ parameters (search, category, stockStatus, brand, lensType, material, coating, thickness, sphFrom/To, cylFrom/To, addFrom/To, fournisseurId)
+  - **Shop role restrictions:** Shop accounts cannot see or create `verre` (lens) category products
+    - Stock listing excludes `verre` via `excludeCategory` API param for shop role
+    - Product create/edit form hides `verre` category option for shop role
+- **Filters:** 14+ parameters (search, category, stockStatus, brand, lensType, material, coating, thickness, sphFrom/To, cylFrom/To, addFrom/To, fournisseurId, excludeCategory)
 
 ### 4.4 Orders
 
@@ -193,18 +196,42 @@ solab/
   - Auto-complete when total paid ≥ total amount
   - Creates `StockAdjustment` records with reason `'sale'`
   - **Lens blank picker:** When a prescription is selected (standard/remounting), a filtered listing of matching lens blanks is shown with filters for thickness, lens type, material, coating. Blanks are matched by SPH/CYL range against both eyes (OR logic). Clicking "Add" adds the blank as an order item.
+  - **Shop role restrictions:** Shop accounts cannot see the lens blank picker — `showLensBlankPicker` checks `user?.role !== 'shop'`
 
 ### 4.5 Repairs / Atelier Work Orders
 
-- **Files:** `src/features/repairs/repair.service.ts`, `repair.controller.ts`
+- **Files:** `src/features/repairs/repair.service.ts`, `repair.controller.ts`, `src/features/atelier-work-orders/`
 - **Purpose:** Workshop jobs (repairs from internal orders or external optician shops)
 - **Status flow:** `pending` → `in_progress` → `completed` → `delivered` | `cancelled`
 - **Key business rules:**
   - Dual source: `internal` (from orders) or `optician` (from partner shops)
-  - Lens blank assignment (left/right eye)
+  - **Multi-service:** Work orders support multiple repair services via `WorkOrderService` junction
+  - **Prescription:** Always saved with work orders (`OpticianShopPrescription` — SPH/CYL/AXIS/ADD/PD per eye + lens specs)
+  - **Lens source:** Stock (from atelier inventory) or optician (provided by partner shop)
+  - When stock: API auto-matches blanks by prescription, validates availability, decrements stock, creates `LensBlankAdjustment`, auto-creates `OpticianShopBill`
+  - Lens blank assignment (left/right eye) — uses `SearchSelect` with multi-line details
   - Breakage tracking with replacement blank assignment
   - SMS notification on completion (currently disabled, logs to DB only)
   - Timestamps: `startedAt`, `completedAt`
+  - **Payment tracking:** Independent of status — work order completion does not imply payment
+    - `paymentStatus`: `pending` | `partial` | `paid`
+    - `amountPaid`: tracks cumulative payments from optician shop
+    - `record-payment` action: accepts `amount`, auto-computes status
+  - **Frame source options:** `shop`, `optician`, `external` (no `client` option)
+  - **Lens blank picker:** Uses `SearchSelect` component with `label` (brand, type, thickness, qty) and `secondary` (SPH/CYL ranges)
+  - **New Work Order Dialog:** 4-step flow — shop → services (multi-select) → expected date → lens source + prescription + blank matching
+  - **OCR upload:** Upload prescription image to auto-fill SPH/CYL/AXIS/ADD/PD fields (uses Groq AI via `/api/ocr-prescription`)
+  - **Stock blanks optional:** When lens source is "stock", blanks are optional. If blanks are missing from stock, work order is still created — the optician shop partner provides lenses externally. Per-eye availability is displayed in the dialog.
+
+### 4.5a Optician Shop Bills
+
+- **Files:** `src/features/optician-shop-bills/`
+- **Purpose:** Billing for optician shop work orders (auto-created when stock lenses are used)
+- **Key business rules:**
+  - Auto-created by `createRepair` when `lensSource === 'stock'`
+  - Line items: per service + per lens blank used
+  - Payment tracking: `status` = `unpaid` | `partiallyPaid` | `paid`
+  - `record-payment` action: accepts amount, auto-computes status
 
 ### 4.6 Lens Blanks
 
@@ -215,6 +242,7 @@ solab/
   - Stock adjustments with reasons (`purchased`, `used_in_mounting`, `used_in_repair`, `broken_during_mounting`)
   - Adjustment audit trail via `LensBlankAdjustment` records
   - **Prescription matching:** API supports `sphRight`, `cylRight`, `sphLeft`, `cylLeft` query params to filter blanks whose SPH/CYL ranges fit the prescription (OR logic — matches either eye)
+  - **Shop role restrictions:** Lens blank nav item hidden from shop accounts (`roles: ['admin', 'atelier']` only). Shop accounts cannot see lens blank stock, create lens blank products, or use the lens blank picker in orders.
 
 ### 4.7 Purchase Invoices
 
@@ -222,7 +250,7 @@ solab/
 - **Purpose:** Supplier invoices and payment tracking
 - **Key business rules:**
   - Auto-generated invoice numbers: `FAC-{supplierAbbreviation}-{sequence}`
-  - Payment methods: cash, cheque (creates `Cheque` record), traite/bill of exchange (creates `Traite` record), transfer
+  - Payment methods: cash, cheque (creates `Cheque` record with `type: 'standard'` or `type: 'traite'`), transfer
   - Entity-aware: `shop` vs `atelier` invoices
   - Payment status computed from `paidAmount` vs `totalAmount`
 
@@ -296,7 +324,7 @@ solab/
 
 - **Files:** `src/features/notifications/notification.service.ts`, `NotificationBell.tsx`
 - **Purpose:** Aggregated alert feed
-- **Alert types:** low_stock, pending_repair, ready_order, pending_payment (cheque), pending_payment (traite)
+- **Alert types:** low_stock, pending_repair, ready_order, pending_payment (cheque/traite)
 
 ### 4.19 Import
 
@@ -329,10 +357,9 @@ solab/
 
 ### Payment Rules
 - Three payment types: `deposit`, `balance`, `full`
-- Five payment methods: `cash`, `cheque`, `traite`, `card`, `transfer`
+- Four payment methods: `cash`, `cheque`, `card`, `transfer`
 - Auto-complete when total paid ≥ total amount
-- Cheque payments create a `Cheque` record with status tracking
-- Traite (bill of exchange) payments create a `Traite` record
+- Cheque payments create a `Cheque` record with status tracking and optional `type: 'traite'`
 
 ### Stock Rules
 - Stock decremented on order creation
@@ -342,9 +369,16 @@ solab/
 
 ### Atelier Work Orders
 - Two sources: `internal` (from shop orders) or `optician` (from partner shops)
-- Lens blank assignment (left/right eye)
+- Lens blank assignment (left/right eye) with detailed display (brand, type, SPH/CYL ranges)
 - Breakage tracking: `none`, `left`, `right`, `both`
 - Replacement blank assignment on breakage
+- **Payment tracking:** Independent of work order status
+  - `paymentStatus`: `pending` | `partial` | `paid`
+  - `amountPaid`: cumulative amount paid by optician shop
+  - Total due = `servicePrice` + `lensBlankPrice`
+  - Status auto-computed on each payment
+- **Frame source:** `shop` | `optician` | `external` (no `client` option)
+- **Shop role restrictions:** Cannot see lens blanks in stock, order form, or product creation
 
 ### Supplier Invoices
 - Invoice numbers: `FAC-{supplierAbbreviation}-{sequence}`
@@ -359,7 +393,7 @@ solab/
 
 ## 6. Database
 
-### 6.1 Entities (22 models)
+### 6.1 Entities (28 models)
 
 | Model | Purpose |
 |-------|---------|
@@ -374,15 +408,19 @@ solab/
 | `Order` | Sales orders |
 | `OrderItem` | Order line items |
 | `Payment` | Client payments |
-| `Cheque` | Cheque payment records |
-| `Traite` | Bills of exchange |
+| `Cheque` | Cheque/traite payment records |
 | `PurchaseInvoice` | Supplier invoices |
 | `PurchaseInvoiceItem` | Invoice line items |
 | `SupplierPayment` | Payments to suppliers |
 | `LensBlank` | Raw lens blanks for atelier |
 | `LensBlankAdjustment` | Lens blank stock changes |
-| `AtelierWorkOrder` | Workshop jobs |
+| `AtelierWorkOrder` | Workshop jobs (multi-service, with prescription, billing, and payment tracking) |
 | `RepairService` | Repair service catalog |
+| `WorkOrderService` | Many-to-many junction: work order ↔ repair service (with per-service price) |
+| `OpticianShopPrescription` | Prescription saved with work orders (SPH/CYL/AXIS/ADD/PD per eye + lens specs) |
+| `OpticianShopBill` | Bill for optician shop work orders (auto-created when stock lenses used) |
+| `OpticianShopBillItem` | Bill line items (per service + per lens blank) |
+| `OpticianShopPayment` | Payments against optician shop bills |
 | `LensBrand` | Lens manufacturer brands |
 | `StockAdjustment` | Product stock changes |
 | `SmsLog` | SMS notification log |
@@ -395,22 +433,37 @@ User ──has many──> Order, AtelierWorkOrder, StockAdjustment, SmsLog
 Client ──has many──> Prescription, Order, SmsLog
 Doctor ──has many──> Prescription
 Fournisseur ──has many──> Product, PurchaseInvoice, LensBlank
-OpticianShop ──has many──> AtelierWorkOrder
+OpticianShop ──has many──> AtelierWorkOrder, OpticianShopPrescription, OpticianShopBill
 Prescription ──belongs to──> Client, Doctor
 Product ──has one──> QRCode
 Product ──has many──> OrderItem, StockAdjustment
 Order ──has many──> OrderItem, Payment, AtelierWorkOrder
-Order ──belongs to──> Client, User
+Order ──belongs to──> Client
 Order ──optional──> Prescription
-AtelierWorkOrder ──belongs to──> Order, OpticianShop, RepairService
+AtelierWorkOrder ──belongs to──> Order (optional), OpticianShop (optional)
+AtelierWorkOrder ──has many──> WorkOrderService (junction to RepairService)
+AtelierWorkOrder ──has one──> OpticianShopPrescription (optional)
+AtelierWorkOrder ──has one──> OpticianShopBill (optional)
 AtelierWorkOrder ──optional──> LensBlank (left, right, replacement left, replacement right)
+AtelierWorkOrder ──has many──> LensBlankAdjustment
 PurchaseInvoice ──belongs to──> Fournisseur
-PurchaseInvoice ──has many──> PurchaseInvoiceItem, SupplierPayment, Traite, LensBlankAdjustment
-Cheque ──has many──> Payment, SupplierPayment
-Traite ──has many──> SupplierPayment
+PurchaseInvoice ──has many──> PurchaseInvoiceItem, SupplierPayment, LensBlankAdjustment
+Cheque ──has many──> Payment, SupplierPayment, OpticianShopPayment
 ```
 
-### 6.3 Enums (13+)
+### 6.3 Indexes
+
+| Model | Fields | Purpose |
+|-------|--------|---------|
+| `Order` | `clientId` | Fast client order lookups |
+| `Order` | `status` | Status filter queries |
+| `OrderItem` | `orderId` | Order line item lookups |
+| `Payment` | `orderId` | Payment lookups per order |
+| `AtelierWorkOrder` | `status` | Status filter queries |
+| `AtelierWorkOrder` | `orderId` | Work order lookups per order |
+| `AtelierWorkOrder` | `opticianShopId` | Shop work order lookups |
+
+### 6.4 Enums (23)
 
 | Enum | Values |
 |------|--------|
@@ -419,14 +472,21 @@ Traite ──has many──> SupplierPayment
 | `OrderType` | `standard`, `remounting`, `direct_sale` |
 | `OrderStatus` | `pending`, `ready`, `completed`, `cancelled` |
 | `PaymentType` | `deposit`, `balance`, `full` |
-| `PaymentMethod` | `cash`, `cheque`, `traite`, `card`, `transfer` |
-| `ChequeStatus` | `pending`, `deposited`, `cashed`, `bounced` |
-| `TraiteStatus` | `pending`, `paid`, `overdue`, `cancelled` |
+| `PaymentMethod` | `cash`, `cheque`, `card`, `transfer` |
+| `ChequeStatus` | `pending`, `deposited`, `cashed`, `bounced`, `paid`, `overdue`, `cancelled` |
+| `ChequeType` | `standard`, `traite` |
+| `ChequeEntityType` | `client_payment`, `supplier_payment` |
 | `ProductCategory` | `lunette`, `lentille`, `verre`, `accessory`, `nettoyant_lentilles`, `nettoyant_monture` |
 | `LensType` | `singleVision`, `progressive`, `bifocal`, `office`, `photochromic` |
 | `LensMaterial` | `cr39`, `polycarbonate`, `highIndex`, `trivex` |
 | `LensCoating` | `none`, `ar`, `scratchResistant`, `blueBlock`, `arScratch`, `arBlueBlock` |
 | `AtelierWorkOrderStatus` | `pending`, `in_progress`, `completed`, `delivered`, `cancelled` |
+| `WorkOrderSource` | `internal`, `optician` |
+| `PaymentStatus` | `pending`, `partial`, `paid` |
+| `BrokenLensBlank` | `none`, `left`, `right`, `both` |
+| `InvoiceEntity` | `shop`, `atelier` |
+| `BillStatus` | `unpaid`, `partiallyPaid`, `paid` |
+| `BillItemType` | `service`, `lens_blank` |
 | `StockAdjustmentReason` | `restock`, `damage`, `adjustment`, `sale` |
 | `LensBlankAdjustmentReason` | `purchased`, `used_in_mounting`, `used_in_repair`, `broken_during_mounting` |
 | `SmsStatus` | `sent`, `failed` |
@@ -474,15 +534,18 @@ Traite ──has many──> SupplierPayment
 | 33 | `/api/export/[entity]` | GET | Export CSV (clients/fournisseurs/products/orders) |
 | 34 | `/api/import` | POST, PUT | Preview/confirm CSV import |
 | 35 | `/api/ocr-prescription` | POST | Extract prescription from image |
+| 36 | `/api/optician-shop-bills` | GET | List optician shop bills |
+| 37 | `/api/optician-shop-bills/[id]` | GET | Get bill detail |
+| 38 | `/api/optician-shop-bills/[id]` | POST | Record payment against bill (`?action=record-payment`) |
 
-**Total:** 35 route files, 58 HTTP method handlers
+**Total:** 38 route files, 63 HTTP method handlers
 
 ### 7.2 Action-Based PATCH Endpoints
 
 Three resources use query params or body inspection to branch PATCH behavior:
 
 - **Orders:** `{ status }` → status update, `{ payments }` → add payments
-- **Repairs:** `?action=assign-lens-blanks`, `?action=declare-breakage`, default → status update
+- **Repairs:** `?action=assign-lens-blanks` → assign lens blanks, `?action=declare-breakage` → declare breakage, `?action=record-payment` → record payment (body: `{ amount }`), default → status update
 - **Lens blanks:** `?action=adjust-stock` → stock adjustment, default → update fields
 - **Purchase invoices:** `?action=add-payment` → add payment
 
@@ -575,7 +638,7 @@ Three resources use query params or body inspection to branch PATCH behavior:
 |----------|------------|-----|
 | `order.service.ts` — `createOrder` | `db.$transaction` | Atomic order number generation + stock decrement |
 | `order.service.ts` — `deleteOrder` | Sequential operations | Stock restoration before deletion |
-| `purchase-invoice.service.ts` — `createPurchaseInvoice` | Nested creates | Invoice + items + payments + cheques/traites in one operation |
+| `purchase-invoice.service.ts` — `createPurchaseInvoice` | Nested creates | Invoice + items + payments + cheques in one operation |
 
 **Note:** Most operations are NOT wrapped in transactions. Single-entity CRUD operations rely on Prisma's default behavior.
 
@@ -603,6 +666,7 @@ Three resources use query params or body inspection to branch PATCH behavior:
 - Three-state empty UI: loading → empty → no-results
 - `cn()` utility for conditional class merging
 - Consistent Card/Badge/Button patterns from shadcn/ui
+- **`SearchSelect` component** (`src/components/ui/search-select.tsx`): Dialog-based select with search, supports `label` (primary text) and `secondary` (secondary text on separate line). Used for lens blank selects where multi-line detail display is needed.
 
 ### 12.3 Naming Conventions
 
@@ -614,6 +678,8 @@ Three resources use query params or body inspection to branch PATCH behavior:
 - Mappers: `*.mapper.ts` (pure functions)
 - Repositories: `*.repository.ts` (thin Prisma wrappers)
 - i18n keys: dot notation (`orders.type_standard`, `common.save`)
+
+**Naming decision — `fournisseur` stays French (2026-09-02):** The supplier domain uses `Fournisseur` at every layer (Prisma model, `fournisseurId` FKs on Product/LensBlank/PurchaseInvoice, `/api/fournisseurs`, module dir, view name, import/export entity keys). Renaming to "supplier" would require a risky SQLite data migration for zero functional gain — the UI already localizes it (eng: "Suppliers", fr: "Fournisseurs") and it is the real-world term used by the shop. Do not rename opportunistically; if ever renamed, it must be a deliberate full-stack refactor including a hand-written `ALTER TABLE RENAME` migration.
 
 ---
 

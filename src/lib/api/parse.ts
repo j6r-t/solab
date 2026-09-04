@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import type { ZodSchema } from 'zod'
-import { BadRequestError } from '@/errors'
+import { BadRequestError } from '@/lib/errors'
 
 export async function parseBody<T>(request: NextRequest, schema?: ZodSchema<T>): Promise<T> {
     const body = await request.json()

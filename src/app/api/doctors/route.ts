@@ -1,1 +1,1 @@
-export { GET, POST } from '@/features/doctors/doctor.controller'
+export { GET, POST } from '@/modules/partners/doctors/doctor.controller'

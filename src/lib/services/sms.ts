@@ -36,13 +36,13 @@ export async function sendRepairReadySms(repairId: string): Promise<{ success: b
             order: {
                 include: { client: true },
             },
-            repairService: true,
+            workOrderServices: { include: { repairService: true } },
         },
     })
     if (!repair) return { success: false }
     if (repair.opticianShopId || !repair.order?.client) return { success: true }
     const client = repair.order.client
-    const serviceName = repair.repairService?.name || repair.type
+    const serviceName = repair.workOrderServices[0]?.repairService?.name || 'Service'
     const message = `Bonjour ${client.name} ${client.familyName}, votre réparation (${serviceName}) est terminée. Vous pouvez venir la récupérer chez Sofien Optic. Merci.`
     return sendSms(client.phone, message, client.id)
 }

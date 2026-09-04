@@ -1,29 +1,31 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '@/stores/auth-store'
 import { useViewStore } from '@/stores/view-store'
 import { AppShell } from '@/components/layouts/AppShell'
-import { DashboardPage } from '@/features/dashboard/dashboardPage'
-import { ClientsPage } from '@/features/clients/ClientsPage'
-import { ClientDetailPage } from '@/features/clients/ClientDetailPage'
-import { StockPage } from '@/features/stock/StockPage'
-import { PrescriptionsPage } from '@/features/prescriptions/PrescriptionsPage'
-import { OrdersPage } from '@/features/orders/OrdersPage'
-import { RepairsPage } from '@/features/repairs/RepairsPage'
-import { BillingPage } from '@/features/billing/BillingPage'
-import { ReportsPage } from '@/features/reports/ReportsPage'
-import { SettingsPage } from '@/features/settings/SettingsPage'
-import { DoctorsPage } from '@/features/doctors/DoctorsPage'
-import { FournisseursPage } from '@/features/fournisseurs/FournisseursPage'
-import { OpticianShopsPage } from '@/features/optician-shops/OpticianShopsPage'
-import { QRCodePage } from '@/features/qrcode/QRCodePage'
-import { ImportPage } from '@/features/import/ImportPage'
-import { PurchaseInvoicesPage } from '@/features/purchase-invoices/PurchaseInvoicesPage'
-import { LensBlanksPage } from '@/features/lens-blanks/LensBlanksPage'
-import { AtelierWorkOrdersPage } from '@/features/atelier-work-orders/AtelierWorkOrdersPage'
+import { DashboardPage } from '@/modules/system/dashboard/DashboardPage'
+import { ClientsPage } from '@/modules/partners/clients/ClientsPage'
+import { ClientDetailPage } from '@/modules/partners/clients/ClientDetailPage'
+import { StockPage } from '@/modules/inventory/stock/StockPage'
+import { PrescriptionsPage } from '@/modules/sales/prescriptions/PrescriptionsPage'
+import { OrdersPage } from '@/modules/sales/orders/OrdersPage'
+import { RepairsPage } from '@/modules/sales/repairs/RepairsPage'
+import { BillingPage } from '@/modules/sales/billing/BillingPage'
+import { ChequesPage } from '@/modules/sales/cheques/ChequesPage'
+import { ReportsPage } from '@/modules/system/reports/ReportsPage'
+import { SettingsPage } from '@/modules/system/settings/SettingsPage'
+import { DoctorsPage } from '@/modules/partners/doctors/DoctorsPage'
+import { FournisseursPage } from '@/modules/partners/fournisseurs/FournisseursPage'
+import { OpticianShopsPage } from '@/modules/partners/optician-shops/OpticianShopsPage'
+import { QRCodePage } from '@/modules/system/qrcode/QRCodePage'
+import { ImportPage } from '@/modules/system/import/ImportPage'
+import { PurchaseInvoicesPage } from '@/modules/inventory/purchase-invoices/PurchaseInvoicesPage'
+import { LensBlanksPage } from '@/modules/inventory/lens-blanks/LensBlanksPage'
+import { AtelierWorkOrdersPage } from '@/modules/sales/atelier-work-orders/AtelierWorkOrdersPage'
+import { AuditLogsPage } from '@/modules/system/audit/AuditLogsPage'
 
 const views: Record<string, React.FC> = {
   dashboard: DashboardPage,
@@ -34,6 +36,7 @@ const views: Record<string, React.FC> = {
   orders: OrdersPage,
   repairs: RepairsPage,
   billing: BillingPage,
+  cheques: ChequesPage,
   reports: ReportsPage,
   settings: SettingsPage,
   doctors: DoctorsPage,
@@ -44,21 +47,20 @@ const views: Record<string, React.FC> = {
   'purchase-invoices': PurchaseInvoicesPage,
   'lens-blanks': LensBlanksPage,
   'atelier-work-orders': AtelierWorkOrdersPage,
+  'audit-logs': AuditLogsPage,
 }
+
+const emptySubscribe = () => () => {}
 
 export default function Home() {
   const { isAuthenticated } = useAuthStore()
   const { currentView } = useViewStore()
   const router = useRouter()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false)
 
   useEffect(() => {
     if (mounted && !isAuthenticated) {
-      router.push('/login')
+      router.push('/en/login') // Use locale-based route
     }
   }, [mounted, isAuthenticated, router])
 

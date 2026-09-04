@@ -1,1 +1,1 @@
-export { PATCH, DELETE } from '@/features/lens-blanks/lens-blank.controller'
+export { PATCH, DELETE } from '@/modules/inventory/lens-blanks/lens-blank.controller'

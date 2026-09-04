@@ -1,1 +1,1 @@
-export { GET, POST } from '@/features/fournisseurs/fournisseur.controller'
+export { GET, POST } from '@/modules/partners/fournisseurs/fournisseur.controller'

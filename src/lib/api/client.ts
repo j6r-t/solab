@@ -1,4 +1,10 @@
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
+import type { PaginatedResponse } from '@/lib/api/pagination'
+
+interface RequestOptions extends RequestInit {
+    keepEnvelope?: boolean
+}
+
+async function request<T>(url: string, init?: RequestOptions): Promise<T> {
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null
 
     const headers: Record<string, string> = {}
@@ -12,6 +18,10 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
     if (!res.ok) {
         const message = body?.message || (body?.fields ? JSON.stringify(body.fields) : `Request failed (${res.status})`)
         throw new Error(message)
+    }
+
+    if (!init?.keepEnvelope && body && typeof body === 'object' && 'data' in body && 'pagination' in body) {
+        return body.data as T
     }
 
     return body
@@ -31,6 +41,11 @@ export const api = {
     get: <T>(path: string, params?: Record<string, string | undefined>): Promise<T> => {
         const qs = buildQuery(params)
         return request<T>(qs ? `${path}?${qs}` : path)
+    },
+
+    getPaginated: <T>(path: string, params?: Record<string, string | undefined>): Promise<PaginatedResponse<T>> => {
+        const qs = buildQuery(params)
+        return request<PaginatedResponse<T>>(qs ? `${path}?${qs}` : path, { keepEnvelope: true })
     },
 
     post: <T>(path: string, data?: unknown): Promise<T> => {

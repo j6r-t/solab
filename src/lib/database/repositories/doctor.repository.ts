@@ -1,11 +1,17 @@
-import { Prisma } from '@prisma/client'
+﻿import { Prisma } from '@prisma/client'
 import { db } from '../db'
 
 export const doctorRepo = {
-    findMany: (args?: Prisma.DoctorFindManyArgs) => db.doctor.findMany(args),
-    findUnique: (args: Prisma.DoctorFindUniqueArgs) => db.doctor.findUnique(args),
-    create: (args: Prisma.DoctorCreateArgs) => db.doctor.create(args),
-    update: (args: Prisma.DoctorUpdateArgs) => db.doctor.update(args),
-    delete: (args: Prisma.DoctorDeleteArgs) => db.doctor.delete(args),
-    count: (args?: Prisma.DoctorCountArgs) => db.doctor.count(args),
+    findMany: <T extends Prisma.DoctorFindManyArgs>(args?: T): Prisma.Result<typeof db.doctor, T, 'findMany'> =>
+        db.doctor.findMany(args) as unknown as Prisma.Result<typeof db.doctor, T, 'findMany'>,
+    findUnique: <T extends Prisma.DoctorFindUniqueArgs>(args: T): Prisma.Result<typeof db.doctor, T, 'findUnique'> =>
+        db.doctor.findUnique(args) as unknown as Prisma.Result<typeof db.doctor, T, 'findUnique'>,
+    create: <T extends Prisma.DoctorCreateArgs>(args: T): Prisma.Result<typeof db.doctor, T, 'create'> =>
+        db.doctor.create(args) as unknown as Prisma.Result<typeof db.doctor, T, 'create'>,
+    update: <T extends Prisma.DoctorUpdateArgs>(args: T): Prisma.Result<typeof db.doctor, T, 'update'> =>
+        db.doctor.update(args) as unknown as Prisma.Result<typeof db.doctor, T, 'update'>,
+    delete: <T extends Prisma.DoctorDeleteArgs>(args: T): Prisma.Result<typeof db.doctor, T, 'delete'> =>
+        db.doctor.delete(args) as unknown as Prisma.Result<typeof db.doctor, T, 'delete'>,
+    count: <T extends Prisma.DoctorCountArgs>(args?: T): Prisma.Result<typeof db.doctor, T, 'count'> =>
+        db.doctor.count(args) as unknown as Prisma.Result<typeof db.doctor, T, 'count'>,
 }

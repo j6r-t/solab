@@ -1,1 +1,1 @@
-export { GET, POST } from '@/features/optician-shops/optician-shop.controller'
+export { GET, POST } from '@/modules/partners/optician-shops/optician-shop.controller'

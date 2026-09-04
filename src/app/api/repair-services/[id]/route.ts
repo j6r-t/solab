@@ -1,1 +1,1 @@
-export { PATCH, DELETE } from '@/features/repair-services/repair-service.controller'
+export { PATCH, DELETE } from '@/modules/sales/repair-services/repair-service.controller'

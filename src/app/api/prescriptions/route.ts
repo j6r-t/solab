@@ -1,1 +1,1 @@
-export { GET, POST } from '@/features/prescriptions/prescription.controller'
+export { GET, POST } from '@/modules/sales/prescriptions/prescription.controller'

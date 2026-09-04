@@ -1,1 +1,1 @@
-export { PATCH, DELETE } from '@/features/fournisseurs/fournisseur.controller'
+export { PATCH, DELETE } from '@/modules/partners/fournisseurs/fournisseur.controller'

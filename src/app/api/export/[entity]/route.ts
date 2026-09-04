@@ -1,12 +1,11 @@
 import { NextRequest } from 'next/server'
-import { handleError } from '@/middlewares/errorHandler'
+import { handleError } from '@/lib/middlewares/errorHandler'
+import { BadRequestError } from '@/lib/errors'
 import { toCSV } from '@/lib/csv'
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ entity: string }> }) {
     try {
         const { entity } = await params
-        const { searchParams } = new URL(request.url)
-        const format = searchParams.get('format') || 'csv'
 
         let headers: string[] = []
         let rows: (string | number | null | undefined)[][] = []
@@ -46,7 +45,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 ] as (string | number | null | undefined)[]
             })
         } else {
-            return new Response('Unknown entity', { status: 400 })
+            throw new BadRequestError('Unknown entity')
         }
 
         const csv = toCSV(headers, rows)

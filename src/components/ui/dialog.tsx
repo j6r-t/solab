@@ -7,11 +7,6 @@ import { cn } from "@/lib/utils/cn"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
 
-function isInsideChildDismissableLayer(el: EventTarget | null): boolean {
-    if (!(el instanceof HTMLElement)) return false
-    return !!el.closest('[data-slot="select-content"], [data-slot="dialog-content"], [role="dialog"]')
-}
-
 function Dialog({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {

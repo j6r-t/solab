@@ -1,1 +1,1 @@
-export { GET, POST } from '@/features/lens-brands/lens-brand.controller'
+export { GET, POST } from '@/modules/inventory/lens-brands/lens-brand.controller'

@@ -1,1 +1,1 @@
-export { GET } from '@/features/qrcode/qrcode.controller'
+export { GET } from '@/modules/system/qrcode/qrcode.controller'

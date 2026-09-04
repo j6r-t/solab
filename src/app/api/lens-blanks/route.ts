@@ -1,1 +1,1 @@
-export { GET, POST } from '@/features/lens-blanks/lens-blank.controller'
+export { GET, POST } from '@/modules/inventory/lens-blanks/lens-blank.controller'

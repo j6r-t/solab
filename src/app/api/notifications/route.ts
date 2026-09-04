@@ -1,1 +1,1 @@
-export { GET } from '@/features/notifications/notification.controller'
+export { GET } from '@/modules/system/notifications/notification.controller'

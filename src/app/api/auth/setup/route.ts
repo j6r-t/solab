@@ -1,1 +1,1 @@
-export { setupPOST as POST } from '@/features/auth/auth.controller'
+export { setupPOST as POST } from '@/modules/system/auth/auth.controller'

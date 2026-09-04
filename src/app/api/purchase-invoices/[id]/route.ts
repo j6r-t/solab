@@ -1,1 +1,1 @@
-export { PATCH, DELETE } from '@/features/purchase-invoices/purchase-invoice.controller'
+export { PATCH, DELETE } from '@/modules/inventory/purchase-invoices/purchase-invoice.controller'

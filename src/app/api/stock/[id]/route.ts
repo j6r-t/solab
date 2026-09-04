@@ -1,1 +1,1 @@
-export { PATCH, DELETE } from '@/features/stock/stock.controller'
+export { PATCH, DELETE } from '@/modules/inventory/stock/stock.controller'

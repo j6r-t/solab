@@ -16,6 +16,7 @@ export type ViewName =
   | 'order-detail'
   | 'billing'
   | 'billing-detail'
+  | 'cheques'
   | 'repairs'
   | 'reports'
   | 'settings'
@@ -27,6 +28,7 @@ export type ViewName =
   | 'purchase-invoices'
   | 'lens-blanks'
   | 'atelier-work-orders'
+  | 'audit-logs'
 
 interface ViewState {
   currentView: ViewName

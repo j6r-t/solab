@@ -1,54 +1,11 @@
 import { NextRequest } from 'next/server'
 import { ok } from '@/lib/api/response'
-import { handleError } from '@/middlewares/errorHandler'
+import { handleError } from '@/lib/middlewares/errorHandler'
 import { parseBody } from '@/lib/api/parse'
-import { createClient } from '@/features/clients/client.service'
-import { createFournisseur } from '@/features/fournisseurs/fournisseur.service'
+import { createClient } from '@/modules/partners/clients/client.service'
+import { createFournisseur } from '@/modules/partners/fournisseurs/fournisseur.service'
 import { z } from 'zod'
 
-const fieldMap: Record<string, Record<string, string>> = {
-    clients: {
-        'nom_et_prénom': 'name',
-        'nom_et_prenom': 'name',
-        'nom': 'name',
-        'prénom': 'familyName',
-        'prenom': 'familyName',
-        'familyname': 'familyName',
-        'name': 'name',
-        'n__tél.1': 'phone',
-        'n° tél.1': 'phone',
-        'telephone': 'phone',
-        'phone': 'phone',
-        'téléphone': 'phone',
-        'adresse': 'address',
-        'address': 'address',
-        'date_naissance': 'birthDate',
-        'birthdate': 'birthDate',
-        'observation': 'notes',
-        'notes': 'notes',
-        'organisme': 'organization',
-        'organization': 'organization',
-        'genre': 'gender',
-        'gender': 'gender',
-    },
-    fournisseurs: {
-        'raison_sociale': 'name',
-        'name': 'name',
-        'nom': 'name',
-        'adresse_': 'address',
-        'adresse': 'address',
-        'address': 'address',
-        'e-mail': 'email',
-        'email': 'email',
-        'mail': 'email',
-        'matricule_fiscale': 'taxId',
-        'taxid': 'taxId',
-        'registre_de_commerce': 'commercialRegister',
-        'téléphone': 'phone',
-        'telephone': 'phone',
-        'phone': 'phone',
-    },
-}
 
 const previewSchema = z.object({
     entity: z.enum(['clients', 'fournisseurs']),
@@ -101,9 +58,9 @@ export async function PUT(request: NextRequest) {
         for (let i = 0; i < rows.length; i++) {
             try {
                 if (entity === 'clients') {
-                    await createClient(rows[i] as any)
+                    await createClient(rows[i])
                 } else {
-                    await createFournisseur(rows[i] as any)
+                    await createFournisseur(rows[i] as unknown as Parameters<typeof createFournisseur>[0])
                 }
                 imported++
             } catch (e: unknown) {

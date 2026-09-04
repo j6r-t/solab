@@ -1,1 +1,1 @@
-export { PATCH, DELETE } from '@/features/lens-brands/lens-brand.controller'
+export { PATCH, DELETE } from '@/modules/inventory/lens-brands/lens-brand.controller'

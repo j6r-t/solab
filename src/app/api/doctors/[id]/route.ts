@@ -1,1 +1,1 @@
-export { PATCH, DELETE } from '@/features/doctors/doctor.controller'
+export { PATCH, DELETE } from '@/modules/partners/doctors/doctor.controller'

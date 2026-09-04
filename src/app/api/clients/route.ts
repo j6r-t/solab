@@ -1,1 +1,1 @@
-export { GET, POST } from '@/features/clients/client.controller'
+export { GET, POST } from '@/modules/partners/clients/client.controller'

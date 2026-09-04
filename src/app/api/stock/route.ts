@@ -1,1 +1,1 @@
-export { GET, POST } from '@/features/stock/stock.controller'
+export { GET, POST } from '@/modules/inventory/stock/stock.controller'

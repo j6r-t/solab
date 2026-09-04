@@ -24,7 +24,7 @@ const getInitialState = () => {
             try {
                 const user = JSON.parse(storedUser)
                 return { isAuthenticated: true, user }
-            } catch (e) {
+            } catch {
                 localStorage.removeItem('auth-token')
                 localStorage.removeItem('auth-user')
                 return { isAuthenticated: false, user: null }
@@ -34,7 +34,7 @@ const getInitialState = () => {
     return { isAuthenticated: false, user: null }
 }
 
-export const useAuthStore = create<AuthState>()((set, get) => ({
+export const useAuthStore = create<AuthState>()((set) => ({
     ...getInitialState(),
     setAuth: (token: string, user: User) => {
         // Store in localStorage for persistence across page reloads

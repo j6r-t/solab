@@ -44,9 +44,7 @@ enum PaymentType {
 enum PaymentMethod {
   cash
   cheque
-  traite
   card
-  transfer
 }
 
 enum ChequeStatus {
@@ -54,13 +52,19 @@ enum ChequeStatus {
   deposited
   cashed
   bounced
-}
-
-enum TraiteStatus {
-  pending
   paid
   overdue
   cancelled
+}
+
+enum ChequeType {
+  standard
+  traite
+}
+
+enum ChequeEntityType {
+  client_payment
+  supplier_payment
 }
 
 enum ProductCategory {
@@ -104,6 +108,40 @@ enum AtelierWorkOrderStatus {
   cancelled
 }
 
+enum WorkOrderSource {
+  internal
+  optician
+}
+
+enum PaymentStatus {
+  pending
+  partial
+  paid
+}
+
+enum BrokenLensBlank {
+  none
+  left
+  right
+  both
+}
+
+enum InvoiceEntity {
+  shop
+  atelier
+}
+
+enum BillStatus {
+  unpaid
+  partiallyPaid
+  paid
+}
+
+enum BillItemType {
+  service
+  lens_blank
+}
+
 enum StockAdjustmentReason {
   restock
   damage
@@ -128,7 +166,7 @@ enum SmsStatus {
 // ───────────────────────────────
 
 model User {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   email     String   @unique
   name      String?
   password  String
@@ -138,7 +176,7 @@ model User {
 }
 
 model Client {
-  id           String         @id @default(cuid())
+  id           String         @id @default(uuid())
   name         String
   familyName   String
   phone        String         @unique
@@ -152,10 +190,11 @@ model Client {
   smsLogs      SmsLog[]
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
+  deletedAt    DateTime?
 }
 
 model Doctor {
-  id             String         @id @default(cuid())
+  id             String         @id @default(uuid())
   name           String
   phone          String
   address        String?
@@ -163,10 +202,11 @@ model Doctor {
   prescriptions  Prescription[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+  deletedAt      DateTime?
 }
 
 model Fournisseur {
-  id              String             @id @default(cuid())
+  id              String             @id @default(uuid())
   name            String
   phone           String
   address         String?
@@ -178,21 +218,25 @@ model Fournisseur {
   lensBlanks      LensBlank[]
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
+  deletedAt       DateTime?
 }
 
 model OpticianShop {
-  id         String             @id @default(cuid())
-  name       String
-  phone      String
-  address    String?
-  notes      String?
-  workOrders AtelierWorkOrder[]
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
+  id            String                    @id @default(uuid())
+  name          String
+  phone         String
+  address       String?
+  notes         String?
+  workOrders    AtelierWorkOrder[]        @relation("OpticianShopWorkOrders")
+  prescriptions OpticianShopPrescription[] @relation("OpticianShopPrescriptions")
+  bills         OpticianShopBill[]        @relation("OpticianShopBills")
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  deletedAt     DateTime?
 }
 
 model Prescription {
-  id       String @id @default(cuid())
+  id       String @id @default(uuid())
   clientId String
   client   Client @relation(fields: [clientId], references: [id], onDelete: Restrict)
 
@@ -218,7 +262,7 @@ model Prescription {
 }
 
 model Product {
-  id               String            @id @default(cuid())
+  id               String            @id @default(uuid())
   name             String
   brand            String
   model            String
@@ -237,7 +281,7 @@ model Product {
   fournisseur      Fournisseur?      @relation(fields: [fournisseurId], references: [id])
   qrcode           QRCode?
   orderItems       OrderItem[]
-  StockAdjustments StockAdjustment[]
+  stockAdjustments StockAdjustment[]
   purchaseInvoiceItems PurchaseInvoiceItem[]
 
   createdAt DateTime @default(now())
@@ -245,7 +289,7 @@ model Product {
 }
 
 model QRCode {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   productId String   @unique
   code      String   @unique
   product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -253,7 +297,7 @@ model QRCode {
 }
 
 model Order {
-  id          String      @id @default(cuid())
+  id          String      @id @default(uuid())
   orderNumber Int         @unique
   clientId    String
   client      Client      @relation(fields: [clientId], references: [id], onDelete: Restrict)
@@ -269,10 +313,14 @@ model Order {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt   DateTime?
+
+  @@index([clientId])
+  @@index([status])
 }
 
 model OrderItem {
-  id           String     @id @default(cuid())
+  id           String     @id @default(uuid())
   orderId      String
   order        Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId    String?
@@ -283,10 +331,12 @@ model OrderItem {
   quantity     Int
   unitPrice    Decimal
   sellingPrice Decimal?
+
+  @@index([orderId])
 }
 
 model Payment {
-  id        String         @id @default(cuid())
+  id        String         @id @default(uuid())
   orderId   String
   order     Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   amount    Decimal
@@ -296,59 +346,47 @@ model Payment {
   cheque    Cheque?        @relation(fields: [chequeId], references: [id])
   dueDate   DateTime?
   createdAt DateTime       @default(now())
+
+  @@index([orderId])
 }
 
 model Cheque {
-  id          String        @id @default(cuid())
-  number      String
-  bankName    String
-  amount      Decimal
-  issueDate   DateTime      @default(now())
-  dueDate     DateTime
-  status      ChequeStatus  @default(pending)
-  entityType  String        // 'client_payment' | 'supplier_payment' | 'shop_to_atelier'
-  entityId    String?       // FK to the payment record
-  payments    Payment[]
-  supplierPayments SupplierPayment[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-}
-
-model Traite {
-  id                String             @id @default(cuid())
-  number            String
-  amount            Decimal
-  issueDate         DateTime           @default(now())
-  dueDate           DateTime
-  status            TraiteStatus       @default(pending)
-  purchaseInvoiceId String             // FK → PurchaseInvoice
-  purchaseInvoice   PurchaseInvoice    @relation(fields: [purchaseInvoiceId], references: [id])
-  supplierPayments  SupplierPayment[]
-  notes             String?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  id                 String                @id @default(uuid())
+  number             String
+  type               ChequeType            @default(standard)
+  bankName           String?
+  amount             Decimal
+  issueDate          DateTime              @default(now())
+  dueDate            DateTime
+  status             ChequeStatus          @default(pending)
+  entityType         ChequeEntityType
+  payments           Payment[]
+  supplierPayments   SupplierPayment[]
+  opticianShopPayments OpticianShopPayment[]
+  notes              String?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
 }
 
 model PurchaseInvoice {
-  id              String                 @id @default(cuid())
+  id              String                 @id @default(uuid())
   invoiceNumber   String
   fournisseurId   String
   fournisseur     Fournisseur            @relation(fields: [fournisseurId], references: [id])
-  entity          String                 // 'shop' | 'atelier'
+  entity          InvoiceEntity
   date            DateTime               @default(now())
   totalAmount     Decimal
   paidAmount      Decimal                @default(0)
   notes           String?
   items           PurchaseInvoiceItem[]
   payments        SupplierPayment[]
-  traites         Traite[]
   lensBlankAdjustments LensBlankAdjustment[]
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
 }
 
 model PurchaseInvoiceItem {
-  id          String           @id @default(cuid())
+  id          String           @id @default(uuid())
   invoiceId   String
   invoice     PurchaseInvoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   productId   String?
@@ -362,29 +400,25 @@ model PurchaseInvoiceItem {
 }
 
 model SupplierPayment {
-  id                String           @id @default(cuid())
+  id                String           @id @default(uuid())
   purchaseInvoiceId String
   purchaseInvoice   PurchaseInvoice  @relation(fields: [purchaseInvoiceId], references: [id], onDelete: Cascade)
   amount            Decimal
   method            PaymentMethod
   chequeId          String?
   cheque            Cheque?          @relation(fields: [chequeId], references: [id])
-  traiteId          String?
-  traite            Traite?          @relation(fields: [traiteId], references: [id])
   paidAt            DateTime         @default(now())
 }
 
 model LensBlank {
-  id            String    @id @default(cuid())
+  id            String    @id @default(uuid())
   brand         String
   lensType      LensType
   material      LensMaterial
   coating       LensCoating
   thickness     String
-  sphMin        Decimal
-  sphMax        Decimal
-  cylMin        Decimal
-  cylMax        Decimal
+  sph           Decimal
+  cyl           Decimal
   costPrice     Decimal
   sellingPrice  Decimal
   quantity      Int       @default(0)
@@ -397,12 +431,13 @@ model LensBlank {
   workOrdersRight     AtelierWorkOrder[]  @relation("lensBlankRight")
   replacementLeftFor  AtelierWorkOrder[]  @relation("replacementLeft")
   replacementRightFor AtelierWorkOrder[]  @relation("replacementRight")
+  opticianBillItems   OpticianShopBillItem[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
 
 model LensBlankAdjustment {
-  id          String                    @id @default(cuid())
+  id          String                    @id @default(uuid())
   lensBlankId String
   lensBlank   LensBlank                 @relation(fields: [lensBlankId], references: [id], onDelete: Cascade)
   quantity    Int
@@ -415,13 +450,12 @@ model LensBlankAdjustment {
 }
 
 model AtelierWorkOrder {
-  id              String                 @id @default(cuid())
+  id              String                 @id @default(uuid())
   orderId         String?
   order           Order?                 @relation(fields: [orderId], references: [id], onDelete: Cascade)
   opticianShopId  String?
-  opticianShop    OpticianShop?          @relation(fields: [opticianShopId], references: [id], onDelete: SetNull)
-  source          String                 // 'internal' | 'optician'
-  type            String                 // 'mounting' | 'repair'
+  opticianShop    OpticianShop?          @relation("OpticianShopWorkOrders", fields: [opticianShopId], references: [id], onDelete: SetNull)
+  source          WorkOrderSource
 
   status          AtelierWorkOrderStatus @default(pending)
 
@@ -430,14 +464,13 @@ model AtelierWorkOrder {
   lensBlankLeft    LensBlank?            @relation("lensBlankLeft", fields: [lensBlankLeftId], references: [id])
   lensBlankRightId String?
   lensBlankRight   LensBlank?            @relation("lensBlankRight", fields: [lensBlankRightId], references: [id])
-  frameFrom        String?               // 'shop' | 'optician' | 'client'
 
   // Pricing
   lensBlankPrice   Decimal?
   servicePrice     Decimal               @default(0)
 
   // Payment
-  paymentStatus    String                @default("pending")
+  paymentStatus    PaymentStatus         @default(pending)
   amountPaid       Decimal               @default(0)
 
   // Timing
@@ -445,11 +478,18 @@ model AtelierWorkOrder {
   completedAt      DateTime?
   dueDate          DateTime
   expectedCompletionDate DateTime?
-  repairServiceId  String?
-  repairService    RepairService?        @relation(fields: [repairServiceId], references: [id])
+
+  // Services (multi-select)
+  workOrderServices WorkOrderService[]
+
+  // Optician shop prescription (separate from client prescriptions)
+  prescription   OpticianShopPrescription?
+
+  // Bill (created when lenses from our stock)
+  bill           OpticianShopBill?
 
   // Breakage
-  brokenLensBlank  String?               // 'none' | 'left' | 'right' | 'both'
+  brokenLensBlank  BrokenLensBlank?      @default(none)
   replacementLeftId  String?
   replacementLeft    LensBlank?          @relation("replacementLeft", fields: [replacementLeftId], references: [id])
   replacementRightId String?
@@ -460,25 +500,29 @@ model AtelierWorkOrder {
 
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
+
+  @@index([status])
+  @@index([orderId])
+  @@index([opticianShopId])
 }
 
 model RepairService {
-  id           String             @id @default(cuid())
-  name         String
-  defaultPrice Decimal
-  workOrders   AtelierWorkOrder[]
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
+  id               String              @id @default(uuid())
+  name             String
+  defaultPrice     Decimal
+  workOrderServices WorkOrderService[]
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
 }
 
 model LensBrand {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   name      String   @unique
   createdAt DateTime @default(now())
 }
 
 model StockAdjustment {
-  id        String                @id @default(cuid())
+  id        String                @id @default(uuid())
   productId String
   product   Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
   quantity  Int
@@ -487,7 +531,7 @@ model StockAdjustment {
 }
 
 model SmsLog {
-  id        String    @id @default(cuid())
+  id        String    @id @default(uuid())
   clientId  String
   client    Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
   phone     String
@@ -497,11 +541,97 @@ model SmsLog {
 }
 
 model AuditLog {
-  id         String   @id @default(cuid())
+  id         String   @id @default(uuid())
   userId     String?
   action     String
   entityType String
   entityId   String?
   metadata   String   @default("{}")
   createdAt  DateTime @default(now())
+}
+
+// ───────────────────────────────
+// Optician Shop Work Order Models
+// ───────────────────────────────
+
+model OpticianShopPrescription {
+  id              String              @id @default(uuid())
+  opticianShopId  String
+  opticianShop    OpticianShop        @relation("OpticianShopPrescriptions", fields: [opticianShopId], references: [id], onDelete: Restrict)
+  workOrderId     String?             @unique
+  workOrder       AtelierWorkOrder?   @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+
+  // Optical prescription (per eye)
+  sphRight  Decimal
+  cylRight  Decimal
+  axisRight Int
+  addRight  Decimal
+  pdRight   Int
+  sphLeft   Decimal
+  cylLeft   Decimal
+  axisLeft  Int
+  addLeft   Decimal
+  pdLeft    Int
+
+  // Lens preferences
+  thickness String?
+  lensType  LensType?
+  material  LensMaterial?
+  coating   LensCoating?
+
+  notes     String?
+  createdAt DateTime  @default(now())
+}
+
+model WorkOrderService {
+  id              String           @id @default(uuid())
+  workOrderId     String
+  workOrder       AtelierWorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  repairServiceId String
+  repairService   RepairService    @relation(fields: [repairServiceId], references: [id], onDelete: Restrict)
+  price           Decimal
+
+  @@unique([workOrderId, repairServiceId])
+}
+
+model OpticianShopBill {
+  id              String                 @id @default(uuid())
+  billNumber      String                 @unique
+  opticianShopId  String
+  opticianShop    OpticianShop           @relation("OpticianShopBills", fields: [opticianShopId], references: [id], onDelete: Restrict)
+  workOrderId     String?                @unique
+  workOrder       AtelierWorkOrder?      @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+  totalAmount     Decimal
+  paidAmount      Decimal                @default(0)
+  status          BillStatus             @default(unpaid)
+  notes           String?
+  items           OpticianShopBillItem[]
+  payments        OpticianShopPayment[]
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+}
+
+model OpticianShopBillItem {
+  id              String           @id @default(uuid())
+  billId          String
+  bill            OpticianShopBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+  description     String
+  quantity        Int              @default(1)
+  unitPrice       Decimal
+  itemType        BillItemType
+  lensBlankId     String?
+  lensBlank       LensBlank?       @relation(fields: [lensBlankId], references: [id])
+  createdAt       DateTime         @default(now())
+}
+
+model OpticianShopPayment {
+  id        String           @id @default(uuid())
+  billId    String
+  bill      OpticianShopBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+  amount    Decimal
+  method    PaymentMethod
+  chequeId  String?
+  cheque    Cheque?          @relation(fields: [chequeId], references: [id])
+  notes     String?
+  paidAt    DateTime         @default(now())
 }

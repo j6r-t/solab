@@ -1,18 +1,18 @@
-// src/app/api/ocr-prescription/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { parseBody } from '@/lib/api/parse';
+import { handleError } from '@/lib/middlewares/errorHandler';
+import { BadRequestError } from '@/lib/errors';
+import { ok } from '@/lib/api/response';
+import { ocrPrescriptionSchema } from './ocr-prescription.schema';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const { imageData } = await req.json();
+    const { imageData } = await parseBody(req, ocrPrescriptionSchema);
     const apiKey = process.env.GROQ_API_KEY;
     const model = process.env.GROQ_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct';
 
     if (!apiKey) {
-      return NextResponse.json({ error: 'Missing GROQ_API_KEY' }, { status: 500 });
-    }
-
-    if (!model) {
-      return NextResponse.json({ error: 'Missing GROQ_MODEL' }, { status: 500 });
+      throw new BadRequestError('Missing GROQ_API_KEY environment variable');
     }
 
     const requestBody = {
@@ -56,37 +56,30 @@ export async function POST(req: Request) {
     );
 
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Groq API Error:', errorData);
+      const errorData = await response.json().catch(() => null);
 
       if (errorData?.error?.code === 'model_decommissioned') {
-        return NextResponse.json({
-          error: `The model "${model}" has been decommissioned by Groq. Update GROQ_MODEL in your .env file to a supported model. See https://console.groq.com/docs/deprecations for recommendations.`
-        }, { status: 410 });
+        throw new BadRequestError(`The model "${model}" has been decommissioned by Groq. Update GROQ_MODEL in your .env file.`);
       }
 
-      throw new Error(errorData.error?.message || 'Failed to fetch from Groq');
+      throw new BadRequestError(errorData?.error?.message || 'Failed to fetch from Groq');
     }
 
     const data = await response.json();
     const textResponse = data.choices?.[0]?.message?.content;
 
     if (!textResponse) {
-      throw new Error('No text returned from Groq');
+      throw new BadRequestError('No text returned from Groq');
     }
 
     const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      console.error('No JSON found in response:', textResponse);
-      throw new Error('Response did not contain valid JSON');
+      throw new BadRequestError('Response did not contain valid JSON');
     }
 
-    const parsedData = JSON.parse(jsonMatch[0]);
+    return ok(JSON.parse(jsonMatch[0]));
 
-    return NextResponse.json(parsedData);
-
-  } catch (error: any) {
-    console.error('OCR Route Error:', error);
-    return NextResponse.json({ error: error.message || 'Failed to process image' }, { status: 500 });
+  } catch (error) {
+    return handleError(error);
   }
 }

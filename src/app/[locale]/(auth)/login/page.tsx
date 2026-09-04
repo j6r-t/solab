@@ -1,6 +1,6 @@
 'use client'
 
-import { LoginPage } from '@/features/auth/LoginPage'
+import { LoginPage } from '@/modules/system/auth/LoginPage'
 
 export default function LoginRoute() {
     return <LoginPage />

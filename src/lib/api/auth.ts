@@ -1,32 +1,46 @@
 import { NextRequest } from 'next/server'
-import { UnauthorizedError, ForbiddenError } from '@/errors'
-import { verifyToken } from '@/features/auth/auth.service'
+import { UnauthorizedError, ForbiddenError } from '@/lib/errors'
 
-export async function getAuthenticatedUser(request: NextRequest): Promise<string> {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
+/**
+ * Get authenticated user email from request headers set by middleware
+ * @param request - Next.js request object
+ * @returns User email
+ * @throws UnauthorizedError if user is not authenticated
+ */
+export function getAuthenticatedUser(request: NextRequest): string {
+    const email = request.headers.get('x-user-email')
+    if (!email) {
         throw new UnauthorizedError('Unauthorized')
     }
-    const token = authHeader.slice(7)
-    const payload = await verifyToken(token)
-    if (!payload) throw new UnauthorizedError('Invalid token')
-    return payload.email
+    return email
 }
 
-export async function getAuthenticatedUserWithRole(request: NextRequest): Promise<{ email: string; role: string }> {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
+/**
+ * Get authenticated user with role from request headers set by middleware
+ * @param request - Next.js request object
+ * @returns User object with email and role
+ * @throws UnauthorizedError if user is not authenticated
+ */
+export function getAuthenticatedUserWithRole(request: NextRequest): { email: string; role: string } {
+    const email = request.headers.get('x-user-email')
+    const role = request.headers.get('x-user-role')
+    
+    if (!email || !role) {
         throw new UnauthorizedError('Unauthorized')
     }
-    const token = authHeader.slice(7)
-    const payload = await verifyToken(token)
-    if (!payload) throw new UnauthorizedError('Invalid token')
-    return payload
+    
+    return { email, role }
 }
 
+/**
+ * Require specific roles for access
+ * @param allowedRoles - Array of allowed role names
+ * @returns Function that validates user role
+ * @throws ForbiddenError if user doesn't have required role
+ */
 export function requireRole(allowedRoles: string[]) {
-    return async (request: NextRequest): Promise<{ email: string; role: string }> => {
-        const user = await getAuthenticatedUserWithRole(request)
+    return (request: NextRequest): { email: string; role: string } => {
+        const user = getAuthenticatedUserWithRole(request)
         if (!allowedRoles.includes(user.role)) {
             throw new ForbiddenError('Insufficient permissions')
         }

@@ -1,1 +1,1 @@
-export { GET } from '@/features/billing/billing.controller'
+export { GET } from '@/modules/sales/billing/billing.controller'
