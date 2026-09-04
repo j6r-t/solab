@@ -21,6 +21,52 @@ function Bar({ value, max, label, revenue }: { value: number; max: number; label
     )
 }
 
+function polarPoint(cx: number, cy: number, r: number, deg: number) {
+    const rad = ((deg - 90) * Math.PI) / 180
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
+}
+
+function donutSlicePath(cx: number, cy: number, rOuter: number, rInner: number, startDeg: number, endDeg: number) {
+    const largeArc = endDeg - startDeg > 180 ? 1 : 0
+    const p1 = polarPoint(cx, cy, rOuter, startDeg)
+    const p2 = polarPoint(cx, cy, rOuter, endDeg)
+    const p3 = polarPoint(cx, cy, rInner, endDeg)
+    const p4 = polarPoint(cx, cy, rInner, startDeg)
+    const f = (n: number) => n.toFixed(2)
+    return `M ${f(p1.x)} ${f(p1.y)} A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${f(p2.x)} ${f(p2.y)} L ${f(p3.x)} ${f(p3.y)} A ${rInner} ${rInner} 0 ${largeArc} 0 ${f(p4.x)} ${f(p4.y)} Z`
+}
+
+function Donut({ slices, total, centerLabel }: { slices: { value: number; pct: number; fill: string }[]; total: number; centerLabel: string }) {
+    const c = 50
+    const rOuter = 46
+    const rInner = 29
+    const sweepOf = (pct: number) => Math.min((pct / 100) * 360, 359.98)
+    const arcs = slices.map((s, i) => {
+        const start = slices.slice(0, i).reduce((sum, prev) => sum + sweepOf(prev.pct), 0)
+        const sweep = sweepOf(s.pct)
+        return { fill: s.fill, pct: s.pct, start, end: start + sweep, mid: start + sweep / 2 }
+    })
+    return (
+        <svg viewBox="0 0 100 100" className="h-28 w-28 shrink-0" role="img">
+            {arcs.map((a, i) => {
+                const labelPos = polarPoint(c, c, (rOuter + rInner) / 2, a.mid)
+                return (
+                    <g key={i}>
+                        <path d={donutSlicePath(c, c, rOuter, rInner, a.start, a.end)} className={a.fill} stroke="var(--card)" strokeWidth={1} />
+                        {a.pct >= 8 && (
+                            <text x={labelPos.x} y={labelPos.y} textAnchor="middle" dominantBaseline="central" fontSize={9} className="fill-foreground font-medium">
+                                {Math.round(a.pct)} %
+                            </text>
+                        )}
+                    </g>
+                )
+            })}
+            <text x={c} y={46} textAnchor="middle" fontSize={6.5} className="fill-muted-foreground">{centerLabel}</text>
+            <text x={c} y={57} textAnchor="middle" fontSize={8.5} fontWeight={600} className="fill-foreground">{formatCurrency(total)}</text>
+        </svg>
+    )
+}
+
 export function ReportsPage() {
     const { user } = useAuthStore()
     const entity = user?.role === 'atelier' ? 'atelier' : 'shop'
@@ -55,6 +101,14 @@ function ShopReports({ data, period, setPeriod }: { data: ShopReportData | null;
 
     const maxMonthly = data ? Math.max(...data.monthlyRevenue.map(m => m.revenue), 1) : 1
 
+    const payments = data?.salesByPaymentMethod
+    const totalPayments = payments ? Number(payments.cash) + Number(payments.card) + Number(payments.instruments) : 0
+    const paymentSlices = payments ? [
+        { label: t('reports.payCash'), value: Number(payments.cash), fill: 'fill-emerald-500', dot: 'bg-emerald-500' },
+        { label: t('reports.payCard'), value: Number(payments.card), fill: 'fill-blue-500', dot: 'bg-blue-500' },
+        { label: t('reports.payInstruments'), value: Number(payments.instruments), fill: 'fill-amber-500', dot: 'bg-amber-500' },
+    ].filter((s) => s.value > 0).map((s) => ({ ...s, pct: totalPayments > 0 ? (s.value / totalPayments) * 100 : 0 })) : []
+
     return (
         <div className="space-y-6 max-w-[1000px]">
             <Header setPeriod={setPeriod} period={period} />
@@ -83,10 +137,25 @@ function ShopReports({ data, period, setPeriod }: { data: ShopReportData | null;
                                     <CardTitle className="text-base">{t('reports.salesByPaymentMethod')}</CardTitle>
                                     <CreditCard className="h-4 w-4 text-blue-600" />
                                 </CardHeader>
-                                <CardContent className="space-y-2">
-                                    <div className="flex justify-between"><span>{t('reports.payCash')}</span><span className="font-semibold tabular-nums">{formatCurrency(data.salesByPaymentMethod.cash)}</span></div>
-                                    <div className="flex justify-between"><span>{t('reports.payCard')}</span><span className="font-semibold tabular-nums">{formatCurrency(data.salesByPaymentMethod.card)}</span></div>
-                                    <div className="flex justify-between"><span>{t('reports.payInstruments')}</span><span className="font-semibold tabular-nums">{formatCurrency(data.salesByPaymentMethod.instruments)}</span></div>
+                                <CardContent className="flex items-center gap-4">
+                                    {totalPayments > 0 ? (
+                                        <Donut slices={paymentSlices} total={totalPayments} centerLabel={t('orders.total')} />
+                                    ) : (
+                                        <div className="h-28 w-28 shrink-0 rounded-full border border-dashed" />
+                                    )}
+                                    <div className="flex-1 min-w-0 space-y-2">
+                                        {paymentSlices.length === 0 && <p className="text-sm text-muted-foreground">{t('common.noResults')}</p>}
+                                        {paymentSlices.map((s) => (
+                                            <div key={s.label}>
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`h-2.5 w-2.5 shrink-0 rounded-sm ${s.dot}`} />
+                                                    <span className="truncate text-sm flex-1">{s.label}</span>
+                                                    <span className="text-sm font-semibold tabular-nums">{formatCurrency(s.value)}</span>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground text-right">{Math.round(s.pct)} %</p>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </CardContent>
                             </Card>
 

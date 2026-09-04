@@ -13,22 +13,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         if (entity === 'clients') {
             const { clientRepo } = await import('@/lib/database/repositories')
             const clients = await clientRepo.findMany({ orderBy: { createdAt: 'desc' } })
-            headers = ['id', 'name', 'familyName', 'phone', 'address', 'gender', 'birthDate', 'notes', 'organization', 'createdAt']
+            headers = ['name', 'familyName', 'phone', 'address', 'gender', 'birthDate', 'notes', 'organization']
             rows = clients.map((c: Record<string, unknown>) => [
-                c.id as string, c.name as string, c.familyName as string, c.phone as string, c.address as string | null, c.gender as string | null, c.birthDate as string | null, c.notes as string | null, c.organization as string | null, c.createdAt as string,
+                c.name as string, c.familyName as string, c.phone as string, c.address as string | null, c.gender as string | null, c.birthDate as string | null, c.notes as string | null, c.organization as string | null,
             ]) as (string | number | null | undefined)[][]
         } else if (entity === 'fournisseurs') {
             const { fournisseurRepo } = await import('@/lib/database/repositories')
             const items = await fournisseurRepo.findMany({ orderBy: { name: 'asc' } })
-            headers = ['id', 'name', 'phone', 'address', 'email', 'taxId', 'createdAt']
-            rows = items.map((f: Record<string, unknown>) => [f.id as string, f.name as string, f.phone as string, f.address as string | null, f.email as string | null, f.taxId as string | null, f.createdAt as string]) as (string | number | null | undefined)[][]
+            headers = ['name', 'phone', 'address', 'email', 'taxId']
+            rows = items.map((f: Record<string, unknown>) => [f.name as string, f.phone as string, f.address as string | null, f.email as string | null, f.taxId as string | null]) as (string | number | null | undefined)[][]
         } else if (entity === 'products') {
             const { productRepo } = await import('@/lib/database/repositories')
             const items = await productRepo.findMany({ orderBy: { name: 'asc' } })
-            headers = ['id', 'name', 'brand', 'model', 'category', 'price', 'costPrice', 'quantity', 'lensType', 'material', 'coating', 'sph', 'cyl', 'add', 'thickness', 'createdAt']
+            headers = ['name', 'brand', 'model', 'category', 'price', 'costPrice', 'quantity', 'lensType', 'material', 'coating', 'sph', 'cyl', 'add', 'thickness']
             rows = items.map((p: Record<string, unknown>) => [
-                p.id as string, p.name as string, p.brand as string | null, p.model as string | null, p.category as string | null, p.price as number | null, p.costPrice as number | null, p.quantity as number | null,
-                p.lensType as string | null, p.material as string | null, p.coating as string | null, p.sph as string | null, p.cyl as string | null, p.add as string | null, p.thickness as string | null, p.createdAt as string,
+                p.name as string, p.brand as string | null, p.model as string | null, p.category as string | null, p.price as number | null, p.costPrice as number | null, p.quantity as number | null,
+                p.lensType as string | null, p.material as string | null, p.coating as string | null, p.sph as string | null, p.cyl as string | null, p.add as string | null, p.thickness as string | null,
             ]) as (string | number | null | undefined)[][]
         } else if (entity === 'orders') {
             const { orderRepo } = await import('@/lib/database/repositories')
@@ -36,12 +36,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 orderBy: { createdAt: 'desc' },
                 include: { client: { select: { name: true, familyName: true } } },
             })
-            headers = ['id', 'orderNumber', 'client', 'orderType', 'status', 'totalAmount', 'turnaroundDays', 'createdAt']
+            headers = ['orderNumber', 'client', 'orderType', 'status', 'totalAmount', 'turnaroundDays']
             rows = items.map((o: Record<string, unknown>) => {
                 const client = o.client as { name: string; familyName: string } | null
                 return [
-                    o.id as string, o.orderNumber as string, client ? `${client.name} ${client.familyName}` : '',
-                    o.orderType as string, o.status as string, o.totalAmount as number | null, o.turnaroundDays as number | null, o.createdAt as string,
+                    o.orderNumber as string, client ? `${client.name} ${client.familyName}` : '',
+                    o.orderType as string, o.status as string, o.totalAmount as number | null, o.turnaroundDays as number | null,
                 ] as (string | number | null | undefined)[]
             })
         } else {
