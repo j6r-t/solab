@@ -40,7 +40,7 @@ Do this once, with the owner account, to see the whole flow.
 
 1. **Look at the dashboard.** Open **Tableau de bord**. You see your key numbers (revenue, clients, today's orders, low stock, pending repairs) and the **Prêt à récupérer** list: orders ready to hand to clients.
 2. **Create a client.** Open **Clients** → **Nouveau client**. Fill in name and phone, then **Enregistrer**.
-3. **Create a prescription.** Open **Ordonnances** → **Nouvelle ordonnance**. Pick the client, the doctor, and enter SPH / CYL / AXE for each eye. Save.
+3. **Create a prescription.** Open **Clients** and click the client, then click **Nouvelle ordonnance** in the **Ordonnances** section. The client is already selected; pick the doctor, and enter SPH / CYL / AXE for each eye. Save.
 4. **Create an order.** Open **Commandes** → **Nouvelle commande**. Pick the client. The latest prescription is selected automatically. Add a frame from Stock, add the lenses, and add a repair service if needed (for example remontage).
 5. **Take the payment.** Cash (**Espèces**) and card (**Carte**) count as paid immediately. For a cheque (**Chèque**) or traite (**Traite**), enter the number, the bank, and the due date (**échéance**). You can combine several payment rows, for example cash plus two cheques.
 6. **Print the facture.** When you save the order, the app offers to print the **FACTURE**. Click **Imprimer**. You can print it again later from **Facturation**.

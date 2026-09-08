@@ -41,8 +41,7 @@ async function testSimpleUserCreation() {
         if (loginResponse.status !== 200 || !loginData.token) {
             log('❌ Failed to get admin token', 'red')
             log('Response:', JSON.stringify(loginData, null, 2), 'red')
-            log('\n⚠️  First, reset your admin password:', 'yellow')
-            log('curl -X POST http://localhost:3000/api/dev/reset-admin-password -H "Content-Type: application/json" -d \'{"newPassword":"admin123"}\'', 'yellow')
+            log('\n⚠️  First, reset your admin password: use Prisma Studio on the dev database or redeploy the route temporarily', 'yellow')
             return
         }
         

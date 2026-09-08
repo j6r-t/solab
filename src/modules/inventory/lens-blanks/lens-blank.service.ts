@@ -2,6 +2,7 @@ import { Prisma, LensType, LensMaterial, LensCoating, LensBlankAdjustmentReason 
 import { lensBlankRepo } from '@/lib/database/repositories'
 import { db } from '@/lib/database/db'
 import { NotFoundError } from '@/lib/errors'
+import { LOW_STOCK_MAX_QTY } from '@/lib/constants/kpi'
 
 export async function listLensBlanks(params?: { search?: string; brand?: string; lensType?: string; material?: string; coating?: string; thickness?: string; lowStock?: string; sphRight?: string; cylRight?: string; sphLeft?: string; cylLeft?: string }) {
     const where: Prisma.LensBlankWhereInput = {}
@@ -12,7 +13,7 @@ export async function listLensBlanks(params?: { search?: string; brand?: string;
         ]
     }
     if (params?.brand) where.brand = params.brand
-    if (params?.lowStock === 'true') where.quantity = { lte: 3 }
+    if (params?.lowStock === 'true') where.quantity = { lte: LOW_STOCK_MAX_QTY }
 
     // When Rx filter is present, lens specs are soft (AND only if provided)
     // When no Rx filter, lens specs are strict (for inventory browsing)

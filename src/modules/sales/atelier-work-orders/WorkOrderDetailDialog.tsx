@@ -1,14 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { SearchSelect, type SearchSelectOption } from '@/components/ui/search-select'
-import { Loader2, Printer, Eye } from 'lucide-react'
+import { AlertTriangle, Loader2, Eye } from 'lucide-react'
 import { toast } from 'sonner'
-import type { PaginatedResponse } from '@/lib/api/pagination'
+import { useTranslation } from '@/lib/hooks/useTranslation'
+import { useLensBlanks } from '@/modules/inventory/lens-blanks/useLensBlanks'
+import { declareBreakage } from '../repairs/repairs.api'
 
 interface WorkOrder {
     id: string
@@ -20,6 +23,7 @@ interface WorkOrder {
     lensBlankPrice: string | null
     paymentStatus: string
     amountPaid: string
+    expectedCompletionDate: string | null
     lensBlankLeft: { id: string; brand: string; thickness: string; lensType: string; material: string; coating: string; sellingPrice: string; sph: string; cyl: string } | null
     lensBlankRight: { id: string; brand: string; thickness: string; lensType: string; material: string; coating: string; sellingPrice: string; sph: string; cyl: string } | null
     brokenLensBlank: string | null
@@ -79,21 +83,24 @@ const STATUS_BADGE: Record<string, string> = {
 }
 
 export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated }: WorkOrderDetailDialogProps) {
+    const { t } = useTranslation()
+    const queryClient = useQueryClient()
     const [loading, setLoading] = useState(false)
-    const [lensBlanks, setLensBlanks] = useState<LensBlank[]>([])
     const [assignLeft, setAssignLeft] = useState('')
     const [assignRight, setAssignRight] = useState('')
     const [lensBlankPrice, setLensBlankPrice] = useState(0)
     const [paymentAmount, setPaymentAmount] = useState('')
+    const [breakageEye, setBreakageEye] = useState<'left' | 'right' | 'both'>('left')
+    const [breakageReplLeft, setBreakageReplLeft] = useState('')
+    const [breakageReplRight, setBreakageReplRight] = useState('')
 
+    const { data: blanksData } = useLensBlanks<LensBlank[]>({ lowStock: 'false' })
+    const lensBlanks = blanksData ?? []
+
+    // Refetch blank quantities every time the dialog opens
     useEffect(() => {
-        if (open) {
-            fetch('/api/lens-blanks?lowStock=false')
-                .then((res): Promise<PaginatedResponse<LensBlank> | LensBlank[]> => res.ok ? res.json() : Promise.resolve([]))
-                .then((json) => setLensBlanks(Array.isArray(json) ? json : (json?.data ?? [])))
-                .catch(() => {})
-        }
-    }, [open])
+        if (open) queryClient.invalidateQueries({ queryKey: ['lens-blanks'] })
+    }, [open, queryClient])
 
     // Sync lens assignment state when a different work order is opened (render-phase state adjustment)
     const [syncedWoId, setSyncedWoId] = useState<string | null>(workOrder?.id ?? null)
@@ -102,6 +109,9 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
         setAssignLeft(workOrder?.lensBlankLeft?.id || '')
         setAssignRight(workOrder?.lensBlankRight?.id || '')
         setLensBlankPrice(workOrder?.lensBlankPrice ? parseFloat(workOrder.lensBlankPrice) : 0)
+        setBreakageEye('left')
+        setBreakageReplLeft('')
+        setBreakageReplRight('')
     }
 
     async function handleStatusTransition(status: string) {
@@ -170,6 +180,25 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
         }
     }
 
+    async function handleDeclareBreakage() {
+        if (!workOrder) return
+        setLoading(true)
+        try {
+            await declareBreakage(workOrder.id, {
+                which: breakageEye,
+                replacementLeftId: (breakageEye === 'left' || breakageEye === 'both') && breakageReplLeft ? breakageReplLeft : undefined,
+                replacementRightId: (breakageEye === 'right' || breakageEye === 'both') && breakageReplRight ? breakageReplRight : undefined,
+            })
+            toast.success(t('workOrders.breakage.saved'))
+            onUpdated()
+            onOpenChange(false)
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to declare breakage')
+        } finally {
+            setLoading(false)
+        }
+    }
+
     if (!workOrder) return null
 
     const hasLensBlanks = lensBlanks.length > 0
@@ -184,6 +213,10 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
             label: `${lb.brand} ${lb.lensType} ${lb.thickness} (${lb.quantity})`,
             secondary: `SPH ${lb.sph} · CYL ${lb.cyl}`,
         }))
+
+    const inStockBlanks = lensBlanks.filter((lb) => lb.quantity > 0)
+    const breakageDeclared = !!workOrder.brokenLensBlank && workOrder.brokenLensBlank !== 'none'
+    const canDeclareBreakage = !!(workOrder.lensBlankLeft || workOrder.lensBlankRight) && !breakageDeclared
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -223,6 +256,14 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                         <div>
                             <p className="text-muted-foreground text-xs">Created</p>
                             <p className="font-medium">{new Date(workOrder.createdAt).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                            <p className="text-muted-foreground text-xs">{t('workOrders.expectedDate')}</p>
+                            <p className="font-medium">
+                                {workOrder.expectedCompletionDate
+                                    ? new Date(workOrder.expectedCompletionDate).toLocaleDateString('fr-TN', { day: 'numeric', month: 'numeric', year: 'numeric' })
+                                    : '—'}
+                            </p>
                         </div>
                     </div>
 
@@ -321,13 +362,84 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                         </div>
                     )}
 
+                    {/* Breakage declaration */}
+                    {canDeclareBreakage && (
+                        <div className="space-y-3 p-4 bg-muted/20 rounded-lg border">
+                            <h3 className="text-sm font-medium flex items-center gap-2">
+                                <AlertTriangle className="h-4 w-4 text-red-500" />
+                                {t('workOrders.breakage.declare')}
+                            </h3>
+                            <div>
+                                <label className="text-xs text-muted-foreground block mb-1">{t('workOrders.breakage.whichEye')}</label>
+                                <div className="flex flex-wrap gap-4 text-sm">
+                                    {(['left', 'right', 'both'] as const).map((eye) => (
+                                        <label key={eye} className="flex items-center gap-1.5 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="breakage-eye"
+                                                checked={breakageEye === eye}
+                                                onChange={() => setBreakageEye(eye)}
+                                            />
+                                            {t(`workOrders.breakage.${eye}`)}
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                            {(breakageEye === 'left' || breakageEye === 'both') && (
+                                <div>
+                                    <label className="text-xs text-muted-foreground block mb-1">
+                                        {t('workOrders.breakage.replacement')} — {t('workOrders.breakage.left')}
+                                    </label>
+                                    <select
+                                        value={breakageReplLeft}
+                                        onChange={(e) => setBreakageReplLeft(e.target.value)}
+                                        className="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                                    >
+                                        <option value="">{t('workOrders.breakage.noReplacement')}</option>
+                                        {inStockBlanks.map((lb) => (
+                                            <option key={lb.id} value={lb.id}>
+                                                {`${lb.brand} ${lb.thickness} (${lb.sph}/${lb.cyl}) — qté ${lb.quantity}`}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+                            {(breakageEye === 'right' || breakageEye === 'both') && (
+                                <div>
+                                    <label className="text-xs text-muted-foreground block mb-1">
+                                        {t('workOrders.breakage.replacement')} — {t('workOrders.breakage.right')}
+                                    </label>
+                                    <select
+                                        value={breakageReplRight}
+                                        onChange={(e) => setBreakageReplRight(e.target.value)}
+                                        className="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                                    >
+                                        <option value="">{t('workOrders.breakage.noReplacement')}</option>
+                                        {inStockBlanks.map((lb) => (
+                                            <option key={lb.id} value={lb.id}>
+                                                {`${lb.brand} ${lb.thickness} (${lb.sph}/${lb.cyl}) — qté ${lb.quantity}`}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+                            <p className="text-xs text-muted-foreground">{t('workOrders.breakage.replacementHint')}</p>
+                            <Button size="sm" variant="destructive" onClick={handleDeclareBreakage} disabled={loading} className="w-full">
+                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('workOrders.breakage.declare')}
+                            </Button>
+                        </div>
+                    )}
+
                     {/* Breakage */}
-                    {workOrder.brokenLensBlank && workOrder.brokenLensBlank !== 'none' && (
+                    {breakageDeclared && (
                         <div className="space-y-1 text-sm p-3 bg-red-50 rounded-lg border border-red-200">
-                            <p className="text-xs font-medium text-red-600">⚠ Breakage Reported</p>
-                            <p>Broken: {workOrder.brokenLensBlank}</p>
-                            {workOrder.replacementLeft && <p>Replacement L: {workOrder.replacementLeft.brand} ({workOrder.replacementLeft.thickness})</p>}
-                            {workOrder.replacementRight && <p>Replacement R: {workOrder.replacementRight.brand} ({workOrder.replacementRight.thickness})</p>}
+                            <p className="text-xs font-medium text-red-600 flex items-center gap-1.5">
+                                <AlertTriangle className="h-3.5 w-3.5" />
+                                {t('workOrders.breakage.reported')}
+                            </p>
+                            <p>{t('workOrders.breakage.broken')}: {t(`workOrders.breakage.${workOrder.brokenLensBlank}`)}</p>
+                            {workOrder.replacementLeft && <p>{t('workOrders.breakage.replacement')} L: {workOrder.replacementLeft.brand} ({workOrder.replacementLeft.thickness})</p>}
+                            {workOrder.replacementRight && <p>{t('workOrders.breakage.replacement')} R: {workOrder.replacementRight.brand} ({workOrder.replacementRight.thickness})</p>}
                         </div>
                     )}
 
@@ -414,10 +526,6 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                                     Mark {nextStatus.replace('_', ' ')}
                                 </Button>
                             ))}
-                            <Button size="sm" variant="outline">
-                                <Printer className="h-3.5 w-3.5 mr-1" />
-                                Print Bill
-                            </Button>
                         </div>
                     </div>
                 </div>

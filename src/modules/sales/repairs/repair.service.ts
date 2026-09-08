@@ -329,16 +329,59 @@ export async function declareBreakage(id: string, data: {
     const repair = await repairRepo.findUnique({ where: { id } })
     if (!repair) throw new NotFoundError('Work order not found')
 
-    const updated = await repairRepo.update({
-        where: { id },
-        data: {
+    // COST RULE (owner requirement): declaring a breakage must never change what
+    // the client is billed. servicePrice, lensBlankPrice, amountPaid and any
+    // OpticianShopBill / bill items stay exactly as they are — the atelier
+    // absorbs the replacement cost. Only stock and the adjustment ledger move.
+    await db.$transaction(async (tx) => {
+        // 1. Record the declaration on the work order (only overwrite replacements that are provided)
+        const woData: Prisma.AtelierWorkOrderUncheckedUpdateInput = {
             brokenLensBlank: data.brokenLensBlank,
-            replacementLeftId: data.replacementLeftId || null,
-            replacementRightId: data.replacementRightId || null,
-        },
+        }
+        if (data.replacementLeftId !== undefined) woData.replacementLeftId = data.replacementLeftId || null
+        if (data.replacementRightId !== undefined) woData.replacementRightId = data.replacementRightId || null
+        await tx.atelierWorkOrder.update({ where: { id }, data: woData })
+
+        // 2. Consume a replacement blank from stock for each broken stock-sourced eye
+        //    (a non-null blank id on the work order means the blank came from our shelves;
+        //    the broken original was already consumed at creation with 'used_in_mounting',
+        //    so the replacement is a new physical blank leaving the shelf).
+        //    Optician-supplied eyes (null blank id) are recorded only — no stock movement.
+        const brokenEyes: ('left' | 'right')[] =
+            data.brokenLensBlank === 'both' ? ['left', 'right'] :
+            data.brokenLensBlank === 'none' ? [] :
+            [data.brokenLensBlank]
+
+        for (const eye of brokenEyes) {
+            const stockBlankId = eye === 'left' ? repair.lensBlankLeftId : repair.lensBlankRightId
+            const replacementId = eye === 'left' ? data.replacementLeftId : data.replacementRightId
+            if (!stockBlankId || !replacementId) continue
+
+            const replacement = await tx.lensBlank.findUnique({ where: { id: replacementId } })
+            if (!replacement) throw new NotFoundError(`${eye === 'left' ? 'Left' : 'Right'} replacement lens blank not found`)
+            if (replacement.quantity < 1) throw new BadRequestError('Insufficient stock')
+
+            await tx.lensBlank.update({ where: { id: replacementId }, data: { quantity: { decrement: 1 } } })
+            await tx.lensBlankAdjustment.create({
+                data: { lensBlankId: replacementId, quantity: -1, reason: 'broken_during_mounting', workOrderId: id },
+            })
+        }
+    }, { timeout: 15000 })
+
+    // Re-fetch with all includes
+    const updated = await repairRepo.findUnique({
+        where: { id },
         include: { ...WORK_ORDER_INCLUDE },
     })
     if (!updated) throw new NotFoundError('Work order not found')
+
+    await auditService.log({
+        action: 'BREAKAGE_DECLARED',
+        entityType: 'REPAIR',
+        entityId: id,
+        metadata: { brokenLensBlank: data.brokenLensBlank, replacementLeftId: data.replacementLeftId, replacementRightId: data.replacementRightId },
+    })
+
     return updated
 }
 

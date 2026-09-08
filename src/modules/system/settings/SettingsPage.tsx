@@ -185,7 +185,7 @@ export function SettingsPage() {
         fetchRepairServices().then((data) => setServices(data || [])).catch(() => {})
     }
 
-    useEffect(() => { loadServices() }, [])
+    useEffect(() => { if (showAtelierSettings) loadServices() }, [showAtelierSettings])
 
     function openNewService() { setEditingService(null); setServiceName(''); setServicePrice(''); setServiceDialogOpen(true) }
 

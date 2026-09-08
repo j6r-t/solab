@@ -24,3 +24,8 @@ export const fetchRepairs = <T = RepairItem[]>(params?: { search?: string; statu
 
 export const updateRepairStatus = (id: string, status: string) =>
     api.patch(`/api/repairs/${id}`, { status })
+
+export const declareBreakage = (
+    id: string,
+    data: { which: 'left' | 'right' | 'both'; replacementLeftId?: string; replacementRightId?: string },
+) => api.patch(`/api/repairs/${id}?action=declare-breakage`, data)

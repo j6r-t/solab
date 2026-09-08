@@ -52,25 +52,25 @@ The menu shows only what your role needs (see the roles table in the Product Gui
 | **Total clients** | How many clients you have | Nothing |
 | **Ventes du jour** | Orders taken today | Nothing — check the evening in **Rapports** |
 | **Articles en stock bas** | Products at 3 units or fewer | Restock (see section 8) |
-| **Réparations en attente** | Repairs not finished | Open them and move them forward |
+| **Réparations en attente** | Repairs not finished | On the shop account this number is informational — repairs are followed up from the atelier (or admin) account |
 | **Stock** | Total number of products | Nothing |
 
 The atelier account sees the same cards with workshop numbers: revenue, partner opticians count, completed work orders, low-stock lens blanks, pending work orders, total lens blanks.
 
 ### Quick actions
 
-Three buttons under the cards: **Réparations** (open the repairs page), **Opticiens partenaires** (partner opticians), and **Nouvelle commande** (start a sale).
+The buttons under the cards depend on your role: the **shop** account sees **Nouvelle commande** (start a sale); the **atelier** account sees **Réparations** (open the repairs page) and **Opticiens partenaires** (partner opticians); the **admin** account sees all three.
 
 ### The "ready for pickup" list (**Prêt à récupérer**)
 
-Orders ready to hand to clients, with order number, client name, phone and total.
+Admin and shop accounts only. Orders ready to hand to clients, with order number, client name, phone and total.
 
 **What to do:** call each client the same day. Click **Voir** to open the order; when the client has taken the glasses, click **Marquer comme récupéré**.
 
 ### What to do when a card alerts you
 
 - **Articles en stock bas**: open **Stock**, sort by quantity, restock the critical items (section 8).
-- **Réparations en attente**: click the **Réparations** quick action and finish or follow up on each job.
+- **Réparations en attente**: on the atelier or admin account, click the **Réparations** quick action and finish or follow up on each job. The shop account sees the number only.
 - A growing **Prêt à récupérer** list: call the clients; glasses that stay in the shop are money waiting.
 
 ---
@@ -109,15 +109,17 @@ Many clients on paper or in Excel? Open **Import** and follow the steps: choose 
 
 ---
 
-## 4. Prescriptions (**Ordonnances**)
+## 4. Prescriptions — on the client page (**Ordonnances**)
 
 **The app remembers every prescription, so the next order picks the right values automatically.**
 
+Prescriptions are not a separate menu anymore: every client's prescriptions live on their page, in the **Ordonnances** section — a table with the date, the **Médecin** and both eyes' values. Click a row to see the full details (SPH, CYL, AXE, ADD and DP for each eye) and use **Modifier** or **Supprimer** there.
+
 ### Create a prescription
 
-1. Open **Ordonnances** → **Nouvelle ordonnance**.
-2. Choose the client and the **Médecin**.
-3. Set **Date de l'ordonnance**.
+1. Open **Clients** and click the client. Their page shows the **Ordonnances** section.
+2. Click **Nouvelle ordonnance** — the client is already selected.
+3. Choose the **Médecin** and set **Date de l'ordonnance**.
 4. For each eye — **Œil droit** (right) and **Œil gauche** (left) — enter **SPH**, **CYL**, **AXE**, and **ADD** if present. **DP** is the pupillary distance.
 5. Click **Enregistrer**.
 
@@ -389,8 +391,10 @@ Lens blanks live separately because a "product" here is a combination of values,
 1. Open **Travaux atelier** and create a new work order for a partner optician, with the prescription if there is one.
 2. Follow the statuses: **pending** → **in progress** → **completed** → **delivered** (or **cancelled**).
 3. Assign the lens blanks used (the app warns if none match — the partner can provide them).
-4. **Breakage**: if a blank breaks, record it and choose the replacement blank used — both are journaled, so the stock stays honest.
-5. **Payments**: record what the optician pays; the bill becomes **Payée** when covered.
+4. **Breakage**: if a blank breaks, open the work order and use **Déclarer une casse** — choose **Gauche**, **Droite** or **Les deux**, and optionally pick a replacement blank from stock for each broken eye (a work order can be reported late; the button disappears once a breakage is already declared).
+5. The replacement is consumed from stock, but the work order and bill amounts never increase — the atelier takes responsibility for the breakage. Both the declaration and the replacement are journaled, so the stock stays honest.
+6. Every declaration feeds the **Taux de casse** and **Casse par verre** stats in **Rapports**, so recurring breakages become visible.
+7. **Payments**: record what the optician pays; the bill becomes **Payée** when covered.
 
 ---
 
@@ -415,31 +419,62 @@ Clicking a notification opens the right page. If the list is empty, everything i
 
 Choose the period at the top: **Aujourd'hui**, **Cette semaine**, **Ce mois**, **Cette année**, **Tout**. The shop account and the atelier account see different pages.
 
+Cards whose title carries the period (for example **Chiffre d'affaires — Ce mois**) follow the selector, and the suffix changes with it. Each headline card also shows a small ▲ or ▼ percentage: the change compared with the previous equivalent period (yesterday, the previous week, the previous month, the previous year). No arrow appears when there is nothing to compare — and with **Tout** there is never a comparison. Revenue and profit count only **Terminé** orders. Cards about money outside and stock are always live: **Créances**, **Santé du stock**, **Réapprovisionnement**, **Soldes fournisseurs**, and the workshop backlog show the situation right now and ignore the period. Finally, the same échéances rule as everywhere in the app applies: chèques and traités count as money only once marked **Encaissé** (or **Payé** for supplier papers).
+
+In the tables below, labels are quoted for the default **Ce mois** period.
+
 ### Shop side
 
-| Number | What it tells you in one sentence | Decision it supports |
+| Card (French label) | What it means | Decision it supports |
 |---|---|---|
-| **Revenu ce mois** | Money earned this period | Is the shop growing? |
-| **Commandes ce mois / aujourd'hui** | How busy you are | Staffing and opening hours |
-| **Panier moyen** | Average sale value | Are you selling complete pairs or only small items? |
-| **Bénéfice ce mois** | Profit after purchase costs | Is the margin healthy? |
-| **Solde impayé** | Orders not fully paid | Who to call |
-| **Top clients** | Your best clients by total spent | Who deserves a call or a discount |
-| **Ventes par paiement** | Espèces / Carte / Chèques-traits encaissés | How money really arrives |
-| **Créances** | Your money outside: **Impayés commandes**, **Instruments en attente**, **Instruments échus** (overdue — in red) | Which papers to chase, in order of urgency |
-| **Santé du stock** | **Ruptures**, **Stock bas**, **Stock dormant (90j)**, **Valeur du stock** | What to reorder, what to discount |
-| **Clients fidèles** | Clients with 2 or more orders in the period | Your loyal base — keep them |
-| **Moyenne/jour** | Orders per day | Targets for the team |
+| **Chiffre d'affaires — Ce mois** | Money from completed orders in the chosen period, with ▲/▼ % versus the previous period | Is the shop growing or slowing down? |
+| **Bénéfice — Ce mois** | What remains after subtracting the purchase cost of the items sold; the **Marge : X %** line underneath is profit divided by revenue | Is the shop keeping a healthy share of every dinar of sales? |
+| **Commandes — Ce mois** | All orders created in the period, whatever their status | How busy the shop is — staffing and opening hours |
+| **Panier moyen — Ce mois** | Average value of a completed sale | Are you selling complete pairs or mostly small items? |
+| **Nouveaux clients — Ce mois** | Clients created in the period | Is the shop attracting new faces? |
+| **Tendance des revenus (12 mois)** | Always the last 12 months: monthly revenue (green **Revenu** line) and profit (blue **Bénéfice** line) | Season patterns; whether profit grows along with revenue |
+| **Revenus par type — Ce mois** | Revenue split between **Monture + Verres**, **Remontage** and **Vente directe** | Which activity actually pays the bills |
+| **Commandes par statut — Ce mois** | Orders still **En attente** and those **Terminé**; below, **Annulations** and the **CA perdu** they represented | What to follow up; what cancellations cost you |
+| **Ventes par paiement — Ce mois** | How money arrived: **Espèces** and **Carte** count immediately; **Chèques/traits encaissés** only once marked **Encaissé** | How money really arrives; how dependent you are on paper |
+| **Créances** | Live, all-time: **Impayés commandes** (order balances still owed), **Instruments en attente** (chèques/traités not yet cashed), **Instruments échus** (past their due date — in red) | Which papers to chase, in order of urgency |
+| **Encaissements — 12 derniers mois** | Always the last 12 months: **Délai d'encaissement moyen** (average days between a sale and its cheque being cashed), **Taux de rejet** (bounced ÷ cashed + bounced), and the **Encaissés** / **Rejetés** counts | How fast paper turns into money, and how often it fails |
+| **Top clients** | The period's best clients by total spent, with order count and revenue | Who deserves a thank-you call or a discount |
+| **Clients fidèles** | Share of active clients with 2 or more orders in the period | The loyal base — recognize and keep it |
+| **Moyenne/jour** | Orders per day over the period | Daily targets for the team |
+| **Concentration du CA** | Share of the period's revenue made by the top 10 % of clients; the text repeats the figure and the number of active clients | Dependency risk: too much revenue from too few people |
+| **CA nouveaux vs fidèles** | Period revenue split between **Nouveaux clients** (their first-ever completed order falls in the period) and **Clients fidèles** (everyone else) | Is growth coming from new clients or from loyalty? |
+| **Top médecins** | Prescribing doctors behind the period's completed orders, with order count and revenue | Which doctors send you clients — nurture those relationships |
+| **Demande de correction** | From the period's prescriptions: **Sphère (SPH)** bands from ≤ −6 up to ≥ +4, and **Cylindre (CYL)** by strength | Which lens powers to keep on the shelf |
+| **Soldes fournisseurs** | Per supplier: **Achats** made in the period and **Solde dû** — everything still unpaid, including traités not yet due (red when above zero) | What you owe whom, before the supplier calls |
+| **Risques & couverture** | **Annulations** and **CA perdu** for the period, then live **Semaines de couverture** per category: current stock ÷ average weekly sales of the last 90 days; ∞ means it has not sold recently | How many weeks of stock remain per category, and what running out would cost |
+| **Réapprovisionnement** | Live list of products at 3 units or fewer, with quantity and supplier | The reorder list, ready to phone in |
+| **Santé du stock** | Live: **Ruptures** (zero stock), **Stock bas** (3 or fewer), **Stock dormant (90j)** (in stock, nothing sold for 90 days), **Valeur du stock**; underneath, **Marge par catégorie** — margin per category from item prices × quantities (repair-service lines are not included, so it can differ slightly from order totals) | What to reorder, what to discount, which categories earn the most |
+| **Meilleurs produits** | Per category, the period's best sellers with quantity, revenue and profit | Which references to display and push |
+| **Ventes par jour de la semaine** | Orders of the period grouped by weekday | Which days deserve more staff |
+| **Ventes par heure (8h–23h)** | Orders of the period grouped by hour of the day | Shift planning and opening hours |
+| **Paniers de commande** | Orders of the period grouped by value: **< 200**, **200 – 500**, **500 – 1 000**, **> 1 000** DT | Whether you sell big or small — and what a higher basket would be worth |
 
 ### Atelier side
 
-| Number | What it tells you | Decision it supports |
+| Card (French label) | What it means | Decision it supports |
 |---|---|---|
-| **Charge atelier** | Work in progress and its average age | Accept or postpone new work |
-| **Délai moyen** | Average time to finish a job | Promises you can keep |
-| **Taux de casse** | Breakages / lens blanks consumed | Handling care or supplier quality |
-| **Revenu par opticien** | What each partner shop brings | Where to invest effort |
-| **Stock verres critique** | Blank references at 3 or fewer | Which blanks to order now |
+| **Chiffre d'affaires — Ce mois** | Revenue of completed work orders in the period (service price + lens prices), with ▲/▼ % versus the previous period | Is the workshop growing? |
+| **Terminés — Ce mois** | Work orders completed in the period | The team's output |
+| **Délai moyen — Ce mois** | Average time between starting and finishing the jobs completed in the period; here down (▼) is good | Promises you can keep to opticians |
+| **Taux de casse — Ce mois** | Share of handled lens blanks that broke; down (▼) is good | Handling care or supplier quality |
+| **Arriéré — Ce mois** | Despite the period tag, this is the current backlog: pending + in-progress work orders, with their **Âge moyen (attente + cours)** | The total weight on the bench right now |
+| **Panier moyen — Ce mois** | Average revenue per completed work order | How you price services and lenses |
+| **Tendance des revenus (12 mois)** | Always the last 12 months: monthly revenue of completed work orders (green **Revenu** line) | The season pattern of workshop demand |
+| **Origine des ordres** | Orders of the period split **Interne** (your own shop) vs **Opticien** (partners) | Where the work comes from |
+| **Débit hebdomadaire (12 semaines)** | Always the last 12 weeks: **Créés** vs **Terminés** per week | If created runs above completed, the backlog is growing |
+| **Ancienneté des arriérés** | Current backlog grouped by days since creation: **0–3 j**, **4–7 j**, **8–14 j**, **15 j +** | Which old jobs to unblock first |
+| **Partenaires opticiens** | Per optician: orders and revenue in the period, **Délai moyen** over all time, **Dette** (all bills minus payments, all time — red when above zero), **Dernière activité** | Who is active, who pays, who has gone quiet |
+| **Charge atelier** | Live: **En attente**, **En cours**, and **Âge moyen (attente + cours)** | Accept or postpone new work |
+| **Verres consommés** | Blanks used for mounting in the period (**Consommés**) next to the **En stock** quantity today (amber at 3 or fewer) | Restock the blanks you actually use |
+| **Casse par verre** | Blanks broken during mounting, per reference, in the period | Which references break most — handling or quality |
+| **Stock verres critique** | Live: number of blank references at 3 or fewer (**références avec quantité ≤ 3**), with the list | The lens order to place now |
+| **Ordres par magasin** | Work orders of the period per partner shop | How work is distributed between partners |
+| **Revenu par opticien** | Revenue brought by each partner shop in the period | Where to invest relationship effort |
 
 ### Printing a report
 
@@ -472,7 +507,7 @@ Print the reçu: **Facturation** → open the order → **Imprimer le reçu**. I
 
 ### The prescription from last year — where is it?
 
-**Ordonnances**, or open the client: all their prescriptions are kept, with dates and the doctor's name. The latest is proposed automatically on a new order.
+Open the client: all their prescriptions are kept in the **Ordonnances** section of their page, with dates and the doctor's name. The latest is proposed automatically on a new order.
 
 ### Something was sold but the stock did not move?
 

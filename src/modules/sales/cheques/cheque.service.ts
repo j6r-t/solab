@@ -21,10 +21,25 @@ const ALLOWED_TARGETS: Record<string, string[]> = {
     supplier_payment: ['paid', 'bounced'],
 }
 
-export async function listCheques(params?: { status?: string; entityType?: string }) {
+export async function listCheques(params?: { status?: string; statuses?: string; entityType?: string; dueBefore?: string }) {
     const where: Prisma.ChequeWhereInput = {}
-    if (params?.status) where.status = params.status as ChequeStatus
+    const validStatuses = Object.values(ChequeStatus) as string[]
+    const statusList = (params?.statuses ?? '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s): s is ChequeStatus => validStatuses.includes(s))
+    if (statusList.length > 0) {
+        where.status = { in: statusList }
+    } else if (params?.status) {
+        where.status = params.status as ChequeStatus
+    }
     if (params?.entityType) where.entityType = params.entityType as ChequeEntityType
+    if (params?.dueBefore) {
+        const dueBefore = new Date(params.dueBefore)
+        if (!Number.isNaN(dueBefore.getTime())) {
+            where.dueDate = { lte: dueBefore }
+        }
+    }
 
     return chequeRepo.findMany({
         where,

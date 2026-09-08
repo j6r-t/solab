@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { LogOut, ChevronDown } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { NotificationBell } from '@/modules/system/notifications/NotificationBell'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/hooks/useTranslation'
@@ -35,6 +36,7 @@ export function Sidebar() {
     const { t } = useTranslation()
     const { currentView, setView } = useViewStore()
     const { user, logout } = useAuthStore()
+    const queryClient = useQueryClient()
     const router = useRouter()
 
     const role = user?.role || 'admin'
@@ -64,7 +66,7 @@ export function Sidebar() {
     }
 
     return (
-        <aside className="hidden md:flex w-64 flex-col border-r bg-card h-screen sticky top-0">
+        <aside className="hidden md:flex w-64 flex-col border-r bg-card h-screen sticky top-0 z-30">
             <div className="px-6 py-4 border-b">
                 <img src="/logo.png" alt="Logo" className="h-10 w-auto object-contain" />
             </div>
@@ -175,8 +177,10 @@ export function Sidebar() {
             <div className="p-3 border-t space-y-0.5">
                 <NotificationBell variant="nav" />
                 <button
-                    onClick={() => {
+                    onClick={async () => {
+                        await queryClient.cancelQueries()
                         logout()
+                        queryClient.clear()
                         router.push('/login')
                     }}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"

@@ -5,14 +5,13 @@ import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '@/stores/auth-store'
 import { useViewStore } from '@/stores/view-store'
+import { VIEW_ROLES } from '@/components/layouts/nav-config'
 import { AppShell } from '@/components/layouts/AppShell'
 import { DashboardPage } from '@/modules/system/dashboard/DashboardPage'
 import { ClientsPage } from '@/modules/partners/clients/ClientsPage'
 import { ClientDetailPage } from '@/modules/partners/clients/ClientDetailPage'
 import { StockPage } from '@/modules/inventory/stock/StockPage'
-import { PrescriptionsPage } from '@/modules/sales/prescriptions/PrescriptionsPage'
 import { OrdersPage } from '@/modules/sales/orders/OrdersPage'
-import { RepairsPage } from '@/modules/sales/repairs/RepairsPage'
 import { BillingPage } from '@/modules/sales/billing/BillingPage'
 import { ChequesPage } from '@/modules/sales/cheques/ChequesPage'
 import { ReportsPage } from '@/modules/system/reports/ReportsPage'
@@ -32,9 +31,7 @@ const views: Record<string, React.FC> = {
   clients: ClientsPage,
   'client-detail': ClientDetailPage,
   stock: StockPage,
-  prescriptions: PrescriptionsPage,
   orders: OrdersPage,
-  repairs: RepairsPage,
   billing: BillingPage,
   cheques: ChequesPage,
   reports: ReportsPage,
@@ -53,7 +50,7 @@ const views: Record<string, React.FC> = {
 const emptySubscribe = () => () => {}
 
 export default function Home() {
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, user } = useAuthStore()
   const { currentView } = useViewStore()
   const router = useRouter()
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false)
@@ -64,17 +61,35 @@ export default function Home() {
     }
   }, [mounted, isAuthenticated, router])
 
+  // Self-heal: if the render-time role gate had to mask the requested view,
+  // correct the store so stale views never linger across role switches.
+  const role = user?.role || 'admin'
+  useEffect(() => {
+    if (!mounted || !isAuthenticated) return
+    const requestedView = currentView in views ? currentView : 'dashboard'
+    const activeView = VIEW_ROLES[requestedView as keyof typeof VIEW_ROLES]?.includes(role)
+      ? requestedView
+      : 'dashboard'
+    if (activeView !== currentView) {
+      useViewStore.getState().reset()
+    }
+  }, [mounted, isAuthenticated, role, currentView])
+
   if (!mounted || !isAuthenticated) {
     return null
   }
 
-  const PageComponent = views[currentView] || DashboardPage
+  const requestedView = currentView in views ? currentView : 'dashboard'
+  const activeView = VIEW_ROLES[requestedView as keyof typeof VIEW_ROLES]?.includes(role)
+    ? requestedView
+    : 'dashboard'
+  const PageComponent = views[activeView] || DashboardPage
 
   return (
     <AppShell>
       <AnimatePresence mode="wait">
         <motion.div
-          key={currentView}
+          key={activeView}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}

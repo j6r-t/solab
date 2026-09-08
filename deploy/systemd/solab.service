@@ -1,0 +1,43 @@
+# systemd unit for the Solab app (PATH B — Ubuntu VPS).
+# Install:
+#   sudo cp deploy/systemd/solab.service /etc/systemd/system/solab.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now solab
+#
+# App reality checked against the repo: next.config.ts does NOT use standalone
+# output, so production runs via `npm start` (`next start`) from /opt/solab.
+
+[Unit]
+Description=Solab Optics ERP (Next.js)
+After=network.target
+
+[Service]
+Type=simple
+User=solab
+Group=solab
+WorkingDirectory=/opt/solab
+
+# Next.js loads /opt/solab/.env itself; EnvironmentFile is a safety net so
+# prisma CLI commands run through systemd also see the variables.
+EnvironmentFile=/opt/solab/.env
+Environment=NODE_ENV=production
+Environment=PORT=3000
+
+ExecStart=/usr/bin/npm start
+
+# Restart 5s after any crash or exit.
+Restart=always
+RestartSec=5
+
+# --- Hardening ---
+# Service may never acquire new privileges (no sudo/setuid from the app).
+NoNewPrivileges=true
+# /usr and /etc become read-only; only /dev, /proc and explicit paths writable.
+ProtectSystem=full
+ProtectHome=true
+# DATABASE_URL (e.g. file:./db/production.db) resolves to /opt/solab/prisma/db/
+# — the SQLite file must stay writable, so the prisma tree is whitelisted.
+ReadWritePaths=/opt/solab/prisma
+
+[Install]
+WantedBy=multi-user.target

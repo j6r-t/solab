@@ -3,13 +3,17 @@ import { ok, created, noContent } from '@/lib/api/response'
 import { handleError } from '@/lib/middlewares/errorHandler'
 import { parseBody, parseQuery } from '@/lib/api/parse'
 import { parsePagination, paginated } from '@/lib/api/pagination'
+import { requireRole } from '@/lib/api/auth'
 import { BadRequestError } from '@/lib/errors'
+
+const ORDER_ROLES = ['admin', 'shop']
 import { listOrders, createOrder, getOrderById, updateOrderStatus, addOrderPayments, deleteOrder } from './order.service'
 import { toOrderListItem, toOrderDetail } from '@/modules/sales/orders/mappers/order.mapper'
 import { createOrderSchema, updateOrderStatusSchema, addOrderPaymentsSchema } from '@/modules/sales/orders/order.schema'
 
 export async function GET(request: NextRequest) {
     try {
+        requireRole(ORDER_ROLES)(request)
         const { page, limit } = parsePagination(request)
         const { status, search, clientId } = parseQuery(request, 'status', 'search', 'clientId')
         const orders = await listOrders({ status, search, clientId })
@@ -21,6 +25,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
+        requireRole(ORDER_ROLES)(request)
         const body = await parseBody(request, createOrderSchema)
         const order = await createOrder(body)
         return created(toOrderDetail(order))
@@ -29,8 +34,9 @@ export async function POST(request: NextRequest) {
     }
 }
 
-export async function GET_ID(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET_ID(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
+        requireRole(ORDER_ROLES)(request)
         const { id } = await params
         const order = await getOrderById(id)
         return ok(toOrderDetail(order))
@@ -41,6 +47,7 @@ export async function GET_ID(_request: NextRequest, { params }: { params: Promis
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
+        requireRole(ORDER_ROLES)(request)
         const { id } = await params
         const raw = await request.json()
 
@@ -62,8 +69,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
+        requireRole(ORDER_ROLES)(request)
         const { id } = await params
         await deleteOrder(id)
         return noContent()

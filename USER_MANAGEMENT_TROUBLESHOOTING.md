@@ -24,21 +24,13 @@ This simplified test:
 ## 🚀 Manual Testing (If Tests Still Fail)
 
 ### **Step 1: Reset Admin Password First**
+If the admin password was changed and you're locked out, use Prisma Studio on the dev database or redeploy the route temporarily:
+
 ```bash
-curl -X POST http://localhost:3000/api/dev/reset-admin-password \
-  -H "Content-Type: application/json" \
-  -d '{"newPassword":"admin123"}'
+npx prisma studio
 ```
 
-**Expected:**
-```json
-{
-  "success": true,
-  "message": "Admin password reset successfully",
-  "email": "owner@sofien.tn",
-  "newPassword": "admin123"
-}
-```
+Then update the `password` field of the admin user directly in the database.
 
 ### **Step 2: Verify Login Works**
 ```bash
@@ -166,17 +158,12 @@ Look at your dev server console for:
 ### **Test Individual Endpoints:**
 
 ```bash
-# Test 1: Can you access the dev endpoint?
-curl -X POST http://localhost:3000/api/dev/reset-admin-password \
-  -H "Content-Type: application/json" \
-  -d '{"newPassword":"test123"}'
-
-# Test 2: Can you login?
+# Test 1: Can you login?
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type": application/json" \
   -d '{"email":"owner@sofien.tn","password":"admin123"}'
 
-# Test 3: Can you list users (with token)?
+# Test 2: Can you list users (with token)?
 curl http://localhost:3000/api/users \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
@@ -216,15 +203,13 @@ echo "Admin Token: $ADMIN_TOKEN"
 4. Are there any errors in the dev server console?
 
 ### **Quick Reset:**
+To reset the admin password, use Prisma Studio on the dev database or redeploy the route temporarily:
 ```bash
-# 1. Stop dev server (Ctrl+C)
-# 2. Reset admin password
-curl -X POST http://localhost:3000/api/dev/reset-admin-password \
-  -H "Content-Type": application/json" \
-  -d '{"newPassword":"admin123"}'
-# 3. Restart dev server
+# 1. Open Prisma Studio and update the admin user's password
+npx prisma studio
+# 2. Restart dev server
 npm run dev
-# 4. Try simple user test
+# 3. Try simple user test
 npm run test:simple-users
 ```
 

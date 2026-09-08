@@ -15,9 +15,6 @@ We've created a complete user management system for Sofien Optic! Now you can cr
 - `PATCH /api/users/[id]` - Update user (name, role, password)
 - `DELETE /api/users/[id]` - Delete user
 
-#### **Development Tools**
-- `POST /api/dev/reset-admin-password` - Reset admin password (dev only)
-
 ### **User Roles Available:**
 - **admin** - Full access to everything
 - **shop** - Sales, inventory, clients, billing
@@ -195,13 +192,11 @@ curl -X POST http://localhost:3000/api/users \
 ## 🔧 Development Tools
 
 ### **Reset Admin Password:**
-```bash
-curl -X POST http://localhost:3000/api/dev/reset-admin-password \
-  -H "Content-Type": application/json" \
-  -d '{"newPassword":"your-new-password"}'
-```
+The dev reset endpoint was removed for security reasons. Use Prisma Studio on the dev database or redeploy the route temporarily:
 
-⚠️ **Security Note:** This endpoint is **development-only** and will be removed in production.
+```bash
+npx prisma studio
+```
 
 ## 🎨 Future Enhancements
 
@@ -229,7 +224,7 @@ curl -X POST http://localhost:3000/api/dev/reset-admin-password \
 ## 🚀 Next Steps
 
 ### **Immediate:**
-1. ✅ Reset admin password: `curl -X POST http://localhost:3000/api/dev/reset-admin-password -d '{"newPassword":"admin123"}'`
+1. ✅ Reset admin password if needed: use Prisma Studio on the dev database or redeploy the route temporarily
 2. ✅ Test login: `npm run test:login`
 3. ✅ Create users: `npm run test:users`
 4. ✅ Test different role logins

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { ok } from '@/lib/api/response'
 import { handleError } from '@/lib/middlewares/errorHandler'
 import { parseBody } from '@/lib/api/parse'
+import { requireRole } from '@/lib/api/auth'
 import { createClient } from '@/modules/partners/clients/client.service'
 import { createFournisseur } from '@/modules/partners/fournisseurs/fournisseur.service'
 import { z } from 'zod'
@@ -15,6 +16,7 @@ const previewSchema = z.object({
 
 export async function POST(request: NextRequest) {
     try {
+        requireRole(['admin', 'shop'])(request)
         const body = await parseBody(request, previewSchema)
         const { entity, rows, mapping } = body
 
@@ -50,6 +52,7 @@ const confirmSchema = z.object({
 
 export async function PUT(request: NextRequest) {
     try {
+        requireRole(['admin', 'shop'])(request)
         const body = await parseBody(request, confirmSchema)
         const { entity, rows } = body
         let imported = 0

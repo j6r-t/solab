@@ -17,7 +17,7 @@ export interface Cheque {
     invoice: { id: string; invoiceNumber: string; fournisseur: { id: string; name: string } } | null
 }
 
-export const fetchCheques = (params?: { status?: string; entityType?: string }) =>
+export const fetchCheques = (params?: { status?: string; statuses?: string; entityType?: string; dueBefore?: string }) =>
     api.get<Cheque[]>('/api/cheques', params as Record<string, string | undefined>)
 
 export const updateChequeStatus = (id: string, status: string) =>

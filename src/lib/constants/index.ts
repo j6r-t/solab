@@ -1,6 +1,6 @@
-export const PRODUCT_CATEGORIES = ['lunette', 'lentille', 'verre', 'accessory', 'nettoyant_lentilles', 'nettoyant_monture'] as const
+export * from './kpi'
 
-export const STOCK_THRESHOLDS = { lowStock: 3 } as const
+export const PRODUCT_CATEGORIES = ['lunette', 'lentille', 'verre', 'accessory', 'nettoyant_lentilles', 'nettoyant_monture'] as const
 
 export const QR_CODE_PREFIX = 'SOPT'
 

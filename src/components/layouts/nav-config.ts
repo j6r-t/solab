@@ -2,7 +2,6 @@ import {
     LayoutDashboard,
     Users,
     Package,
-    FileText,
     ShoppingCart,
     Wrench,
     Receipt,
@@ -50,7 +49,6 @@ export const navGroups: NavGroup[] = [
         roles: ['admin', 'shop'],
         items: [
             { icon: Users, view: 'clients', labelKey: 'clients', roles: ['admin', 'shop'] },
-            { icon: FileText, view: 'prescriptions', labelKey: 'prescriptions', roles: ['admin', 'shop'] },
             { icon: Stethoscope, view: 'doctors', labelKey: 'doctors', roles: ['admin', 'shop'] },
         ],
     },
@@ -111,6 +109,34 @@ const SMART_DEFAULTS: Record<string, string[]> = {
     admin: [],
     shop: ['navGroups.sales', 'navGroups.stock'],
     atelier: ['navGroups.atelier', 'navGroups.stock'],
+}
+
+export const VIEW_ROLES: Record<ViewName, string[]> = {
+    dashboard: ['admin', 'shop', 'atelier'],
+    clients: ['admin', 'shop'],
+    'client-detail': ['admin', 'shop'],
+    'client-new': ['admin', 'shop'],
+    stock: ['admin', 'shop'],
+    'stock-detail': ['admin', 'shop'],
+    'stock-new': ['admin', 'shop'],
+    'stock-scan': ['admin', 'shop'],
+    orders: ['admin', 'shop'],
+    'order-new': ['admin', 'shop'],
+    'order-detail': ['admin', 'shop'],
+    billing: ['admin', 'shop'],
+    'billing-detail': ['admin', 'shop'],
+    cheques: ['admin', 'shop'],
+    reports: ['admin', 'shop', 'atelier'],
+    settings: ['admin', 'shop', 'atelier'],
+    doctors: ['admin', 'shop'],
+    fournisseurs: ['admin', 'shop', 'atelier'],
+    'optician-shops': ['admin', 'atelier'],
+    qrcode: ['admin', 'shop'],
+    import: ['admin', 'shop'],
+    'purchase-invoices': ['admin', 'shop', 'atelier'],
+    'lens-blanks': ['admin', 'atelier'],
+    'atelier-work-orders': ['admin', 'atelier'],
+    'audit-logs': ['admin'],
 }
 
 export type NavEntry =

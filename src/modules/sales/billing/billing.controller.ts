@@ -3,11 +3,13 @@ import { ok } from '@/lib/api/response'
 import { handleError } from '@/lib/middlewares/errorHandler'
 import { parseQuery } from '@/lib/api/parse'
 import { parsePagination, paginated } from '@/lib/api/pagination'
+import { requireRole } from '@/lib/api/auth'
 import { listBilling } from './billing.service'
 import { toBillingResponse } from '@/modules/sales/billing/mappers/billing.mapper'
 
 export async function GET(request: NextRequest) {
     try {
+        requireRole(['admin', 'shop'])(request)
         const { page, limit } = parsePagination(request)
         const { status, search, start, end } = parseQuery(request, 'status', 'search', 'start', 'end')
         const orders = await listBilling({ status, search, start, end })

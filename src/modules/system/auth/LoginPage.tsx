@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { useAuthStore } from '@/stores/auth-store'
+import { useViewStore } from '@/stores/view-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -34,6 +35,7 @@ export function LoginPage() {
         try {
             const data = await login(email, password)
             setAuth(data.token, data.user)
+            useViewStore.getState().reset()
             router.push('/')
         } catch {
             setError('Connection error')

@@ -18,10 +18,11 @@ import { fetchFournisseurs } from '@/modules/partners/fournisseurs/fournisseurs.
 import { useAuthStore } from '@/stores/auth-store'
 import type { StockProduct as Product } from './stock.api'
 import { toast } from 'sonner'
+import { LOW_STOCK_MAX_QTY } from '@/lib/constants/kpi'
 
 function getStockStatus(quantity: number): { label: string; variant: 'default' | 'secondary' | 'destructive'; className: string } {
     if (quantity === 0) return { label: 'outOfStock', variant: 'destructive', className: 'bg-status-pending text-status-pending border-status-pending' }
-    if (quantity <= 3) return { label: 'lowStock', variant: 'secondary', className: 'bg-status-pending text-status-pending border-status-pending' }
+    if (quantity <= LOW_STOCK_MAX_QTY) return { label: 'lowStock', variant: 'secondary', className: 'bg-status-pending text-status-pending border-status-pending' }
     return { label: 'inStock', variant: 'default', className: 'bg-status-ready text-status-ready border-status-ready' }
 }
 

@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { useViewStore } from '@/stores/view-store'
 import { useAuthStore } from '@/stores/auth-store'
@@ -12,6 +13,7 @@ export function Header() {
     const { t } = useTranslation()
     const { currentView, goBack } = useViewStore()
     const { logout } = useAuthStore()
+    const queryClient = useQueryClient()
     const router = useRouter()
 
     const showBack = currentView !== 'dashboard'
@@ -37,8 +39,10 @@ export function Header() {
                 <div className="flex gap-1">
                     <NotificationBell />
                     <button
-                        onClick={() => {
+                        onClick={async () => {
+                            await queryClient.cancelQueries()
                             logout()
+                            queryClient.clear()
                             router.push('/login')
                         }}
                         className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"

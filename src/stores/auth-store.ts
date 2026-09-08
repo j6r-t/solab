@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { useViewStore } from './view-store'
 
 interface User {
     id: string
@@ -43,6 +44,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
         set({ isAuthenticated: true, user })
     },
     logout: () => {
+        useViewStore.getState().reset()
         localStorage.removeItem('auth-token')
         localStorage.removeItem('auth-user')
         set({ isAuthenticated: false, user: null })

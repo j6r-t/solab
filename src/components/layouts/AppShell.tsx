@@ -3,6 +3,7 @@
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
 import { MobileNav } from './MobileNav'
+import { DueChequesAlert } from '@/modules/sales/cheques/DueChequesAlert'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
     return (
@@ -15,6 +16,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </main>
             </div>
             <MobileNav />
+            <DueChequesAlert />
         </div>
     )
 }

@@ -19,6 +19,7 @@ import {
 import { LensBlankForm } from './LensBlankForm'
 import { toast } from 'sonner'
 import { useLensBlanks } from './useLensBlanks'
+import { LOW_STOCK_MAX_QTY } from '@/lib/constants/kpi'
 
 interface LensBlank {
     id: string
@@ -127,7 +128,7 @@ export function LensBlanksPage() {
     const uniqueBrands = [...new Set(blanks.map((b) => b.brand))].sort()
     const totalRefs = blanks.length
     const totalQty = blanks.reduce((s, b) => s + b.quantity, 0)
-    const lowStockCount = blanks.filter((b) => b.quantity <= 3).length
+    const lowStockCount = blanks.filter((b) => b.quantity <= LOW_STOCK_MAX_QTY).length
     const totalValue = blanks.reduce((s, b) => s + parseFloat(b.costPrice) * b.quantity, 0)
 
     return (
@@ -242,7 +243,7 @@ export function LensBlanksPage() {
                                     <td className="py-3 px-4 text-right text-sm">{parseFloat(blank.costPrice).toFixed(3)}</td>
                                     <td className="py-3 px-4 text-right text-sm">{parseFloat(blank.sellingPrice).toFixed(3)}</td>
                                     <td className="py-3 px-4 text-center">
-                                        <Badge variant={blank.quantity <= 3 ? 'destructive' : 'secondary'} className="text-xs">
+                                        <Badge variant={blank.quantity <= LOW_STOCK_MAX_QTY ? 'destructive' : 'secondary'} className="text-xs">
                                             {blank.quantity}
                                         </Badge>
                                     </td>

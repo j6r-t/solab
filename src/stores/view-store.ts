@@ -9,15 +9,12 @@ export type ViewName =
   | 'stock-detail'
   | 'stock-new'
   | 'stock-scan'
-  | 'prescriptions'
-  | 'prescription-new'
   | 'orders'
   | 'order-new'
   | 'order-detail'
   | 'billing'
   | 'billing-detail'
   | 'cheques'
-  | 'repairs'
   | 'reports'
   | 'settings'
   | 'doctors'
@@ -36,6 +33,7 @@ interface ViewState {
   history: ViewName[]
   setView: (view: ViewName, params?: Record<string, string>) => void
   goBack: () => void
+  reset: () => void
 }
 
 export const useViewStore = create<ViewState>()((set, get) => ({
@@ -58,4 +56,10 @@ export const useViewStore = create<ViewState>()((set, get) => ({
       history: newHistory,
     })
   },
+  reset: () =>
+    set({
+      currentView: 'dashboard',
+      viewParams: {},
+      history: ['dashboard'],
+    }),
 }))

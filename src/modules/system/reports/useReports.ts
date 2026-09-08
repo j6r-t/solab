@@ -14,11 +14,14 @@ export interface TopProduct {
 export interface MonthlyRevenue {
     month: string
     revenue: number
+    profit: number
+    orders: number
 }
 
 export interface MonthlyWorkOrders {
     month: string
     count: number
+    revenue: number
 }
 
 export interface WorkOrderByShop {
@@ -51,6 +54,24 @@ export interface TopClient {
     name: string
     totalSpent: string
     ordersCount: number
+}
+
+export interface DormantClient {
+    clientId: string
+    name: string
+    phone: string
+    lastOrderDate: string
+    totalSpent: string
+    ordersCount: number
+}
+
+export interface RestockItem {
+    productId: string
+    name: string
+    brand: string
+    category: string | null
+    quantity: number
+    supplierName: string | null
 }
 
 export interface SalesByPaymentMethod {
@@ -89,6 +110,94 @@ export interface LensBlanksLowStock {
     items: { id: string; label: string; quantity: number }[]
 }
 
+export interface ShopDeltas {
+    revenue: number | null
+    orders: number | null
+    avgOrderValue: number | null
+    newClients: number | null
+    profit: number | null
+}
+
+export interface OrderValueBucket {
+    bucket: 'lt200' | '200to500' | '500to1000' | 'gt1000'
+    count: number
+}
+
+export interface PowerBand {
+    band: string
+    count: number
+}
+
+export interface MarginByCategoryItem {
+    category: string
+    revenue: string
+    cost: string
+    marginPct: number
+}
+
+export interface WeeksOfCoverItem {
+    category: string
+    onHand: number
+    weeklyRate: number
+    weeks: number | null
+}
+
+export interface SupplierBalance {
+    fournisseurId: string
+    name: string
+    purchases: string
+    outstanding: string
+}
+
+export interface DoctorRankingItem {
+    doctorId: string
+    name: string
+    orders: number
+    revenue: string
+}
+
+export interface AtelierDeltas {
+    revenue: number | null
+    completed: number | null
+    avgTurnaround: number | null
+    breakage: number | null
+    avgTicket: number | null
+}
+
+export interface AgingBucket {
+    bucket: '0to3' | '4to7' | '8to14' | 'gt14'
+    count: number
+}
+
+export interface WeeklyThroughputItem {
+    weekStart: string
+    created: number
+    completed: number
+}
+
+export interface PartnerScorecardItem {
+    shopId: string
+    name: string
+    orders: number
+    revenue: string
+    avgTurnaroundDays: number
+    debt: string
+    lastActivity: string
+}
+
+export interface LensUsageItem {
+    blankId: string
+    label: string
+    usedQty: number
+    inStock: number
+}
+
+export interface BreakageByLensItem {
+    blankId: string
+    label: string
+    brokenQty: number
+}
+
 export interface ShopReportData {
     totalRevenue: string
     totalOrders: number
@@ -107,7 +216,21 @@ export interface ShopReportData {
     topProductsByCategory: Record<string, TopProduct[]>
     monthlyRevenue: MonthlyRevenue[]
     recentOrders: RecentOrder[]
+    deltas: ShopDeltas
+    salesHeatmap: { byWeekday: number[]; byHour: number[] }
+    pareto: { topDecileSharePct: number; activeClients: number }
+    revenueSplit: { newClientsRevenue: string; returningClientsRevenue: string }
+    orderValueBuckets: OrderValueBucket[]
+    doctorRanking: DoctorRankingItem[]
+    powerDemand: { sphBands: PowerBand[]; cylBands: PowerBand[] }
+    marginByCategory: MarginByCategoryItem[]
+    weeksOfCover: WeeksOfCoverItem[]
+    supplierBalances: SupplierBalance[]
+    collections: { avgDaysToCash: number; bounceRate: number; cashedCount: number; bouncedCount: number }
+    cancellations: { count: number; revenueLost: string }
     topClients?: TopClient[]
+    dormantClients: DormantClient[]
+    restockList: RestockItem[]
     salesByPaymentMethod?: SalesByPaymentMethod
     receivables?: Receivables
     stockHealth?: StockHealth
@@ -127,6 +250,14 @@ export interface AtelierReportData {
     workOrdersByShop: WorkOrderByShop[]
     monthlyWorkOrders: MonthlyWorkOrders[]
     recentWorkOrders: RecentWorkOrder[]
+    deltas: AtelierDeltas
+    avgTicket: number
+    agingBuckets: AgingBucket[]
+    weeklyThroughput: WeeklyThroughputItem[]
+    partnerScorecard: PartnerScorecardItem[]
+    sourceSplit: { source: string; count: number }[]
+    lensUsage: LensUsageItem[]
+    breakageByLens: BreakageByLensItem[]
     workload?: Workload
     avgTurnaroundDays?: number
     breakageRate?: number

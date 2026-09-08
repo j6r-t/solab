@@ -28,6 +28,7 @@ interface WorkOrder {
     lensBlankPrice: string | null
     paymentStatus: string
     amountPaid: string
+    expectedCompletionDate: string | null
     lensBlankLeft: { id: string; brand: string; thickness: string; lensType: string; material: string; coating: string; sellingPrice: string; sph: string; cyl: string } | null
     lensBlankRight: { id: string; brand: string; thickness: string; lensType: string; material: string; coating: string; sellingPrice: string; sph: string; cyl: string } | null
     brokenLensBlank: string | null
@@ -56,6 +57,18 @@ const STATUS_BADGE: Record<string, string> = {
     cancelled: 'bg-red-100 text-red-700 border-red-200',
 }
 
+function formatDateFr(dateStr: string): string {
+    return new Date(dateStr).toLocaleDateString('fr-TN', { day: 'numeric', month: 'numeric', year: 'numeric' })
+}
+
+function daysUntil(dateStr: string): number {
+    const due = new Date(dateStr)
+    const now = new Date()
+    const dueDay = Date.UTC(due.getFullYear(), due.getMonth(), due.getDate())
+    const nowDay = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+    return Math.round((dueDay - nowDay) / 86400000)
+}
+
 export function AtelierWorkOrdersPage() {
     const { t } = useTranslation()
     const [search, setSearch] = useState('')
@@ -74,11 +87,15 @@ export function AtelierWorkOrdersPage() {
     })
     const workOrders = workOrdersData ?? []
 
-    const countByStatus = (status: string) => status === 'all'
-        ? workOrders.length
-        : workOrders.filter((wo) => wo.status === status).length
+    // Overview cards + tab counts: same search/source, but NO status filter — stable across tab clicks
+    const { data: statsData } = useRepairs<WorkOrder[]>({ search: debouncedSearch, source: sourceFilter })
+    const statsOrders = statsData ?? []
 
-    const pendingCount = workOrders.filter((wo) => wo.status === 'pending' || wo.status === 'in_progress').length
+    const countByStatus = (status: string) => status === 'all'
+        ? statsOrders.length
+        : statsOrders.filter((wo) => wo.status === status).length
+
+    const pendingCount = statsOrders.filter((wo) => wo.status === 'pending' || wo.status === 'in_progress').length
 
     return (
         <div className="space-y-6 max-w-[1000px]">
@@ -96,7 +113,7 @@ export function AtelierWorkOrdersPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="rounded-lg border bg-card p-3">
                     <p className="text-xs text-muted-foreground">Total</p>
-                    <p className="text-lg font-semibold mt-1">{workOrders.length}</p>
+                    <p className="text-lg font-semibold mt-1">{statsOrders.length}</p>
                 </div>
                 <div className="rounded-lg border bg-card p-3">
                     <p className="text-xs text-muted-foreground">Pending / Active</p>
@@ -166,6 +183,7 @@ export function AtelierWorkOrdersPage() {
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Client / Shop</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Source</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Services</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('workOrders.expectedDate')}</th>
                                 <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
                                 <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Price</th>
                             </tr>
@@ -175,6 +193,9 @@ export function AtelierWorkOrdersPage() {
                                 const clientName = wo.order?.client
                                     ? `${wo.order.client.name} ${wo.order.client.familyName}`
                                     : wo.opticianShop?.name || '—'
+                                const dueDate = wo.expectedCompletionDate
+                                const isDueBadgeActive = dueDate !== null && (wo.status === 'pending' || wo.status === 'in_progress')
+                                const daysLeft = isDueBadgeActive && dueDate ? daysUntil(dueDate) : null
                                 return (
                                     <tr
                                         key={wo.id}
@@ -188,8 +209,30 @@ export function AtelierWorkOrdersPage() {
                                                 {wo.workOrderServices.map((s) => (
                                                     <Badge key={s.id} variant="secondary" className="text-xs">{s.repairService.name}</Badge>
                                                 ))}
-                                                {wo.workOrderServices.length === 0 && '—'}
-                                            </div>
+                                            {wo.workOrderServices.length === 0 && '—'}
+                                        </div>
+                                    </td>
+                                        <td className="py-3 px-4 text-sm text-muted-foreground">
+                                            {dueDate ? (
+                                                <div className="flex flex-col items-start gap-1">
+                                                    <span>{formatDateFr(dueDate)}</span>
+                                                    {daysLeft !== null && daysLeft < 0 && (
+                                                        <Badge variant="outline" className="text-xs bg-red-100 text-red-700 border-red-200">
+                                                            {t('repairs.overdue')}
+                                                        </Badge>
+                                                    )}
+                                                    {daysLeft === 0 && (
+                                                        <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-200">
+                                                            {t('workOrders.dueToday')}
+                                                        </Badge>
+                                                    )}
+                                                    {daysLeft !== null && daysLeft >= 1 && daysLeft <= 3 && (
+                                                        <Badge variant="outline" className="text-xs bg-gray-100 text-gray-700 border-gray-200">
+                                                            {t('workOrders.dueInDays', { n: daysLeft })}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            ) : '—'}
                                         </td>
                                         <td className="py-3 px-4 text-center">
                                             <Badge variant="outline" className={`text-xs ${STATUS_BADGE[wo.status] || ''}`}>

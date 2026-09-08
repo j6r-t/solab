@@ -23,11 +23,86 @@ export interface TopProductDto {
 export interface MonthlyRevenueDto {
     month: string
     revenue: number
+    profit: number
+    orders: number
 }
 
 export interface MonthlyWorkOrdersDto {
     month: string
     count: number
+    revenue: number
+}
+
+export interface OrderValueBucketDto {
+    bucket: 'lt200' | '200to500' | '500to1000' | 'gt1000'
+    count: number
+}
+
+export interface PowerBandDto {
+    band: string
+    count: number
+}
+
+export interface MarginByCategoryItemDto {
+    category: string
+    revenue: string
+    cost: string
+    marginPct: number
+}
+
+export interface WeeksOfCoverItemDto {
+    category: string
+    onHand: number
+    weeklyRate: number
+    weeks: number | null
+}
+
+export interface SupplierBalanceDto {
+    fournisseurId: string
+    name: string
+    purchases: string
+    outstanding: string
+}
+
+export interface DoctorRankingItemDto {
+    doctorId: string
+    name: string
+    orders: number
+    revenue: string
+}
+
+export interface AgingBucketDto {
+    bucket: '0to3' | '4to7' | '8to14' | 'gt14'
+    count: number
+}
+
+export interface WeeklyThroughputItemDto {
+    weekStart: string
+    created: number
+    completed: number
+}
+
+export interface PartnerScorecardItemDto {
+    shopId: string
+    name: string
+    orders: number
+    revenue: string
+    avgTurnaroundDays: number
+    debt: string
+    lastActivity: string
+}
+
+export interface LensUsageItemDto {
+    blankId: string
+    label: string
+    usedQty: number
+    inStock: number
+}
+
+export interface BreakageByLensItemDto {
+    blankId: string
+    label: string
+    brokenQty: number
 }
 
 export interface WorkOrderByShopDto {
@@ -49,6 +124,24 @@ export interface TopClientDto {
     name: string
     totalSpent: string
     ordersCount: number
+}
+
+export interface DormantClientDto {
+    clientId: string
+    name: string
+    phone: string
+    lastOrderDate: string
+    totalSpent: string
+    ordersCount: number
+}
+
+export interface RestockItemDto {
+    productId: string
+    name: string
+    brand: string
+    category: string | null
+    quantity: number
+    supplierName: string | null
 }
 
 export interface SalesByPaymentMethodDto {
@@ -113,11 +206,25 @@ export interface ReportResponse {
     monthlyRevenue?: MonthlyRevenueDto[]
     recentOrders?: RecentOrderDto[]
     topClients?: TopClientDto[]
+    dormantClients?: DormantClientDto[]
+    restockList?: RestockItemDto[]
     salesByPaymentMethod?: SalesByPaymentMethodDto
     receivables?: ReceivablesDto
     stockHealth?: StockHealthDto
     repeatClients?: number
     dailyAvgSales?: number
+    deltas?: Record<string, number | null>
+    salesHeatmap?: { byWeekday: number[]; byHour: number[] }
+    pareto?: { topDecileSharePct: number; activeClients: number }
+    revenueSplit?: { newClientsRevenue: string; returningClientsRevenue: string }
+    orderValueBuckets?: OrderValueBucketDto[]
+    doctorRanking?: DoctorRankingItemDto[]
+    powerDemand?: { sphBands: PowerBandDto[]; cylBands: PowerBandDto[] }
+    marginByCategory?: MarginByCategoryItemDto[]
+    weeksOfCover?: WeeksOfCoverItemDto[]
+    supplierBalances?: SupplierBalanceDto[]
+    collections?: { avgDaysToCash: number; bounceRate: number; cashedCount: number; bouncedCount: number }
+    cancellations?: { count: number; revenueLost: string }
     // Atelier fields
     totalLensBlanks?: number
     lowStockLensBlanks?: number
@@ -133,6 +240,13 @@ export interface ReportResponse {
     breakageRate?: number
     revenueByOptician?: RevenueByOpticianDto[]
     lensBlanksLowStock?: LensBlanksLowStockDto
+    avgTicket?: number
+    agingBuckets?: AgingBucketDto[]
+    weeklyThroughput?: WeeklyThroughputItemDto[]
+    partnerScorecard?: PartnerScorecardItemDto[]
+    sourceSplit?: { source: string; count: number }[]
+    lensUsage?: LensUsageItemDto[]
+    breakageByLens?: BreakageByLensItemDto[]
     // Common
     period: string
 }

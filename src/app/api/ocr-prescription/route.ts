@@ -1,15 +1,17 @@
 import { NextRequest } from 'next/server';
 import { parseBody } from '@/lib/api/parse';
 import { handleError } from '@/lib/middlewares/errorHandler';
+import { requireRole } from '@/lib/api/auth';
 import { BadRequestError } from '@/lib/errors';
 import { ok } from '@/lib/api/response';
 import { ocrPrescriptionSchema } from './ocr-prescription.schema';
 
 export async function POST(req: NextRequest) {
   try {
+    requireRole(['admin', 'shop', 'atelier'])(req);
     const { imageData } = await parseBody(req, ocrPrescriptionSchema);
     const apiKey = process.env.GROQ_API_KEY;
-    const model = process.env.GROQ_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct';
+    const model = process.env.GROQ_MODEL;
 
     if (!apiKey) {
       throw new BadRequestError('Missing GROQ_API_KEY environment variable');

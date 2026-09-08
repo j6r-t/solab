@@ -20,9 +20,9 @@ This guide explains every part of the app and why it helps you. For step-by-step
 
 ---
 
-## Clients, Prescriptions and Doctors (**Clients**, **Ordonnances**, **Médecins**)
+## Clients, Prescriptions and Doctors (**Clients**, **Médecins**)
 
-**What it is.** Client records with phone, address, insurance (**Organisme / Assurance**) and notes (allergies, preferences). Each client can have several prescriptions, with the values for each eye and the prescribing doctor.
+**What it is.** Client records with phone, address, insurance (**Organisme / Assurance**) and notes (allergies, preferences). Each client can have several prescriptions, with the values for each eye and the prescribing doctor. Prescriptions are managed from the client's page in the **Ordonnances** section: history table, details, **Nouvelle ordonnance**.
 
 **Why it helps you.** When a client returns, their history is there: old prescriptions, old orders, what they bought. The latest prescription is proposed automatically on the next order, so no more searching through drawers.
 
@@ -95,8 +95,10 @@ The facture prints with the shop identity: **Sofien Optic**, address *Rue de la 
 
 | Role | Numbers to check weekly |
 |---|---|
-| Owner / Shop | Revenue, orders, average basket (**Panier moyen**), profit (**Bénéfice**), top clients, sales by payment method, **Créances** (money outside), stock health including dead stock, repeat clients, daily average |
-| Atelier | Workload and backlog age, average turnaround, breakage rate, revenue per optician shop, critical lens-blank stock |
+| Owner / Shop | Revenue and profit (**Bénéfice**) with the **Marge** line, orders and average basket (**Panier moyen**) — each with a ▲/▼ delta versus the previous period; sales by payment method, **Créances** and **Encaissements** (how fast cheques turn into money), **Concentration du CA** (top 10 % of clients), **Top médecins** and **Demande de correction**, **Soldes fournisseurs**, stock health with dead stock and **Réapprovisionnement**, repeat clients, daily average |
+| Atelier | Workload with backlog aging (**Ancienneté des arriérés**), average turnaround, breakage rate, partner scorecard (**Partenaires opticiens**) including each optician's **Dette**, weekly throughput (**Débit hebdomadaire**), lens usage (**Verres consommés**), critical lens-blank stock |
+
+Every headline KPI compares the chosen period with the previous equivalent one — this month against last month, this year against last year — so growth is visible at a glance. The **Bénéfice** line shows what remains after purchase costs, with the margin percentage underneath. Money-outside and stock cards (like **Créances** and **Santé du stock**) always show the live, current situation.
 
 **Why it helps you.** Decisions stop being guesses: which clients to call, which payment habits to watch, what to reorder, and how much money is outside.
 
@@ -123,11 +125,11 @@ The facture prints with the shop identity: **Sofien Optic**, address *Rue de la 
 | Menu | Admin (boss) | Shop (Magasin) | Atelier |
 |---|---|---|---|
 | Tableau de bord | Yes | Yes | Yes |
-| Clients, Ordonnances, Médecins | Yes | Yes | No |
+| Clients, Médecins (prescriptions on the client page) | Yes | Yes | No |
 | Stock | Yes | Yes | No |
 | Verres (lens blanks) | Yes | No | Yes |
 | Commandes, Facturation, Chèques | Yes | Yes | No |
-| Travaux atelier, Opticiens partenaires | Yes | No | Yes |
+| Travaux atelier, Réparations, Opticiens partenaires | Yes | No | Yes |
 | Factures fournisseur, Fournisseurs | Yes | Yes | Yes |
 | Rapports, Paramètres | Yes | Yes | Yes |
 | Import (CSV) | Yes | Yes | No |

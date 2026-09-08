@@ -1,0 +1,17 @@
+# cloudflared tunnel configuration (PATH A — shop Windows PC).
+# Copy this file to:  C:\Users\<you>\.cloudflared\config.yml
+# Fill in <TUNNEL-ID> and the credentials path printed by:
+#   cloudflared tunnel create sofien-optic
+# Placeholder values only — do not commit real IDs here.
+
+tunnel: <TUNNEL-ID>
+credentials-file: C:\Users\jesse\.cloudflared\<TUNNEL-ID>.json
+
+ingress:
+  # Public hostname routed to this tunnel
+  # (also run: cloudflared tunnel route dns sofien-optic shop.yourdomain.tn)
+  - hostname: shop.yourdomain.tn
+    service: http://localhost:3000
+
+  # Required catch-all: anything else gets a 404
+  - service: http_status:404

@@ -44,6 +44,8 @@ export const declareBreakageSchema = z.object({
         message: 'Must specify left, right, or both',
     }),
     reason: z.string().optional(),
+    replacementLeftId: z.string().optional(),
+    replacementRightId: z.string().optional(),
 })
 
 export const recordRepairPaymentSchema = z.object({

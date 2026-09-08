@@ -3,12 +3,16 @@ import { ok, created, noContent } from '@/lib/api/response'
 import { handleError } from '@/lib/middlewares/errorHandler'
 import { parseBody, parseQuery } from '@/lib/api/parse'
 import { parsePagination, paginated } from '@/lib/api/pagination'
+import { requireRole } from '@/lib/api/auth'
 import { listRepairs, getRepair, createRepair, updateRepairStatus, assignLensBlanks, declareBreakage, deleteRepair, recordPayment } from './repair.service'
 import { toRepairResponse } from '@/modules/sales/repairs/mappers/repair.mapper'
 import { repairSchema, updateRepairStatusSchema, assignLensBlanksSchema, declareBreakageSchema, recordRepairPaymentSchema } from '@/modules/sales/repairs/repair.schema'
 
+const REPAIR_ROLES = ['admin', 'atelier']
+
 export async function GET(request: NextRequest) {
     try {
+        requireRole(REPAIR_ROLES)(request)
         const { status, search, source, type } = parseQuery(request, 'status', 'search', 'source', 'type')
         const url = new URL(request.url)
         const id = url.searchParams.get('id')
@@ -26,6 +30,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
+        requireRole(REPAIR_ROLES)(request)
         const body = await parseBody(request, repairSchema)
         const repair = await createRepair(body)
         return created(toRepairResponse(repair))
@@ -36,6 +41,7 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
+        requireRole(REPAIR_ROLES)(request)
         const { id } = await params
         const url = new URL(request.url)
         const action = url.searchParams.get('action')
@@ -47,7 +53,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         }
         if (action === 'declare-breakage') {
             const body = await parseBody(request, declareBreakageSchema)
-            const repair = await declareBreakage(id, { brokenLensBlank: body.which })
+            const repair = await declareBreakage(id, {
+                brokenLensBlank: body.which,
+                replacementLeftId: body.replacementLeftId,
+                replacementRightId: body.replacementRightId,
+            })
             return ok(toRepairResponse(repair))
         }
         if (action === 'record-payment') {
@@ -64,8 +74,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
+        requireRole(REPAIR_ROLES)(request)
         const { id } = await params
         await deleteRepair(id)
         return noContent()

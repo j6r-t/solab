@@ -63,9 +63,12 @@ export function DashboardPage() {
 
     const entity = user?.role === 'atelier' ? 'atelier' : 'shop'
     const isAtelier = entity === 'atelier'
+    const role = user?.role || 'admin'
+    const canShop = role === 'admin' || role === 'shop'
+    const canAtelier = role === 'admin' || role === 'atelier'
 
     const { data, isLoading } = useReports({ period: 'month', entity })
-    const { data: readyOrdersData, refetch: refetchReadyOrders } = useOrders({ status: 'ready' })
+    const { data: readyOrdersData, refetch: refetchReadyOrders } = useOrders({ status: 'ready' }, { enabled: canShop })
     const readyOrders = readyOrdersData ?? []
 
     const kpis = useMemo(() => {
@@ -159,20 +162,27 @@ export function DashboardPage() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-                <Button variant="outline" className="gap-2" onClick={() => setView('repairs')}>
-                    <Wrench className="h-4 w-4" />
-                    {t('nav.repairs')}
-                </Button>
-                <Button variant="outline" className="gap-2" onClick={() => setView('optician-shops')}>
-                    <Store className="h-4 w-4" />
-                    {t('nav.opticianShops')}
-                </Button>
-                <Button className="gap-2" onClick={() => setView('orders')}>
-                    <Plus className="h-4 w-4" />
-                    {t('orders.newOrder')}
-                </Button>
+                {canAtelier && (
+                    <Button variant="outline" className="gap-2" onClick={() => setView('atelier-work-orders')}>
+                        <Wrench className="h-4 w-4" />
+                        {t('nav.atelierWorkOrders')}
+                    </Button>
+                )}
+                {canAtelier && (
+                    <Button variant="outline" className="gap-2" onClick={() => setView('optician-shops')}>
+                        <Store className="h-4 w-4" />
+                        {t('nav.opticianShops')}
+                    </Button>
+                )}
+                {canShop && (
+                    <Button className="gap-2" onClick={() => setView('orders')}>
+                        <Plus className="h-4 w-4" />
+                        {t('orders.newOrder')}
+                    </Button>
+                )}
             </div>
 
+            {canShop && (
             <Card>
                 <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
@@ -217,6 +227,7 @@ export function DashboardPage() {
                     )}
                 </CardContent>
             </Card>
+            )}
 
             <OrderDetailDialog
                 order={selectedOrder}

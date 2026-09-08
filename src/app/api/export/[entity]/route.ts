@@ -1,11 +1,18 @@
 import { NextRequest } from 'next/server'
 import { handleError } from '@/lib/middlewares/errorHandler'
+import { requireRole } from '@/lib/api/auth'
 import { BadRequestError } from '@/lib/errors'
 import { toCSV } from '@/lib/csv'
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ entity: string }> }) {
     try {
         const { entity } = await params
+
+        if (entity === 'fournisseurs') {
+            requireRole(['admin', 'shop', 'atelier'])(request)
+        } else {
+            requireRole(['admin', 'shop'])(request)
+        }
 
         let headers: string[] = []
         let rows: (string | number | null | undefined)[][] = []

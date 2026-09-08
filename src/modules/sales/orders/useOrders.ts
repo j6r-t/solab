@@ -2,10 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchOrders } from './orders.api'
 import { api } from '@/lib/api/client'
 
-export function useOrders(params?: { search?: string; status?: string; clientId?: string }) {
+export function useOrders(params?: { search?: string; status?: string; clientId?: string }, options?: { enabled?: boolean }) {
     return useQuery({
         queryKey: ['orders', params],
         queryFn: () => fetchOrders(params),
+        enabled: options?.enabled,
     })
 }
 

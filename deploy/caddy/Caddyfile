@@ -1,0 +1,35 @@
+# Caddy v2 reverse proxy for the Solab app (PATH B — Ubuntu VPS).
+# Install:  sudo cp deploy/caddy/Caddyfile /etc/caddy/Caddyfile
+# Edit the site address below to your real domain, then: sudo systemctl reload caddy
+# Caddy automatically obtains and renews the HTTPS certificate.
+
+# {$DOMAIN} reads the DOMAIN environment variable of the Caddy service.
+# Simplest: replace {$DOMAIN} with your real hostname, e.g. shop.yourdomain.tn
+{$DOMAIN} {
+	# Terminate TLS at Caddy and forward plain HTTP to Next.js on localhost.
+	reverse_proxy localhost:3000
+
+	# Compress text responses (JS/CSS/HTML/JSON) on the fly.
+	encode zstd gzip
+
+	# Allow large request bodies — OCR prescription images are uploaded as base64.
+	# Default Caddy limit is 10 MB; 20 MB gives headroom for phone-camera photos.
+	request_body {
+		max_size 20MB
+	}
+
+	# Security headers on every response.
+	header {
+		# Forbid framing the app in an <iframe> (clickjacking protection).
+		X-Frame-Options DENY
+		# Stop browsers from MIME-sniffing responses away from the declared type.
+		X-Content-Type-Options nosniff
+		# Only send the origin as referrer to other sites — never full URLs.
+		Referrer-Policy strict-origin-when-cross-origin
+		# Force HTTPS for 2 years, including subdomains; allows preload submission.
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		# Remove headers that advertise server internals.
+		-Server
+		X-Powered-By ""
+	}
+}
