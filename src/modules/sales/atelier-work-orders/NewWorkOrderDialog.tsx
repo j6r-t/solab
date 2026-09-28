@@ -19,6 +19,7 @@ import { toast } from 'sonner'
 import { fetchOpticianShops, type OpticianShopItem } from '@/modules/partners/optician-shops/optician-shops.api'
 import { fetchRepairServices } from '@/modules/system/settings/settings.api'
 import type { PaginatedResponse } from '@/lib/api/pagination'
+import { useTranslation } from '@/lib/hooks/useTranslation'
 
 interface RepairService {
     id: string
@@ -51,6 +52,7 @@ interface NewWorkOrderDialogProps {
 }
 
 export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrderDialogProps) {
+    const { t } = useTranslation()
     const [shops, setShops] = useState<OpticianShopItem[]>([])
     const [repairServices, setRepairServices] = useState<RepairService[]>([])
     const [loading, setLoading] = useState(false)
@@ -143,7 +145,7 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
     function triggerSearch() {
         const hasRx = rx.sphRight !== 0 || rx.cylRight !== 0 || rx.sphLeft !== 0 || rx.cylLeft !== 0
         if (!hasRx && !thickness && !lensType && !material && !coating) {
-            toast.error('Veuillez remplir au moins un champ de l\'ordonnance')
+            toast.error(t('workOrders.fillRxField'))
             return
         }
         setLensBlankLoading(true)
@@ -185,7 +187,7 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
             const base64 = await new Promise<string>((resolve, reject) => {
                 const reader = new FileReader()
                 reader.onload = () => resolve(reader.result as string)
-                reader.onerror = () => reject(new Error('Failed to read file'))
+                reader.onerror = () => reject(new Error(t('common.fileReadFailed')))
                 reader.readAsDataURL(file)
             })
 
@@ -204,7 +206,7 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
 
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}))
-                throw new Error(err.error || 'Erreur lors de la lecture de l\'ordonnance.')
+                throw new Error(err.error || t('common.ocrError'))
             }
 
             const data = await res.json()
@@ -223,9 +225,9 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
                 pdLeft: data.pd ?? prev.pdLeft,
             }))
 
-            toast.success('Données d\'ordonnance extraites')
+            toast.success(t('common.ocrSuccess'))
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Erreur lors de la lecture de l\'ordonnance.')
+            toast.error(error instanceof Error ? error.message : t('common.ocrError'))
         } finally {
             setOcrLoading(false)
             if (fileInputRef.current) fileInputRef.current.value = ''
@@ -245,13 +247,13 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
         .map((lb) => ({
             value: lb.id,
             label: `${lb.brand} ${lb.lensType} ${lb.thickness}`,
-            secondary: `SPH ${lb.sph} · CYL ${lb.cyl} · ${Number(lb.sellingPrice).toFixed(3)} TND · ${lb.quantity} in stock`,
+            secondary: `SPH ${lb.sph} · CYL ${lb.cyl} · ${Number(lb.sellingPrice).toFixed(3)} TND · ${t('common.inStockSuffix', { n: lb.quantity })}`,
         }))
 
     async function handleSubmit() {
-        if (!selectedShopId) { toast.error('Please select an optician shop'); return }
-        if (selectedServiceIds.length === 0) { toast.error('Please select at least one service'); return }
-        if (!expectedDate) { toast.error('Please set expected completion date'); return }
+        if (!selectedShopId) { toast.error(t('workOrders.selectShopRequired')); return }
+        if (selectedServiceIds.length === 0) { toast.error(t('workOrders.selectServiceRequired')); return }
+        if (!expectedDate) { toast.error(t('workOrders.expectedDateRequired')); return }
 
         setLoading(true)
         try {
@@ -285,14 +287,14 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
             })
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}))
-                throw new Error(err.error || 'Failed to create work order')
+                throw new Error(err.error || t('workOrders.createFailed'))
             }
-            toast.success('Work order created')
+            toast.success(t('workOrders.created'))
             onCreated()
             onOpenChange(false)
             resetForm()
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to create')
+            toast.error(error instanceof Error ? error.message : t('workOrders.createFailed'))
         } finally {
             setLoading(false)
         }
@@ -328,7 +330,7 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Plus className="h-4 w-4" />
-                        Nouvel Ordre de Travail
+                        {t('workOrders.new')}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -340,21 +342,21 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
                     <div className="space-y-5">
                         {/* Step 1: Shop */}
                         <div className="space-y-2">
-                            <Label>Optician Shop *</Label>
+                            <Label>{t('workOrders.opticianShop')}</Label>
                             <SearchSelect
                                 options={shops.map((s) => ({ value: s.id, label: s.name, secondary: s.phone }))}
                                 value={selectedShopId}
                                 onChange={setSelectedShopId}
-                                placeholder="Select shop..."
-                                searchPlaceholder="Search shops..."
-                                emptyMessage="No shops found"
-                                title="Optician Shop"
+                                placeholder={t('workOrders.selectShopPlaceholder')}
+                                searchPlaceholder={t('workOrders.searchShopsPlaceholder')}
+                                emptyMessage={t('workOrders.noShopsFound')}
+                                title={t('workOrders.opticianShopLabel')}
                             />
                         </div>
 
                         {/* Step 2: Services (multi-select) */}
                         <div className="space-y-2">
-                            <Label>Services * (select one or more)</Label>
+                            <Label>{t('workOrders.servicesLabel')}</Label>
                             <div className="space-y-1.5">
                                 {repairServices.map((service) => {
                                     const checked = selectedServiceIds.includes(service.id)
@@ -370,29 +372,29 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
                             </div>
                             {selectedServiceIds.length > 0 && (
                                 <div className="text-sm text-muted-foreground">
-                                    Total services: <strong>{totalServicePrice.toFixed(3)} TND</strong>
+                                    {t('workOrders.totalServices')} <strong>{totalServicePrice.toFixed(3)} TND</strong>
                                 </div>
                             )}
                         </div>
 
                         {/* Step 3: Expected date */}
                         <div className="space-y-2">
-                            <Label>Date de livraison prévue *</Label>
+                            <Label>{t('workOrders.expectedDate')} *</Label>
                             <Input type="date" min={today} value={expectedDate} onChange={(e) => setExpectedDate(e.target.value)} className="h-9" />
                         </div>
 
                         {/* Step 4: Lens source */}
                         <div className="space-y-2">
-                            <Label>Source des verres *</Label>
+                            <Label>{t('workOrders.lensSourceLabel')}</Label>
                             <div className="flex gap-3">
                                 <Button type="button" variant={lensSource === 'stock' ? 'default' : 'outline'} size="sm"
                                     onClick={() => changeLensSource('stock')} className="flex-1">
                                     <Package className="h-4 w-4 mr-2" />
-                                    Notre stock
+                                    {t('workOrders.ourStock')}
                                 </Button>
                                 <Button type="button" variant={lensSource === 'optician' ? 'default' : 'outline'} size="sm"
                                     onClick={() => changeLensSource('optician')} className="flex-1">
-                                    Optician shop
+                                    {t('workOrders.opticianSource')}
                                 </Button>
                             </div>
                         </div>
@@ -402,20 +404,20 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
                             <div className="flex items-center justify-between">
                                 <Label className="text-sm font-medium flex items-center gap-2">
                                     <Eye className="h-4 w-4" />
-                                    Ordonnance
+                                    {t('workOrders.prescription')}
                                 </Label>
                                 <div>
                                     <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleOcrUpload} />
                                     <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={ocrLoading}>
                                         {ocrLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
-                                        Importer photo
+                                        {t('workOrders.importPhoto')}
                                     </Button>
                                 </div>
                             </div>
                             {ocrPreviewUrl && (
                                 <div className="relative rounded-md overflow-hidden border">
                                     {/* eslint-disable-next-line @next/next/no-img-element -- local object/data URL preview */}
-                            <img src={ocrPreviewUrl} alt="Ordonnance importée" className="w-full max-h-48 object-contain bg-white" />
+                            <img src={ocrPreviewUrl} alt={t('workOrders.importedRxAlt')} className="w-full max-h-48 object-contain bg-white" />
                                     <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6"
                                         onClick={() => { setOcrPreviewUrl(null); if (fileInputRef.current) fileInputRef.current.value = '' }}>
                                         <X className="h-3.5 w-3.5" />
@@ -424,7 +426,7 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
                             )}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label className="text-sm font-medium">Œil droit (Right)</Label>
+                                    <Label className="text-sm font-medium">{t('prescriptions.rightEye')}</Label>
                                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                                         {(['sphRight', 'cylRight', 'axisRight', 'addRight', 'pdRight'] as const).map((field) => {
                                             const base = field.replace('Right', '')
@@ -440,7 +442,7 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-sm font-medium">Œil gauche (Left)</Label>
+                                    <Label className="text-sm font-medium">{t('prescriptions.leftEye')}</Label>
                                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                                         {(['sphLeft', 'cylLeft', 'axisLeft', 'addLeft', 'pdLeft'] as const).map((field) => {
                                             const base = field.replace('Left', '')
@@ -458,7 +460,7 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
                             </div>
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                 <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Épaisseur</Label>
+                                    <Label className="text-xs text-muted-foreground">{t('stock.thickness')}</Label>
                                     <Select value={thickness} onValueChange={setThickness}>
                                         <SelectTrigger className="h-8"><SelectValue placeholder="—" /></SelectTrigger>
                                         <SelectContent>
@@ -470,7 +472,7 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
                                     </Select>
                                 </div>
                                 <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Type</Label>
+                                    <Label className="text-xs text-muted-foreground">{t('orders.type')}</Label>
                                     <Select value={lensType} onValueChange={setLensType}>
                                         <SelectTrigger className="h-8"><SelectValue placeholder="—" /></SelectTrigger>
                                         <SelectContent>
@@ -482,7 +484,7 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
                                     </Select>
                                 </div>
                                 <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Matériau</Label>
+                                    <Label className="text-xs text-muted-foreground">{t('stock.material')}</Label>
                                     <Select value={material} onValueChange={setMaterial}>
                                         <SelectTrigger className="h-8"><SelectValue placeholder="—" /></SelectTrigger>
                                         <SelectContent>
@@ -494,7 +496,7 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
                                     </Select>
                                 </div>
                                 <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Traitement</Label>
+                                    <Label className="text-xs text-muted-foreground">{t('stock.coating')}</Label>
                                     <Select value={coating} onValueChange={setCoating}>
                                         <SelectTrigger className="h-8"><SelectValue placeholder="—" /></SelectTrigger>
                                         <SelectContent>
@@ -507,8 +509,8 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
                                 </div>
                             </div>
                             <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Notes</Label>
-                                <Input value={prescriptionNotes} onChange={(e) => setPrescriptionNotes(e.target.value)} placeholder="Notes optionnelles..." className="h-9 text-sm" />
+                                <Label className="text-xs text-muted-foreground">{t('clients.notes')}</Label>
+                                <Input value={prescriptionNotes} onChange={(e) => setPrescriptionNotes(e.target.value)} placeholder={t('workOrders.notesPlaceholder')} className="h-9 text-sm" />
                             </div>
                         </div>
 
@@ -516,64 +518,64 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
                         {lensSource === 'stock' && (
                             <div className="p-3 bg-muted/20 rounded-lg border space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <Label className="text-sm font-medium">Verres du stock</Label>
+                                    <Label className="text-sm font-medium">{t('workOrders.stockLenses')}</Label>
                                     <Button type="button" variant="outline" size="sm" onClick={triggerSearch} disabled={lensBlankLoading}>
                                         {lensBlankLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Search className="h-3.5 w-3.5 mr-1.5" />}
-                                        Rechercher
+                                        {t('common.search')}
                                     </Button>
                                 </div>
                                 {lensBlankLoading ? (
                                     <div className="flex items-center justify-center py-4 text-muted-foreground text-sm">
-                                        <Loader2 className="h-4 w-4 animate-spin mr-2" /> Recherche de verres correspondants...
+                                        <Loader2 className="h-4 w-4 animate-spin mr-2" /> {t('workOrders.searchingBlanks')}
                                     </div>
                                 ) : blankOptions.length === 0 ? (
                                     <div className="space-y-2">
-                                        <p className="text-sm text-amber-600 font-medium">Aucun verre correspondant en stock</p>
-                                        <p className="text-xs text-muted-foreground">L&apos;opticien partenaire devra fournir ce(s) verre(s) via un fournisseur externe.</p>
+                                        <p className="text-sm text-amber-600 font-medium">{t('common.blanksNotInStock')}</p>
+                                        <p className="text-xs text-muted-foreground">{t('common.opticianWillProvide')}</p>
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div className="space-y-1">
-                                            <Label className="text-xs text-muted-foreground">Œil gauche (Left)</Label>
+                                            <Label className="text-xs text-muted-foreground">{t('prescriptions.leftEye')}</Label>
                                             <SearchSelect
-                                                options={[{ value: '', label: 'None' }, ...blankOptions]}
+                                                options={[{ value: '', label: t('stock.none') }, ...blankOptions]}
                                                 value={lensBlankLeftId}
                                                 onChange={setLensBlankLeftId}
-                                                placeholder="None"
-                                                title="Left Eye Lens Blank"
-                                                searchPlaceholder="Search..."
+                                                placeholder={t('stock.none')}
+                                                title={t('workOrders.leftEyeBlank')}
+                                                searchPlaceholder={t('common.search')}
                                             />
                                             {lensBlankLeftId ? (
-                                                <p className="text-xs text-green-600">En stock</p>
+                                                <p className="text-xs text-green-600">{t('common.inStock')}</p>
                                             ) : (
-                                                <p className="text-xs text-amber-600">Non assigné — l&apos;opticien devra fournir</p>
+                                                <p className="text-xs text-amber-600">{t('common.notAssigned')}</p>
                                             )}
                                         </div>
                                         <div className="space-y-1">
-                                            <Label className="text-xs text-muted-foreground">Œil droit (Right)</Label>
+                                            <Label className="text-xs text-muted-foreground">{t('prescriptions.rightEye')}</Label>
                                             <SearchSelect
-                                                options={[{ value: '', label: 'None' }, ...blankOptions]}
+                                                options={[{ value: '', label: t('stock.none') }, ...blankOptions]}
                                                 value={lensBlankRightId}
                                                 onChange={setLensBlankRightId}
-                                                placeholder="None"
-                                                title="Right Eye Lens Blank"
-                                                searchPlaceholder="Search..."
+                                                placeholder={t('stock.none')}
+                                                title={t('workOrders.rightEyeBlank')}
+                                                searchPlaceholder={t('common.search')}
                                             />
                                             {lensBlankRightId ? (
-                                                <p className="text-xs text-green-600">En stock</p>
+                                                <p className="text-xs text-green-600">{t('common.inStock')}</p>
                                             ) : (
-                                                <p className="text-xs text-amber-600">Non assigné — l&apos;opticien devra fournir</p>
+                                                <p className="text-xs text-amber-600">{t('common.notAssigned')}</p>
                                             )}
                                         </div>
                                     </div>
                                 )}
                                 {blankOptions.length > 0 && totalLensBlankPrice > 0 && (
                                     <div className="text-sm text-muted-foreground">
-                                        Total verres: <strong>{totalLensBlankPrice.toFixed(3)} TND</strong>
+                                        {t('workOrders.totalLenses')} <strong>{totalLensBlankPrice.toFixed(3)} TND</strong>
                                     </div>
                                 )}
                                 {!lensBlankLoading && blankOptions.length === 0 && (
-                                    <p className="text-xs text-muted-foreground italic">Les verres manquants seront fournis par l&apos;opticien partenaire.</p>
+                                    <p className="text-xs text-muted-foreground italic">{t('workOrders.missingBlanksProvidedByOptician')}</p>
                                 )}
                             </div>
                         )}
@@ -582,18 +584,18 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
                         <div className="rounded-lg bg-muted/30 border divide-y divide-border">
                             {selectedServices.length > 0 && (
                                 <div className="flex justify-between px-3 py-2 text-sm">
-                                    <span>Services ({selectedServices.length})</span>
+                                    <span>{t('workOrders.servicesCount', { count: selectedServices.length })}</span>
                                     <span className="font-medium">{totalServicePrice.toFixed(3)} TND</span>
                                 </div>
                             )}
                             {lensSource === 'stock' && totalLensBlankPrice > 0 && (
                                 <div className="flex justify-between px-3 py-2 text-sm">
-                                    <span>Verres (2)</span>
+                                    <span>{t('workOrders.lensesCount', { count: 2 })}</span>
                                     <span className="font-medium">{totalLensBlankPrice.toFixed(3)} TND</span>
                                 </div>
                             )}
                             <div className="flex justify-between px-3 py-2.5 text-sm font-semibold">
-                                <span>Total</span>
+                                <span>{t('orders.total')}</span>
                                 <span>{grandTotal.toFixed(3)} TND</span>
                             </div>
                         </div>
@@ -601,10 +603,10 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
                         <div className="flex gap-3 pt-2">
                             <Button onClick={handleSubmit} disabled={loading || !selectedShopId || selectedServiceIds.length === 0 || !expectedDate} className="flex-1">
                                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                                Créer l&apos;ordre
+                                {t('workOrders.create')}
                             </Button>
                             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-                                Annuler
+                                {t('common.cancel')}
                             </Button>
                         </div>
                     </div>
