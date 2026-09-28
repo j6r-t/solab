@@ -75,5 +75,8 @@ export const createOrder = (data: object) =>
 export const updateOrder = (id: string, data: object) =>
     api.patch<Order>(`/api/orders/${id}`, data)
 
+export const addOrderPayments = (id: string, payments: unknown) =>
+    api.patch<{ success: boolean }>(`/api/orders/${id}`, { payments })
+
 export const deleteOrder = (id: string) =>
     api.del(`/api/orders/${id}`)

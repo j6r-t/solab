@@ -80,10 +80,10 @@ export function FournisseurProductsDialog({
                 {filteredProducts.length === 0 ? (
                     <p className="text-center py-8 text-muted-foreground">No products found</p>
                 ) : (
-                    <div className="border rounded-lg overflow-x-auto">
+                    <div className="border rounded-lg overflow-x-auto overflow-y-auto max-h-[340px]">
                         <table className="w-full text-sm">
-                            <thead className="bg-muted/30">
-                                <tr>
+                            <thead>
+                                <tr className="bg-muted sticky top-0 z-10">
                                     <th className="text-left p-3 font-medium text-muted-foreground">Product</th>
                                     <th className="text-left p-3 font-medium text-muted-foreground">Category</th>
                                     <th className="text-right p-3 font-medium text-muted-foreground">Price</th>

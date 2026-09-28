@@ -181,7 +181,7 @@ export function Sidebar() {
                         await queryClient.cancelQueries()
                         logout()
                         queryClient.clear()
-                        router.push('/login')
+                        router.push('/')
                     }}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                     title={t('common.logout')}

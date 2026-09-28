@@ -156,11 +156,6 @@ enum LensBlankAdjustmentReason {
   broken_during_mounting
 }
 
-enum SmsStatus {
-  sent
-  failed
-}
-
 // ───────────────────────────────
 // Models
 // ───────────────────────────────
@@ -187,7 +182,6 @@ model Client {
   organization String?
   prescription Prescription[]
   orders       Order[]
-  smsLogs      SmsLog[]
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   deletedAt    DateTime?
@@ -216,6 +210,7 @@ model Fournisseur {
   products        Product[]
   purchaseInvoices PurchaseInvoice[]
   lensBlanks      LensBlank[]
+  supplierConsolidatedInvoices SupplierConsolidatedInvoice[] @relation("FournisseurConsolidatedInvoices")
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
   deletedAt       DateTime?
@@ -230,6 +225,7 @@ model OpticianShop {
   workOrders    AtelierWorkOrder[]        @relation("OpticianShopWorkOrders")
   prescriptions OpticianShopPrescription[] @relation("OpticianShopPrescriptions")
   bills         OpticianShopBill[]        @relation("OpticianShopBills")
+  consolidatedInvoices ConsolidatedInvoice[] @relation("ConsolidatedInvoices")
   createdAt     DateTime                  @default(now())
   updatedAt     DateTime                  @updatedAt
   deletedAt     DateTime?
@@ -363,6 +359,8 @@ model Cheque {
   payments           Payment[]
   supplierPayments   SupplierPayment[]
   opticianShopPayments OpticianShopPayment[]
+  consolidatedPayments ConsolidatedPayment[]
+  supplierConsolidatedPayments SupplierConsolidatedPayment[]
   notes              String?
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
@@ -381,6 +379,9 @@ model PurchaseInvoice {
   items           PurchaseInvoiceItem[]
   payments        SupplierPayment[]
   lensBlankAdjustments LensBlankAdjustment[]
+  groupedIntoId   String?
+  groupedInto     SupplierConsolidatedInvoice?  @relation("PurchaseInvoiceGroupedInto", fields: [groupedIntoId], references: [id], onDelete: SetNull)
+  groupedItem     SupplierConsolidatedInvoiceItem? @relation("SupplierConsolidatedSource")
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
 }
@@ -530,16 +531,6 @@ model StockAdjustment {
   createdAt DateTime              @default(now())
 }
 
-model SmsLog {
-  id        String    @id @default(uuid())
-  clientId  String
-  client    Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  phone     String
-  message   String
-  status    SmsStatus
-  createdAt DateTime  @default(now())
-}
-
 model AuditLog {
   id         String   @id @default(uuid())
   userId     String?
@@ -607,6 +598,9 @@ model OpticianShopBill {
   notes           String?
   items           OpticianShopBillItem[]
   payments        OpticianShopPayment[]
+  groupedIntoId   String?
+  groupedInto     ConsolidatedInvoice?   @relation("BillGroupedInto", fields: [groupedIntoId], references: [id], onDelete: SetNull)
+  groupedItem     ConsolidatedInvoiceItem? @relation("ConsolidatedSourceBill")
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
 }
@@ -634,4 +628,83 @@ model OpticianShopPayment {
   cheque    Cheque?          @relation(fields: [chequeId], references: [id])
   notes     String?
   paidAt    DateTime         @default(now())
+}
+
+model ConsolidatedInvoice {
+  id             String                    @id @default(uuid())
+  invoiceNumber  String                    @unique
+  opticianShopId String
+  opticianShop   OpticianShop              @relation("ConsolidatedInvoices", fields: [opticianShopId], references: [id], onDelete: Cascade)
+  totalAmount    Decimal
+  paidAmount     Decimal                   @default(0)
+  status         BillStatus                @default(unpaid)
+  notes          String?
+  items          ConsolidatedInvoiceItem[]
+  payments       ConsolidatedPayment[]
+  groupedBills   OpticianShopBill[]        @relation("BillGroupedInto")
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+}
+
+model ConsolidatedInvoiceItem {
+  id                    String              @id @default(uuid())
+  consolidatedInvoiceId String
+  consolidatedInvoice   ConsolidatedInvoice @relation(fields: [consolidatedInvoiceId], references: [id], onDelete: Cascade)
+  sourceBillId          String              @unique
+  sourceBill            OpticianShopBill    @relation("ConsolidatedSourceBill", fields: [sourceBillId], references: [id], onDelete: Restrict)
+  sourceBillNumber      String
+  amount                Decimal
+  createdAt             DateTime            @default(now())
+}
+
+model ConsolidatedPayment {
+  id                    String              @id @default(uuid())
+  consolidatedInvoiceId String
+  consolidatedInvoice   ConsolidatedInvoice @relation(fields: [consolidatedInvoiceId], references: [id], onDelete: Cascade)
+  amount                Decimal
+  method                PaymentMethod
+  chequeId              String?
+  cheque                Cheque?             @relation(fields: [chequeId], references: [id])
+  notes                 String?
+  paidAt                DateTime            @default(now())
+}
+
+model SupplierConsolidatedInvoice {
+  id             String                           @id @default(uuid())
+  invoiceNumber  String                           @unique
+  fournisseurId  String
+  fournisseur    Fournisseur                      @relation("FournisseurConsolidatedInvoices", fields: [fournisseurId], references: [id], onDelete: Cascade)
+  entity         InvoiceEntity
+  totalAmount    Decimal
+  paidAmount     Decimal                          @default(0)
+  status         BillStatus                       @default(unpaid)
+  notes          String?
+  items          SupplierConsolidatedInvoiceItem[]
+  payments       SupplierConsolidatedPayment[]
+  groupedInvoices PurchaseInvoice[]                @relation("PurchaseInvoiceGroupedInto")
+  createdAt      DateTime                         @default(now())
+  updatedAt      DateTime                         @updatedAt
+}
+
+model SupplierConsolidatedInvoiceItem {
+  id                      String                      @id @default(uuid())
+  consolidatedInvoiceId   String
+  consolidatedInvoice     SupplierConsolidatedInvoice @relation(fields: [consolidatedInvoiceId], references: [id], onDelete: Cascade)
+  sourcePurchaseInvoiceId String                      @unique
+  sourcePurchaseInvoice   PurchaseInvoice             @relation("SupplierConsolidatedSource", fields: [sourcePurchaseInvoiceId], references: [id], onDelete: Restrict)
+  sourceInvoiceNumber     String
+  amount                  Decimal
+  createdAt               DateTime                    @default(now())
+}
+
+model SupplierConsolidatedPayment {
+  id                    String                      @id @default(uuid())
+  consolidatedInvoiceId String
+  consolidatedInvoice   SupplierConsolidatedInvoice @relation(fields: [consolidatedInvoiceId], references: [id], onDelete: Cascade)
+  amount                Decimal
+  method                PaymentMethod
+  chequeId              String?
+  cheque                Cheque?                     @relation(fields: [chequeId], references: [id])
+  notes                 String?
+  paidAt                DateTime                    @default(now())
 }

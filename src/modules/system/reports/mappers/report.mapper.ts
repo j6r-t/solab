@@ -60,6 +60,7 @@ export function toReportResponse(data: Partial<ReportResponse> & { period: strin
         sourceSplit: data.sourceSplit,
         lensUsage: data.lensUsage,
         breakageByLens: data.breakageByLens,
+        topBlanksByShop: data.topBlanksByShop,
         period: data.period,
     }
 }

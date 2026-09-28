@@ -1,4 +1,5 @@
 import { formatCurrency } from '@/lib/utils/currency'
+import { formatDate } from '@/lib/utils/dates'
 
 interface DownloadInvoice {
     invoiceNumber: string
@@ -41,7 +42,7 @@ export function downloadPurchaseInvoice(inv: DownloadInvoice) {
     }).join('')
 
     const paymentRows = inv.payments.map((p) =>
-        `<tr><td style="padding:6px 10px">${new Date(p.paidAt).toLocaleDateString('fr-TN')}</td><td style="padding:6px 10px;text-transform:capitalize">${p.method}</td><td style="padding:6px 10px;text-align:right">${formatCurrency(p.amount)}</td></tr>`
+        `<tr><td style="padding:6px 10px">${formatDate(p.paidAt)}</td><td style="padding:6px 10px;text-transform:capitalize">${p.method}</td><td style="padding:6px 10px;text-align:right">${formatCurrency(p.amount)}</td></tr>`
     ).join('')
 
     const origin = window.location.origin
@@ -96,7 +97,7 @@ export function downloadPurchaseInvoice(inv: DownloadInvoice) {
                 <div class="info-row"><span class="label">Entity:</span><span>${inv.entity === 'shop' ? 'Shop' : 'Atelier'}</span></div>
             </div>
             <div class="col">
-                <div class="info-row"><span class="label">Date:</span><span>${new Date(inv.date).toLocaleDateString('fr-TN')}</span></div>
+                <div class="info-row"><span class="label">Date:</span><span>${formatDate(inv.date)}</span></div>
                 <div class="info-row"><span class="label">Invoice #:</span><span>${inv.invoiceNumber}</span></div>
             </div>
         </div>

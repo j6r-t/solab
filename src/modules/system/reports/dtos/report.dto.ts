@@ -186,6 +186,12 @@ export interface LensBlanksLowStockDto {
     items: LowStockLensBlankDto[]
 }
 
+export interface TopBlanksByShopDto {
+    shopId: string
+    shopName: string
+    blanks: { label: string; qty: number }[]
+}
+
 export interface ReportResponse {
     // Shop fields
     totalClients?: number
@@ -247,6 +253,7 @@ export interface ReportResponse {
     sourceSplit?: { source: string; count: number }[]
     lensUsage?: LensUsageItemDto[]
     breakageByLens?: BreakageByLensItemDto[]
+    topBlanksByShop?: TopBlanksByShopDto[]
     // Common
     period: string
 }

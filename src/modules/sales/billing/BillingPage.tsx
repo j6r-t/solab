@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Receipt, Search, ShoppingCart, FileBarChart, Loader2 } from 'lucide-react'
 import { OrderForm, type OrderFormData } from '@/modules/sales/orders/OrderForm'
 import { formatCurrency } from '@/lib/utils/currency'
+import { formatDate } from '@/lib/utils/dates'
 import { fetchBillingRecords } from './billing.api'
 import { useBilling } from './useBilling'
 import { createOrder } from '@/modules/sales/orders/orders.api'
@@ -39,10 +40,6 @@ export function BillingPage() {
 
     const { data, isLoading: loading, refetch: reFetch } = useBilling({ search: debouncedSearch || undefined, status: statusFilter || undefined })
     const records = data ?? []
-
-    function formatDate(dateStr: string): string {
-        return new Date(dateStr).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
-    }
 
     const typeLabel = (type: string) => {
         const labels: Record<string, string> = { standard: 'Standard', remounting: 'Remounting', direct_sale: 'Direct Sale' }
@@ -105,7 +102,7 @@ export function BillingPage() {
     const showNoResults = !loading && records.length === 0 && debouncedSearch
 
     return (
-        <div className="space-y-4 max-w-[900px]">
+        <div className="space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
                 <h1 className="text-2xl font-bold">{t('nav.billing')}</h1>
                 <div className="flex gap-2">
@@ -174,30 +171,44 @@ export function BillingPage() {
                     <h2 className="text-lg font-medium text-foreground mb-2">{t('common.noResults')}</h2>
                 </div>
             ) : (
-                <div className="space-y-2">
-                    {records.map((r) => (
-                        <button
-                            key={r.id}
-                            onClick={() => setSelected(r)}
-                            className="w-full flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent transition-colors text-left"
-                        >
-                            <div>
-                                <p className="font-medium">#{r.orderNumber} — {r.client.name} {r.client.familyName}</p>
-                                <p className="text-xs text-muted-foreground">{typeLabel(r.orderType)} · {r.items.length} articles · {formatDate(r.createdAt)}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <div className="text-right text-sm">
-                                    <p className="font-medium">{formatCurrency(r.totalAmount)}</p>
-                                    {r.balance !== '0.000' && (
-                                        <p className="text-xs text-muted-foreground">{t('orders.balance')}: {formatCurrency(r.balance)}</p>
-                                    )}
-                                </div>
-                                <Badge variant={paymentColors[r.paymentStatus] || 'outline'}>
-                                    {t(`orders.${r.paymentStatus}`)}
-                                </Badge>
-                            </div>
-                        </button>
-                    ))}
+                <div className="border rounded-xl bg-card overflow-x-auto overflow-y-auto max-h-[340px]">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="bg-muted border-b sticky top-0 z-10">
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('billing.number')}</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('orders.client')}</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('orders.type')}</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('billing.date')}</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('orders.total')}</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('orders.balance')}</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('orders.status')}</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                            {records.map((r) => {
+                                const balance = parseFloat(r.balance)
+                                return (
+                                    <tr key={r.id} className="cursor-pointer row-hover" onClick={() => setSelected(r)}>
+                                        <td className="py-3 px-4 font-medium">#{r.orderNumber}</td>
+                                        <td className="py-3 px-4 font-medium">{r.client.name} {r.client.familyName}</td>
+                                        <td className="py-3 px-4 text-sm">{typeLabel(r.orderType)}</td>
+                                        <td className="py-3 px-4 text-sm">{formatDate(r.createdAt)}</td>
+                                        <td className="py-3 px-4 text-sm">{formatCurrency(r.totalAmount)}</td>
+                                        <td className="py-3 px-4 text-sm">
+                                            {balance === 0
+                                                ? '—'
+                                                : <span className={balance > 0 ? 'text-destructive' : ''}>{formatCurrency(balance)}</span>}
+                                        </td>
+                                        <td className="py-3 px-4">
+                                            <Badge variant={paymentColors[r.paymentStatus] || 'outline'}>
+                                                {t(`orders.${r.paymentStatus}`)}
+                                            </Badge>
+                                        </td>
+                                    </tr>
+                                )
+                            })}
+                        </tbody>
+                    </table>
                 </div>
             )}
 

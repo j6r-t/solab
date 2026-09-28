@@ -14,6 +14,7 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { SearchSelect, type SearchSelectOption } from '@/components/ui/search-select'
+import { TUNISIAN_BANKS } from '@/lib/constants/banks'
 import { fetchFournisseurs } from '@/modules/partners/fournisseurs/fournisseurs.api'
 import { toast } from 'sonner'
 
@@ -467,7 +468,14 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                                 {(pay.method === 'cheque' || pay.method === 'traite') && (
                                     <div className="space-y-1">
                                         <Label className="text-xs text-muted-foreground">Banque *</Label>
-                                        <Input value={pay.bank} onChange={(e) => updatePayment(pay.key, 'bank', e.target.value)} placeholder="BIAT" className="h-9" />
+                                        <SearchSelect
+                                            options={TUNISIAN_BANKS.map((b) => ({ value: b, label: b }))}
+                                            value={pay.bank}
+                                            onChange={(val) => updatePayment(pay.key, 'bank', val)}
+                                            placeholder="BIAT"
+                                            emptyMessage={t('common.noResults')}
+                                            title="Banque"
+                                        />
                                     </div>
                                 )}
                                 {(pay.method === 'cheque' || pay.method === 'traite') && (

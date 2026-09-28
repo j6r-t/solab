@@ -10,6 +10,24 @@ export interface ChequeRelatedInvoiceResponse {
     fournisseur: { id: string; name: string }
 }
 
+export interface ChequeRelatedBillResponse {
+    id: string
+    billNumber: string
+    opticianShop: { id: string; name: string }
+}
+
+export interface ChequeRelatedConsolidatedInvoiceResponse {
+    id: string
+    invoiceNumber: string
+    opticianShop: { id: string; name: string }
+}
+
+export interface ChequeRelatedSupplierConsolidatedInvoiceResponse {
+    id: string
+    invoiceNumber: string
+    fournisseur: { id: string; name: string }
+}
+
 export interface ChequeResponse {
     id: string
     number: string
@@ -23,4 +41,7 @@ export interface ChequeResponse {
     notes: string | null
     order: ChequeRelatedOrderResponse | null
     invoice: ChequeRelatedInvoiceResponse | null
+    opticianBill: ChequeRelatedBillResponse | null
+    consolidatedInvoice: ChequeRelatedConsolidatedInvoiceResponse | null
+    supplierConsolidated: ChequeRelatedSupplierConsolidatedInvoiceResponse | null
 }

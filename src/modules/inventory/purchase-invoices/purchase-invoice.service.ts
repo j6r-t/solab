@@ -2,7 +2,8 @@ import { purchaseInvoiceRepo } from '@/lib/database/repositories'
 import { db } from '@/lib/database/db'
 import { BadRequestError, NotFoundError } from '@/lib/errors'
 import { ChequeType, InvoiceEntity, PaymentMethod, Prisma } from '@prisma/client'
-import { effectivePaymentTotal, isCashMethod } from '@/lib/utils/payments'
+import { assertWithinTotal, effectivePaymentTotal, isCashMethod, pendingInstrumentTotal } from '@/lib/utils/payments'
+import { auditService } from '@/modules/system/audit'
 
 type SupplierPaymentInput = {
     amount: number
@@ -27,7 +28,10 @@ function toChequeType(p: SupplierPaymentInput): ChequeType {
     return p.method === 'traite' ? 'traite' : ((p.chequeType || 'standard') as ChequeType)
 }
 
-async function syncInvoiceStoredPaid(invoiceId: string) {
+// Single writer for a purchase invoice's stored paid state: derives it from
+// the effective (cleared-instrument) payments, clamped to the total. Also
+// used by cheque status transitions (sales/cheques).
+export async function syncInvoiceStoredPaid(invoiceId: string) {
     const invoice = await db.purchaseInvoice.findUnique({
         where: { id: invoiceId },
         include: { payments: { include: { cheque: { select: { status: true } } } } },
@@ -37,13 +41,13 @@ async function syncInvoiceStoredPaid(invoiceId: string) {
         invoice.payments.map((p) => ({ amount: p.amount.toString(), method: p.method, cheque: p.cheque })),
         'supplier'
     )
-    await db.purchaseInvoice.update({ where: { id: invoiceId }, data: { paidAmount: effective } })
+    await db.purchaseInvoice.update({ where: { id: invoiceId }, data: { paidAmount: Math.min(effective, Number(invoice.totalAmount)) } })
 }
 
-async function createSupplierInstrument(invoiceId: string, p: SupplierPaymentInput) {
+async function createSupplierInstrument(invoiceId: string, p: SupplierPaymentInput, tx: Prisma.TransactionClient = db) {
     let chequeId: string | null = null
     if (p.method === 'cheque' || p.method === 'traite') {
-        const cheque = await db.cheque.create({
+        const cheque = await tx.cheque.create({
             data: {
                 number: p.chequeNumber || '',
                 type: toChequeType(p),
@@ -56,7 +60,7 @@ async function createSupplierInstrument(invoiceId: string, p: SupplierPaymentInp
         chequeId = cheque.id
     }
 
-    await db.supplierPayment.create({
+    await tx.supplierPayment.create({
         data: {
             purchaseInvoiceId: invoiceId,
             amount: p.amount,
@@ -71,6 +75,9 @@ export async function listPurchaseInvoices(params?: { entity?: string; fournisse
     const where: Prisma.PurchaseInvoiceWhereInput = {}
     if (params?.entity) where.entity = params.entity as InvoiceEntity
     if (params?.fournisseurId) where.fournisseurId = params.fournisseurId
+    // Grouped invoices live in their consolidated invoice — exclude them from
+    // the payable list (Phase 4, mirrors the Phase 3 bill list).
+    where.groupedIntoId = null
 
     const invoices = await purchaseInvoiceRepo.findMany({
         where,
@@ -186,10 +193,33 @@ export async function getNextInvoiceNumber(fournisseurId: string, entity?: strin
 }
 
 export async function addPaymentToInvoice(id: string, data: SupplierPaymentInput) {
-    const invoice = await purchaseInvoiceRepo.findUnique({ where: { id } })
+    const invoice = await purchaseInvoiceRepo.findUnique({
+        where: { id },
+        include: {
+            payments: { include: { cheque: { select: { status: true } } } },
+            groupedInto: { select: { invoiceNumber: true } },
+        },
+    })
     if (!invoice) throw new NotFoundError('Purchase invoice not found')
 
-    await createSupplierInstrument(id, data)
+    // Phase 4: grouped invoices are frozen — payments go on the consolidated invoice
+    if (invoice.groupedIntoId) {
+        throw new BadRequestError(`Invoice is already grouped into consolidated invoice ${invoice.groupedInto?.invoiceNumber ?? invoice.groupedIntoId}`)
+    }
+    if (data.amount <= 0) throw new BadRequestError('Payment amount must be positive')
+
+    const paymentInputs = invoice.payments.map((p) => ({ amount: p.amount.toString(), method: p.method, cheque: p.cheque }))
+    // Overpay guard on effective paid + pending instruments + the new amount
+    assertWithinTotal({
+        totalAmount: invoice.totalAmount,
+        effectivePaid: effectivePaymentTotal(paymentInputs, 'supplier'),
+        pendingTotal: pendingInstrumentTotal(paymentInputs, 'supplier'),
+        newAmount: data.amount,
+    })
+
+    await db.$transaction(async (tx) => {
+        await createSupplierInstrument(id, data, tx)
+    })
     await syncInvoiceStoredPaid(id)
 
     const updated = await purchaseInvoiceRepo.findUnique({
@@ -197,6 +227,14 @@ export async function addPaymentToInvoice(id: string, data: SupplierPaymentInput
         include: INVOICE_INCLUDE,
     })
     if (!updated) throw new NotFoundError('Purchase invoice not found')
+
+    await auditService.log({
+        action: 'SUPPLIER_INVOICE_PAYMENT_RECORDED',
+        entityType: 'PURCHASE_INVOICE',
+        entityId: id,
+        metadata: { amount: data.amount, method: data.method },
+    })
+
     return updated
 }
 

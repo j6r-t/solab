@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Globe, User, Smartphone, Wrench, Plus, Pencil, Trash2, Eye, KeyRound, Loader2, Sun, Moon, Monitor } from 'lucide-react'
+import { Globe, User, Wrench, Plus, Pencil, Trash2, Eye, KeyRound, Loader2, Sun, Moon, Monitor } from 'lucide-react'
 import { changePassword } from '@/modules/system/auth/auth.api'
 import { useAuthStore } from '@/stores/auth-store'
 import { useThemeStore } from '@/stores/theme-store'
@@ -378,18 +378,6 @@ export function SettingsPage() {
                 cancelLabel={t('common.cancel')}
                 onConfirm={handleDeleteService}
             />
-
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                        <Smartphone className="h-5 w-5" />
-                        {t('settings.sms')}
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-muted-foreground">{t('settings.smsDescription')}</p>
-                </CardContent>
-            </Card>
         </div>
     )
 }

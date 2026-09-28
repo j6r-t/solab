@@ -122,7 +122,10 @@ DATABASE_URL=file:/opt/solab/prisma/db/production.db
 ```bash
 npx prisma db push
 npx prisma generate
+node scripts/backfill-optician-bills.mjs
 ```
+
+Run the backfill **once, before the app is used**: it creates bills for historical optician work orders that predate bills (it is idempotent and can be re-run safely).
 
 (The project also contains a `prisma/migrations/` folder kept for reference; day-to-day schema management here is `prisma db push`, which is what you should use on deploy. Do not run `migrate deploy` unless you know the migration history is in sync.)
 
@@ -342,16 +345,21 @@ Then: `chmod +x /opt/solab/deploy/backup/*.sh` once.
 2. Get the new code:
    - Path A (Windows): `git pull` (or copy the updated folder over the old one, without `.env`, `node_modules`, `.next`, `prisma/db/`).
    - Path B (VPS): `cd /opt/solab && sudo -u solab git pull` (or scp-copy as in 5.4).
-3. Rebuild:
+3. **Stop the app** before touching Prisma:
+   - Path A (Windows): close the `start-solab.cmd` window, or stop the Node process / the "Solab App" task (`schtasks /End /TN "Solab App"`).
+   - Path B (VPS): `sudo systemctl stop solab`.
+4. Update the database schema and rebuild:
    ```bash
    npm ci
    npx prisma db push      # no-op if schema unchanged — still safe, backup taken in step 1
    npx prisma generate
    npm run build
    ```
-4. Restart:
-   - Path A: Task Scheduler → restart the "Solab App" task (`schtasks /End /TN "Solab App"` then `schtasks /Run /TN "Solab App"`), or simply reboot the PC.
-   - Path B: `sudo systemctl restart solab`.
+5. Restart:
+   - Path A: re-run `start-solab.cmd` (or Task Scheduler → `schtasks /Run /TN "Solab App"`).
+   - Path B: `sudo systemctl start solab`.
+
+Updating Prisma while the app is running can fail with an EPERM lock on the SQLite DLL, or leave the server on a stale Prisma client (500 errors) until restart — that is why the app must be stopped first.
 
 ---
 

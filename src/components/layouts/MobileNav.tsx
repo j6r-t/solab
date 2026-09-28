@@ -39,7 +39,7 @@ const primaryItems: MobileNavItem[] = [
     { icon: ShoppingCart, view: 'orders', labelKey: 'orders', roles: ['admin', 'shop'] },
     { icon: Wrench, view: 'atelier-work-orders', labelKey: 'atelierWorkOrders', roles: ['admin', 'atelier'] },
     { icon: PackageOpen, view: 'lens-blanks', labelKey: 'lensBlanks', roles: ['admin', 'atelier'] },
-    { icon: ClipboardList, view: 'purchase-invoices', labelKey: 'purchaseInvoices', roles: ['admin', 'atelier'] },
+    { icon: ClipboardList, view: 'purchase-invoices', labelKey: 'purchaseInvoices', roles: ['admin'] },
 ]
 
 function filterByRole(items: MobileNavItem[], role: string): MobileNavItem[] {

@@ -13,6 +13,7 @@ import { Plus, Search, ShoppingCart, CheckCircle, XCircle, Clock, Loader2 } from
 import { OrderForm, type OrderFormData } from './OrderForm'
 import { OrderDetailDialog } from './OrderDetailDialog'
 import { formatCurrency } from '@/lib/utils/currency'
+import { formatDate } from '@/lib/utils/dates'
 import { fetchOrderById, createOrder, updateOrder, type Order } from './orders.api'
 import { useOrders, useDeleteOrder } from './useOrders'
 import { printFacture } from '@/modules/sales/billing/billing.print'
@@ -30,7 +31,7 @@ function getReadyDate(order: Order): string | null {
     if (!order.turnaroundDays) return null
     const created = new Date(order.createdAt)
     created.setDate(created.getDate() + order.turnaroundDays)
-    return created.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    return formatDate(created)
 }
 
 export function OrdersPage() {
@@ -182,10 +183,10 @@ export function OrdersPage() {
                     <h2 className="text-lg font-medium text-foreground mb-2">{t('common.noResults')}</h2>
                 </div>
             ) : (
-                <div className="border rounded-xl bg-card overflow-x-auto">
+                <div className="border rounded-xl bg-card overflow-x-auto overflow-y-auto max-h-[340px]">
                     <table className="w-full">
                         <thead>
-                            <tr className="bg-muted/30 border-b">
+                            <tr className="bg-muted border-b sticky top-0 z-10">
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('orders.client')}</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('orders.type')}</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('orders.status')}</th>
@@ -228,6 +229,7 @@ export function OrdersPage() {
                 onOpenChange={setDetailOpen}
                 onConfirmStatusUpdate={(orderId, status) => setStatusConfirmTarget({ orderId, status })}
                 updatingOrders={updatingOrders}
+                onUpdated={(fresh) => { setSelectedOrder(fresh); reFetch() }}
             />
 
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>

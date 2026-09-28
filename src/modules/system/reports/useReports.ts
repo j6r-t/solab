@@ -198,6 +198,12 @@ export interface BreakageByLensItem {
     brokenQty: number
 }
 
+export interface TopBlanksByShopEntry {
+    shopId: string
+    shopName: string
+    blanks: { label: string; qty: number }[]
+}
+
 export interface ShopReportData {
     totalRevenue: string
     totalOrders: number
@@ -258,6 +264,7 @@ export interface AtelierReportData {
     sourceSplit: { source: string; count: number }[]
     lensUsage: LensUsageItem[]
     breakageByLens: BreakageByLensItem[]
+    topBlanksByShop?: TopBlanksByShopEntry[]
     workload?: Workload
     avgTurnaroundDays?: number
     breakageRate?: number

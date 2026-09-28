@@ -7,6 +7,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog'
 import { Stethoscope, Calendar } from 'lucide-react'
+import { formatDate } from '@/lib/utils/dates'
 
 interface PatientPrescription {
     id: string
@@ -48,7 +49,7 @@ export function DoctorPatientsDialog({
                                 </div>
                                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                     <Calendar className="h-3 w-3" />
-                                    {new Date(p.createdAt).toLocaleDateString()}
+                                    {formatDate(p.createdAt)}
                                 </div>
                             </div>
                         ))}

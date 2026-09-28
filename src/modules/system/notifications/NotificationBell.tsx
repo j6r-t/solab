@@ -2,16 +2,18 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Bell, Package, Wrench, ShoppingCart, Landmark, Loader2 } from 'lucide-react'
+import { Bell, Package, Wrench, ShoppingCart, Landmark, CheckCircle, Loader2 } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { useViewStore, type ViewName } from '@/stores/view-store'
 import { useAuthStore } from '@/stores/auth-store'
+import { VIEW_ROLES } from '@/components/layouts/nav-config'
 import { useNotifications } from './useNotifications'
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
     low_stock: Package,
     pending_repair: Wrench,
     ready_order: ShoppingCart,
+    ready_optician_work: CheckCircle,
     pending_payment: Landmark,
 }
 
@@ -19,12 +21,13 @@ const viewMap: Record<string, ViewName> = {
     low_stock: 'stock',
     pending_repair: 'atelier-work-orders',
     ready_order: 'orders',
+    ready_optician_work: 'atelier-work-orders',
     pending_payment: 'billing',
 }
 
 const ROLE_ALERT_TYPES: Record<string, string[]> = {
-    admin: ['low_stock', 'pending_repair', 'ready_order', 'pending_payment'],
-    shop: ['low_stock', 'ready_order', 'pending_payment'],
+    admin: ['low_stock', 'pending_repair', 'ready_order', 'ready_optician_work', 'pending_payment'],
+    shop: ['low_stock', 'ready_order', 'ready_optician_work', 'pending_payment'],
     atelier: ['pending_repair'],
 }
 
@@ -154,7 +157,13 @@ export function NotificationBell({ variant = 'icon' }: NotificationBellProps) {
                                 return (
                                     <button
                                         key={alert.type}
-                                        onClick={() => { setView(viewMap[alert.type]); setOpen(false) }}
+                                        onClick={() => {
+                                            setOpen(false)
+                                            const view = viewMap[alert.type]
+                                            const roles = VIEW_ROLES[view]
+                                            if (user?.role && roles && !roles.includes(user.role)) return
+                                            setView(view)
+                                        }}
                                         className="w-full text-left p-3 hover:bg-muted/50 transition-colors"
                                     >
                                         <div className="flex items-start gap-3">

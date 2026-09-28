@@ -15,9 +15,12 @@ export interface Cheque {
     notes: string | null
     order: { id: string; orderNumber: number; client: { id: string; name: string; familyName: string } } | null
     invoice: { id: string; invoiceNumber: string; fournisseur: { id: string; name: string } } | null
+    opticianBill?: { id: string; billNumber: string; opticianShop: { id: string; name: string } } | null
+    consolidatedInvoice?: { id: string; invoiceNumber: string; opticianShop: { id: string; name: string } } | null
+    supplierConsolidated?: { id: string; invoiceNumber: string; fournisseur: { id: string; name: string } } | null
 }
 
-export const fetchCheques = (params?: { status?: string; statuses?: string; entityType?: string; dueBefore?: string }) =>
+export const fetchCheques = (params?: { status?: string; statuses?: string; entityType?: string; dueBefore?: string; instrumentScopes?: string }) =>
     api.get<Cheque[]>('/api/cheques', params as Record<string, string | undefined>)
 
 export const updateChequeStatus = (id: string, status: string) =>

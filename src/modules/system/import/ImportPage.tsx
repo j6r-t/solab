@@ -234,10 +234,10 @@ export function ImportPage() {
                             Preview
                         </Button>
                     </div>
-                    <div className="border rounded-xl overflow-hidden">
+                    <div className="border rounded-xl overflow-x-auto overflow-y-auto max-h-[340px]">
                         <table className="w-full text-sm">
-                            <thead className="bg-muted/30">
-                                <tr>
+                            <thead>
+                                <tr className="bg-muted sticky top-0 z-10">
                                     <th className="text-left p-3 font-medium text-muted-foreground">CSV Column</th>
                                     <th className="text-left p-3 font-medium text-muted-foreground">First value</th>
                                     <th className="text-left p-3 font-medium text-muted-foreground">Maps to</th>
@@ -301,9 +301,9 @@ export function ImportPage() {
                             {t('import.importRecords', { count: preview.length })}
                         </Button>
                     </div>
-                    <div className="border rounded-xl overflow-x-auto max-h-[60vh] overflow-y-auto">
+                    <div className="border rounded-xl overflow-x-auto overflow-y-auto max-h-[340px]">
                         <table className="w-full text-sm">
-                            <thead className="bg-muted/30 sticky top-0 z-10">
+                            <thead className="bg-muted sticky top-0 z-10">
                                 <tr>
                                     <th className="text-left p-3 font-medium text-muted-foreground">#</th>
                                     {Object.keys(preview[0]?.data || {}).map((key) => (

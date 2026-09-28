@@ -1,9 +1,10 @@
 import { db } from '@/lib/database/db'
 import { STOCK_THRESHOLDS } from '@/lib/constants'
 import { DAY_MS, PENDING_CHEQUES_WINDOW_DAYS } from '@/lib/constants/kpi'
+import { formatDate } from '@/lib/utils/dates'
 
 export interface NotificationAlert {
-    type: 'low_stock' | 'pending_repair' | 'ready_order' | 'pending_payment'
+    type: 'low_stock' | 'pending_repair' | 'ready_order' | 'ready_optician_work' | 'pending_payment'
     label: string
     count: number
     items: { id: string; label: string }[]
@@ -79,6 +80,23 @@ export async function getNotifications(role: string): Promise<NotificationAlert[
             })
         }
 
+        const readyOpticianWork = await db.atelierWorkOrder.findMany({
+            where: { status: 'completed', opticianShopId: { not: null } },
+            select: { id: true, opticianShop: { select: { name: true } } },
+            orderBy: { completedAt: 'asc' },
+        })
+        if (readyOpticianWork.length > 0) {
+            alerts.push({
+                type: 'ready_optician_work',
+                label: 'notifications.readyOpticianWork',
+                count: readyOpticianWork.length,
+                items: readyOpticianWork.map((w) => ({
+                    id: w.id,
+                    label: w.opticianShop?.name ?? 'Ordre de travail',
+                })),
+            })
+        }
+
         const now = new Date()
         const dueCutoff = new Date(now.getTime() + PENDING_CHEQUES_WINDOW_DAYS * DAY_MS)
         const pendingCheques = await db.cheque.findMany({
@@ -96,7 +114,7 @@ export async function getNotifications(role: string): Promise<NotificationAlert[
                 count: pendingCheques.length,
                 items: pendingCheques.map((c) => ({
                     id: c.id,
-                    label: `#${c.number} - ${c.bankName ?? '—'} - ${c.amount.toString()} TND (due ${c.dueDate.toLocaleDateString()})`,
+                    label: `#${c.number} - ${c.bankName ?? '—'} - ${c.amount.toString()} TND (due ${formatDate(c.dueDate)})`,
                 })),
             })
         }

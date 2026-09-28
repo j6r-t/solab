@@ -1,9 +1,9 @@
-import { orderRepo, clientRepo, productRepo, paymentRepo, stockAdjustmentRepo, lensBlankRepo } from '@/lib/database/repositories'
+import { orderRepo, clientRepo, productRepo, stockAdjustmentRepo, lensBlankRepo } from '@/lib/database/repositories'
 import { db } from '@/lib/database/db'
 import { Prisma, OrderType, OrderStatus, PaymentType, PaymentMethod, ChequeType, ChequeEntityType, AtelierWorkOrderStatus, WorkOrderSource } from '@prisma/client'
 import { BadRequestError, NotFoundError } from '@/lib/errors'
 import { auditService } from '@/modules/system/audit'
-import { effectivePaymentTotal, isCashMethod } from '@/lib/utils/payments'
+import { effectivePaymentTotal, isCashMethod, pendingInstrumentTotal, assertWithinTotal } from '@/lib/utils/payments'
 
 type OrderWithItems = {
     items: { lensBlankId?: string | null; productId?: string | null; quantity: number }[];
@@ -232,15 +232,23 @@ export async function createOrder(data: {
     return order
 }
 
+async function completeOrder(id: string) {
+    const flipped = await db.atelierWorkOrder.updateMany({
+        where: { orderId: id, status: 'completed' },
+        data: { status: 'delivered' },
+    })
+    const result = await orderRepo.update({ where: { id }, data: { status: 'completed' } })
+    await auditService.log({ action: 'ORDER_COMPLETED', entityType: 'ORDER', entityId: id, metadata: { workOrdersDelivered: flipped.count } })
+    return result
+}
+
 export async function updateOrderStatus(id: string, status: string) {
     if (status === 'ready') {
         return orderRepo.update({ where: { id }, data: { status: 'ready' } })
     }
 
     if (status === 'completed') {
-        const result = await orderRepo.update({ where: { id }, data: { status: 'completed' } })
-        await auditService.log({ action: 'ORDER_COMPLETED', entityType: 'ORDER', entityId: id })
-        return result
+        return completeOrder(id)
     }
 
     if (status === 'cancelled') {
@@ -270,27 +278,58 @@ export async function updateOrderStatus(id: string, status: string) {
 export async function addOrderPayments(id: string, payments: PaymentInput[]) {
     if (!payments?.length) throw new BadRequestError('No valid updates')
 
-    for (const payment of payments) {
-        await paymentRepo.create({
-            data: {
-                order: { connect: { id } },
-                ...paymentCreateData(payment),
-            },
-        })
-    }
-
     const order = await orderRepo.findUnique({
         where: { id },
         include: { payments: { include: { cheque: { select: { status: true } } } } },
     })
-    if (order) {
-        const totalPaid = effectivePaymentTotal(order.payments.map((p) => ({ amount: p.amount.toString(), method: p.method, cheque: p.cheque })), 'client')
-        if (totalPaid >= parseFloat(order.totalAmount.toString())) {
-            await orderRepo.update({ where: { id }, data: { status: 'completed' } })
-        }
-    }
+    if (!order) throw new NotFoundError('Order not found')
+    if (order.status === 'cancelled') throw new BadRequestError('Cannot add payments to a cancelled order')
 
-    await auditService.log({ action: 'PAYMENT_ADDED', entityType: 'ORDER', entityId: id, metadata: { paymentsCount: payments.length } })
+    const existingPayments = order.payments.map((p) => ({ amount: p.amount.toString(), method: p.method, cheque: p.cheque }))
+    const effectivePaid = effectivePaymentTotal(existingPayments, 'client')
+    const pendingTotal = pendingInstrumentTotal(existingPayments, 'client')
+    const newTotal = payments.reduce((s, p) => s + (p.amount || 0), 0)
+    assertWithinTotal({ totalAmount: order.totalAmount, effectivePaid, pendingTotal, newAmount: newTotal, label: 'Order' })
+
+    let newTotalPaid = effectivePaid + newTotal
+    let orderCompleted = false
+    await db.$transaction(async (tx) => {
+        for (const payment of payments) {
+            await tx.payment.create({
+                data: {
+                    order: { connect: { id } },
+                    ...paymentCreateData(payment),
+                },
+            })
+        }
+
+        const fresh = await tx.order.findUnique({
+            where: { id },
+            select: {
+                totalAmount: true,
+                payments: { include: { cheque: { select: { status: true } } } },
+            },
+        })
+        if (!fresh) return
+        newTotalPaid = effectivePaymentTotal(fresh.payments.map((p) => ({ amount: p.amount.toString(), method: p.method, cheque: p.cheque })), 'client')
+        if (newTotalPaid >= parseFloat(fresh.totalAmount.toString())) {
+            await completeOrder(id)
+            orderCompleted = true
+        }
+    })
+
+    await auditService.log({
+        action: 'PAYMENT_ADDED',
+        entityType: 'ORDER',
+        entityId: id,
+        metadata: {
+            paymentsCount: payments.length,
+            amount: newTotal,
+            methods: [...new Set(payments.map((p) => (p.method as PaymentMethod) || 'cash'))],
+            newTotalPaid,
+            orderCompleted,
+        },
+    })
     return { success: true }
 }
 

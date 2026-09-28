@@ -29,3 +29,6 @@ export const declareBreakage = (
     id: string,
     data: { which: 'left' | 'right' | 'both'; replacementLeftId?: string; replacementRightId?: string },
 ) => api.patch(`/api/repairs/${id}?action=declare-breakage`, data)
+
+export const recordWorkOrderPayment = (id: string, amount: number) =>
+    api.patch(`/api/repairs/${id}?action=record-payment`, { amount })

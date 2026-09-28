@@ -40,6 +40,8 @@ export const TOP_LIST_SIZE = 5
 export const RECOMMENDED_TOP_LIST_SIZE = 10
 // Lens-usage ranking size (most-consumed blanks)
 export const TOP_USED_BLANKS_SIZE = 8
+// Blanks per shop in the per-optician top-blanks list (most-used blanks by shop)
+export const TOP_BLANKS_PER_SHOP = 3
 
 // Completed orders needed for a client to count as "repeat" (label: "≥ 2 orders")
 export const REPEAT_CLIENT_MIN_ORDERS = 2

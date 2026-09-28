@@ -13,6 +13,9 @@ interface Client {
     notes: string | null
     organization: string | null
     createdAt: string
+    revenue: string
+    balance: string
+    lastVisitAt: string | null
 }
 
 export type { Client }

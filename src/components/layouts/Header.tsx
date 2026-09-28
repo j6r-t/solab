@@ -43,7 +43,7 @@ export function Header() {
                             await queryClient.cancelQueries()
                             logout()
                             queryClient.clear()
-                            router.push('/login')
+                            router.push('/')
                         }}
                         className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
                         title={t('common.logout')}

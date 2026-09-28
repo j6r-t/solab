@@ -25,6 +25,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { useViewStore } from '@/stores/view-store'
 import { cn } from '@/lib/utils/cn'
 import { formatCurrency } from '@/lib/utils/currency'
+import { formatDate } from '@/lib/utils/dates'
 import { toast } from 'sonner'
 import { useReports, type ShopReportData, type AtelierReportData } from '@/modules/system/reports/useReports'
 import { useOrders } from '@/modules/sales/orders/useOrders'
@@ -211,7 +212,7 @@ export function DashboardPage() {
                                             #{order.orderNumber} — {order.client.name} {order.client.familyName}
                                         </p>
                                         <p className="text-xs text-muted-foreground mt-0.5">
-                                            {order.client.phone} · {new Date(order.createdAt).toLocaleDateString()}
+                                            {order.client.phone} · {formatDate(order.createdAt)}
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-2 shrink-0 ml-3">
@@ -235,6 +236,7 @@ export function DashboardPage() {
                 onOpenChange={setDetailOpen}
                 onConfirmStatusUpdate={(orderId, status) => setStatusConfirmTarget({ orderId, status })}
                 updatingOrders={updatingOrders}
+                onUpdated={(fresh) => { setSelectedOrder(fresh); refetchReadyOrders() }}
             />
 
             <ConfirmDialog

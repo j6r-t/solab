@@ -16,6 +16,8 @@ import {
 import { ClientWizardDialog } from './ClientWizardDialog'
 import { ExportButton } from '@/components/ui/export-button'
 import { Plus, Search, Users, Pencil, Trash2, Loader2, Eye } from 'lucide-react'
+import { formatCurrency } from '@/lib/utils/currency'
+import { formatDate } from '@/lib/utils/dates'
 import type { ClientFormData } from './client.schema'
 import { toast } from 'sonner'
 import { createClient, updateClient, deleteClient, type Client } from './client.api'
@@ -126,7 +128,7 @@ export function ClientsPage() {
 
     return (
         <>
-            <div className="space-y-6 max-w-[900px]">
+            <div className="space-y-6">
                 <div>
                     <h1 className="text-[22px] font-medium">{t('clients.title')}</h1>
                     <p className="text-sm text-muted-foreground mt-1">{t('clients.description')}</p>
@@ -174,41 +176,65 @@ export function ClientsPage() {
                         <h2 className="text-lg font-medium text-foreground mb-2">{t('common.noResults')}</h2>
                     </div>
                 ) : (
-                    <div className="space-y-2">
-                        {clients.map((client) => (
-                            <div key={client.id} className="flex items-center justify-between p-4 rounded-lg border bg-card row-alternate row-hover">
-                                <div>
-                                    <p className="font-medium">{client.name} {client.familyName}</p>
-                                    <p className="text-sm text-muted-foreground">{client.phone}</p>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => setView('client-detail', { id: client.id })}
-                                        title="View orders"
-                                    >
-                                        <Eye className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => { setEditClient(client); setDialogOpen(true) }}
-                                        title={t('common.edit')}
-                                    >
-                                        <Pencil className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => setDeleteTarget(client)}
-                                        title={t('common.delete')}
-                                    >
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                </div>
-                            </div>
-                        ))}
+                    <div className="border rounded-xl bg-card overflow-x-auto overflow-y-auto max-h-[340px]">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="bg-muted border-b sticky top-0 z-10">
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('clients.name')}</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('clients.phone')}</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('clients.revenue')}</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('clients.balance')}</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('clients.lastVisit')}</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground"></th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y">
+                                {clients.map((client) => {
+                                    const balance = parseFloat(client.balance)
+                                    return (
+                                        <tr key={client.id} className="row-hover">
+                                            <td className="py-3 px-4 font-medium">{client.name} {client.familyName}</td>
+                                            <td className="py-3 px-4 text-sm text-muted-foreground">{client.phone}</td>
+                                            <td className="py-3 px-4 text-sm">{formatCurrency(parseFloat(client.revenue))}</td>
+                                            <td className="py-3 px-4 text-sm">
+                                                {balance === 0
+                                                    ? '—'
+                                                    : <span className={balance > 0 ? 'text-destructive' : ''}>{formatCurrency(balance)}</span>}
+                                            </td>
+                                            <td className="py-3 px-4 text-sm">{client.lastVisitAt ? formatDate(client.lastVisitAt) : '—'}</td>
+                                            <td className="py-3 px-4">
+                                                <div className="flex items-center gap-1">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => setView('client-detail', { id: client.id })}
+                                                        title="View orders"
+                                                    >
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => { setEditClient(client); setDialogOpen(true) }}
+                                                        title={t('common.edit')}
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => setDeleteTarget(client)}
+                                                        title={t('common.delete')}
+                                                    >
+                                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
                     </div>
                 )}
 

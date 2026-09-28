@@ -7,7 +7,7 @@ export interface NotificationItem {
 }
 
 export interface NotificationAlert {
-    type: 'low_stock' | 'pending_repair' | 'ready_order' | 'pending_payment'
+    type: 'low_stock' | 'pending_repair' | 'ready_order' | 'ready_optician_work' | 'pending_payment'
     label: string
     count: number
     items: NotificationItem[]

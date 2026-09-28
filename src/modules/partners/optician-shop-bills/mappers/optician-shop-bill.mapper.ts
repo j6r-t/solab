@@ -19,7 +19,13 @@ interface BillPaymentInput {
     method: string | null
     notes?: string | null
     paidAt: Date
-    cheque?: { status?: string | null } | null
+    cheque?: {
+        status?: string | null
+        type?: string | null
+        number?: string | null
+        bankName?: string | null
+        dueDate?: Date | string | null
+    } | null
 }
 
 interface BillInput {
@@ -33,6 +39,8 @@ interface BillInput {
     status: string
     items?: BillItemInput[]
     payments?: BillPaymentInput[]
+    groupedIntoId?: string | null
+    groupedInto?: { invoiceNumber: string } | null
     notes?: string | null
     createdAt: Date
 }
@@ -65,7 +73,18 @@ export function toOpticianShopBillResponse(bill: BillInput): OpticianShopBillRes
             method: p.method,
             notes: p.notes || null,
             paidAt: p.paidAt,
+            cheque: p.cheque
+                ? {
+                      status: p.cheque.status ?? null,
+                      type: p.cheque.type ?? null,
+                      number: p.cheque.number ?? null,
+                      bankName: p.cheque.bankName ?? null,
+                      dueDate: p.cheque.dueDate ?? null,
+                  }
+                : null,
         })),
+        groupedIntoId: bill.groupedIntoId ?? null,
+        groupedInvoiceNumber: bill.groupedInto?.invoiceNumber ?? null,
         notes: bill.notes || null,
         createdAt: bill.createdAt,
     }

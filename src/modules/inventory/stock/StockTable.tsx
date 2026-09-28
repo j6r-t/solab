@@ -20,10 +20,10 @@ export function StockTable({ products, onEdit, onDelete, onShowQr, categoryLabel
     const { t } = useTranslation()
 
     return (
-        <div className="border rounded-xl bg-card overflow-x-auto">
+        <div className="border rounded-xl bg-card overflow-x-auto overflow-y-auto max-h-[340px]">
             <table className="w-full">
                 <thead>
-                    <tr className="bg-muted/30 border-b">
+                    <tr className="bg-muted border-b sticky top-0 z-10">
                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('stock.name')}</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('stock.category')}</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Details</th>

@@ -7,6 +7,7 @@ import { useTranslation } from '@/lib/hooks/useTranslation'
 import { useAuthStore } from '@/stores/auth-store'
 import { useViewStore } from '@/stores/view-store'
 import { formatCurrency } from '@/lib/utils/currency'
+import { formatDate } from '@/lib/utils/dates'
 import { cn } from '@/lib/utils/cn'
 import {
     Dialog,
@@ -52,10 +53,23 @@ function DueChequeRow({ cheque, overdue }: { cheque: Cheque; overdue: boolean })
         deposited: t('cheques.deposited'),
         overdue: t('cheques.overdue'),
     }
+    // Resolve the party/reference from whichever link the mapper resolved:
+    // client order, supplier invoice, grouped supplier invoice, grouped
+    // optician invoice or optician bill.
     const party = cheque.order
         ? `${cheque.order.client.name} ${cheque.order.client.familyName}`.trim()
-        : cheque.invoice?.fournisseur.name ?? ''
-    const reference = cheque.order ? `#${cheque.order.orderNumber}` : cheque.invoice?.invoiceNumber ?? ''
+        : cheque.invoice?.fournisseur.name
+            ?? cheque.supplierConsolidated?.fournisseur.name
+            ?? cheque.consolidatedInvoice?.opticianShop.name
+            ?? cheque.opticianBill?.opticianShop.name
+            ?? ''
+    const reference = cheque.order
+        ? `#${cheque.order.orderNumber}`
+        : cheque.invoice?.invoiceNumber
+            ?? cheque.supplierConsolidated?.invoiceNumber
+            ?? cheque.consolidatedInvoice?.invoiceNumber
+            ?? cheque.opticianBill?.billNumber
+            ?? ''
 
     return (
         <div className={cn('rounded-lg border p-2.5', overdue && 'border-destructive/40 bg-destructive/5')}>
@@ -73,7 +87,7 @@ function DueChequeRow({ cheque, overdue }: { cheque: Cheque; overdue: boolean })
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                 <span>{cheque.bankName || '—'}</span>
                 <span>
-                    {t('cheques.dueDate')}: {new Date(cheque.dueDate).toLocaleDateString()}
+                    {t('cheques.dueDate')}: {formatDate(cheque.dueDate)}
                 </span>
                 <span className="font-medium text-foreground">
                     {cheque.entityType === 'supplier_payment' ? t('cheques.supplierPayment') : t('cheques.clientPayment')}
@@ -108,14 +122,18 @@ export function DueChequesAlert() {
     const { setView } = useViewStore()
     const [dismissed, setDismissed] = useState(false)
 
-    const roleAllowed = isAuthenticated && (user?.role === 'admin' || user?.role === 'shop')
+    const roleAllowed = isAuthenticated && (user?.role === 'admin' || user?.role === 'shop' || user?.role === 'atelier')
+    const isAtelier = user?.role === 'atelier'
 
     const { data } = useQuery({
-        queryKey: ['cheques', { statuses: UNPAID_STATUSES.join(','), dueAlert: true }],
+        queryKey: ['cheques', { statuses: UNPAID_STATUSES.join(','), dueAlert: true, atelier: isAtelier }],
         queryFn: async (): Promise<DueChequesResult> => {
             const cheques = await fetchCheques({
                 statuses: UNPAID_STATUSES.join(','),
                 dueBefore: endOfTodayPlus(CHEQUE_ALERT_DAYS),
+                // Atelier instruments only: the server force-scopes anyway;
+                // admin/shop keep the exact previous unscoped fetch.
+                ...(isAtelier ? { instrumentScopes: 'optician_bill,supplier' } : {}),
             })
             const { overdue, upcoming } = splitByDueDate(cheques)
             const hasDue = overdue.length > 0 || upcoming.length > 0

@@ -1,9 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { SearchSelect, type SearchSelectOption } from '@/components/ui/search-select'
@@ -11,7 +10,10 @@ import { AlertTriangle, Loader2, Eye } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { useLensBlanks } from '@/modules/inventory/lens-blanks/useLensBlanks'
+import { fetchOpticianShopBill, type OpticianShopBillPayment } from '@/modules/partners/optician-shop-bills/optician-shop-bills.api'
 import { declareBreakage } from '../repairs/repairs.api'
+import { PaymentDialog, type PaymentTarget } from './PaymentDialog'
+import { formatDate } from '@/lib/utils/dates'
 
 interface WorkOrder {
     id: string
@@ -82,6 +84,20 @@ const STATUS_BADGE: Record<string, string> = {
     cancelled: 'bg-red-100 text-red-700 border-red-200',
 }
 
+const BILL_STATUS_BADGE: Record<string, string> = {
+    paid: 'bg-green-100 text-green-700 border-green-200',
+    partiallyPaid: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+    unpaid: 'bg-red-100 text-red-700 border-red-200',
+}
+
+const WO_PAYMENT_STATUS_BADGE: Record<string, string> = {
+    paid: 'bg-green-100 text-green-700 border-green-200',
+    partial: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+    pending: 'bg-red-100 text-red-700 border-red-200',
+}
+
+const EPSILON = 0.000001
+
 export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated }: WorkOrderDetailDialogProps) {
     const { t } = useTranslation()
     const queryClient = useQueryClient()
@@ -89,13 +105,22 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
     const [assignLeft, setAssignLeft] = useState('')
     const [assignRight, setAssignRight] = useState('')
     const [lensBlankPrice, setLensBlankPrice] = useState(0)
-    const [paymentAmount, setPaymentAmount] = useState('')
+    const [paymentOpen, setPaymentOpen] = useState(false)
     const [breakageEye, setBreakageEye] = useState<'left' | 'right' | 'both'>('left')
     const [breakageReplLeft, setBreakageReplLeft] = useState('')
     const [breakageReplRight, setBreakageReplRight] = useState('')
 
     const { data: blanksData } = useLensBlanks<LensBlank[]>({ lowStock: 'false' })
     const lensBlanks = blanksData ?? []
+
+    // Fresh invoice (with payment history) fetched while the dialog is open
+    const billRow = workOrder?.bill ?? null
+    const billId = billRow?.id ?? null
+    const { data: billDetail } = useQuery({
+        queryKey: ['optician-shop-bill', billId],
+        queryFn: () => fetchOpticianShopBill(billId!),
+        enabled: open && !!billId,
+    })
 
     // Refetch blank quantities every time the dialog opens
     useEffect(() => {
@@ -158,28 +183,6 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
         }
     }
 
-    async function handleRecordPayment() {
-        if (!workOrder || !paymentAmount) return
-        const amount = parseFloat(paymentAmount)
-        if (isNaN(amount) || amount <= 0) { toast.error('Enter a valid amount'); return }
-        setLoading(true)
-        try {
-            const res = await fetch(`/api/repairs/${workOrder.id}?action=record-payment`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount }),
-            })
-            if (!res.ok) throw new Error('Failed to record payment')
-            toast.success('Payment recorded')
-            setPaymentAmount('')
-            onUpdated()
-        } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to record payment')
-        } finally {
-            setLoading(false)
-        }
-    }
-
     async function handleDeclareBreakage() {
         if (!workOrder) return
         setLoading(true)
@@ -205,6 +208,44 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
     const clientName = workOrder.order?.client
         ? `${workOrder.order.client.name} ${workOrder.order.client.familyName}`
         : workOrder.opticianShop?.name || '—'
+
+    // Invoice figures — the fetched bill (with payment history) is the source of
+    // truth; fall back to the work order row's bill summary while loading.
+    const billTotal = parseFloat(billDetail?.totalAmount ?? workOrder.bill?.totalAmount ?? '0')
+    const billPaid = parseFloat(billDetail?.paidAmount ?? workOrder.bill?.paidAmount ?? '0')
+    const billRemaining = Math.max(0, billTotal - billPaid)
+    const billStatus = billDetail?.status ?? workOrder.bill?.status ?? 'unpaid'
+    const billPayments: OpticianShopBillPayment[] = billDetail?.payments ?? []
+    // Grouped bills are frozen — payments go on the consolidated invoice
+    const billGrouped = !!billDetail?.groupedIntoId
+    const billGroupedInvoiceNumber = billDetail?.groupedInvoiceNumber ?? null
+
+    // Amount-only ledger for internal work orders (no bill)
+    const totalDue = parseFloat(workOrder.servicePrice) + parseFloat(workOrder.lensBlankPrice || '0')
+    const woPaid = parseFloat(workOrder.amountPaid)
+    const woRemaining = Math.max(0, totalDue - woPaid)
+
+    const paymentTarget: PaymentTarget | null = workOrder.bill
+        ? { kind: 'bill', id: workOrder.bill.id, total: billTotal, paid: billPaid, remaining: billRemaining }
+        : { kind: 'workorder', id: workOrder.id, total: totalDue, paid: woPaid, remaining: woRemaining }
+
+    function handlePaymentDone() {
+        if (workOrder?.bill) queryClient.invalidateQueries({ queryKey: ['optician-shop-bill', workOrder.bill.id] })
+        onUpdated()
+    }
+
+    function paymentMethodLabel(p: OpticianShopBillPayment): string {
+        if (p.method === 'cheque') return p.cheque?.type === 'traite' ? t('payments.traite') : t('payments.cheque')
+        if (p.method === 'card') return t('payments.card')
+        return t('payments.cash')
+    }
+
+    function instrumentBadge(p: OpticianShopBillPayment): { label: string; cls: string } | null {
+        if (!p.cheque) return null
+        if (p.cheque.status === 'cashed') return { label: t('payments.statusCleared'), cls: 'bg-green-100 text-green-700 border-green-200' }
+        if (p.cheque.status === 'bounced') return { label: t('payments.statusBounced'), cls: 'bg-red-100 text-red-700 border-red-200' }
+        return { label: t('payments.statusPending'), cls: 'bg-yellow-100 text-yellow-700 border-yellow-200' }
+    }
 
     const blankOptions: SearchSelectOption[] = lensBlanks
         .filter((lb) => lb.quantity > 0)
@@ -255,13 +296,13 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                         </div>
                         <div>
                             <p className="text-muted-foreground text-xs">Created</p>
-                            <p className="font-medium">{new Date(workOrder.createdAt).toLocaleDateString()}</p>
+                            <p className="font-medium">{formatDate(workOrder.createdAt)}</p>
                         </div>
                         <div>
                             <p className="text-muted-foreground text-xs">{t('workOrders.expectedDate')}</p>
                             <p className="font-medium">
                                 {workOrder.expectedCompletionDate
-                                    ? new Date(workOrder.expectedCompletionDate).toLocaleDateString('fr-TN', { day: 'numeric', month: 'numeric', year: 'numeric' })
+                                    ? formatDate(workOrder.expectedCompletionDate)
                                     : '—'}
                             </p>
                         </div>
@@ -443,73 +484,115 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                         </div>
                     )}
 
-                    {/* Bill */}
-                    {workOrder.bill && (
-                        <div className="space-y-1 text-sm p-3 bg-muted/20 rounded-lg border">
-                            <p className="text-xs font-medium text-muted-foreground">Facture</p>
-                            <p>N° {workOrder.bill.billNumber}</p>
-                            <p>Total: {Number(workOrder.bill.totalAmount).toFixed(3)} TND · Payé: {Number(workOrder.bill.paidAmount).toFixed(3)} TND</p>
-                            <Badge variant="outline" className={
-                                workOrder.bill.status === 'paid' ? 'bg-green-100 text-green-700 border-green-200' :
-                                workOrder.bill.status === 'partiallyPaid' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
-                                'bg-red-100 text-red-700 border-red-200'
-                            }>
-                                {workOrder.bill.status === 'paid' ? 'Payée' : workOrder.bill.status === 'partiallyPaid' ? 'Partiel' : 'Impayée'}
+                    {/* Invoice & payments */}
+                    {workOrder.bill ? (
+                        <div className="space-y-3 p-3 bg-muted/20 rounded-lg border">
+                            <div className="flex items-center justify-between gap-2">
+                                <h3 className="text-sm font-medium">
+                                    {t('payments.invoice')} — {workOrder.bill.billNumber}
+                                </h3>
+                                <Badge variant="outline" className={BILL_STATUS_BADGE[billStatus] || ''}>
+                                    {billStatus === 'paid' ? t('orders.fullyPaid') : billStatus === 'partiallyPaid' ? t('orders.partiallyPaid') : t('orders.unpaid')}
+                                </Badge>
+                            </div>
+                            <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">{t('payments.total')}:</span>
+                                    <span className="font-medium">{billTotal.toFixed(3)} TND</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">{t('payments.paid')}:</span>
+                                    <span className="font-medium">{billPaid.toFixed(3)} TND</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">{t('payments.remaining')}:</span>
+                                    <span className={`font-medium ${billRemaining > EPSILON ? 'text-destructive' : ''}`}>{billRemaining.toFixed(3)} TND</span>
+                                </div>
+                            </div>
+
+                            <div className="space-y-1 overflow-y-auto max-h-[340px]">
+                                <p className="text-xs font-medium text-muted-foreground">{t('payments.history')}</p>
+                                {billPayments.length === 0 ? (
+                                    <p className="text-xs text-muted-foreground">{t('payments.noPayments')}</p>
+                                ) : (
+                                    <table className="w-full text-xs">
+                                        <thead>
+                                            <tr className="text-left text-muted-foreground border-b bg-muted sticky top-0 z-10">
+                                                <th className="py-1 font-medium">{t('payments.date')}</th>
+                                                <th className="py-1 font-medium">{t('payments.method')}</th>
+                                                <th className="py-1 font-medium text-right">{t('payments.amount')}</th>
+                                                <th className="py-1 font-medium">{t('payments.status')}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {billPayments.map((p) => {
+                                                const badge = instrumentBadge(p)
+                                                return (
+                                                    <tr key={p.id} className="border-b last:border-0">
+                                                        <td className="py-1 pr-2">
+                                                            {formatDate(p.paidAt)}
+                                                        </td>
+                                                        <td className="py-1 pr-2">
+                                                            {paymentMethodLabel(p)}
+                                                            {p.cheque?.number && <span className="text-muted-foreground"> · {p.cheque.number}</span>}
+                                                        </td>
+                                                        <td className="py-1 pr-2 text-right">{parseFloat(p.amount).toFixed(3)} TND</td>
+                                                        <td className="py-1">
+                                                            {badge ? (
+                                                                <Badge variant="outline" className={`px-1 py-0 text-[10px] ${badge.cls}`}>{badge.label}</Badge>
+                                                            ) : (
+                                                                '—'
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            })}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+
+                            {billGrouped ? (
+                                <p className="text-xs text-muted-foreground">
+                                    {t('workOrders.groupedHint', { invoiceNumber: billGroupedInvoiceNumber ?? '—' })}
+                                </p>
+                            ) : (
+                                billRemaining > EPSILON && (
+                                    <Button size="sm" onClick={() => setPaymentOpen(true)} className="w-full">
+                                        {t('payments.recordPayment')}
+                                    </Button>
+                                )
+                            )}
+                        </div>
+                    ) : (
+                        <div className="space-y-2 p-3 bg-muted/20 rounded-lg border">
+                            <h3 className="text-sm font-medium">{t('orders.payment')}</h3>
+                            <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">{t('payments.total')}:</span>
+                                    <span className="font-medium">{totalDue.toFixed(3)} TND</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">{t('payments.paid')}:</span>
+                                    <span className="font-medium">{woPaid.toFixed(3)} TND</span>
+                                </div>
+                                {woRemaining > EPSILON && (
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">{t('payments.remaining')}:</span>
+                                        <span className="font-medium text-destructive">{woRemaining.toFixed(3)} TND</span>
+                                    </div>
+                                )}
+                            </div>
+                            <Badge variant="outline" className={WO_PAYMENT_STATUS_BADGE[workOrder.paymentStatus] || ''}>
+                                {workOrder.paymentStatus === 'paid' ? t('orders.fullyPaid') : workOrder.paymentStatus === 'partial' ? t('orders.partiallyPaid') : t('orders.unpaid')}
                             </Badge>
+                            {workOrder.paymentStatus !== 'paid' && woRemaining > EPSILON && (
+                                <Button size="sm" onClick={() => setPaymentOpen(true)} className="w-full">
+                                    {t('payments.recordPayment')}
+                                </Button>
+                            )}
                         </div>
                     )}
-
-                    {/* Payment */}
-                    <div className="space-y-2 p-3 bg-muted/20 rounded-lg border">
-                        <h3 className="text-sm font-medium">Payment</h3>
-                        {(() => {
-                            const totalDue = parseFloat(workOrder.servicePrice) + parseFloat(workOrder.lensBlankPrice || '0')
-                            const paid = parseFloat(workOrder.amountPaid)
-                            const remaining = totalDue - paid
-                            const pStatus = workOrder.paymentStatus
-                            return (
-                                <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Total Due:</span>
-                                        <span className="font-medium">{totalDue.toFixed(3)} TND</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Paid:</span>
-                                        <span className="font-medium">{paid.toFixed(3)} TND</span>
-                                    </div>
-                                    {remaining > 0 && (
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Remaining:</span>
-                                            <span className="font-medium text-destructive">{remaining.toFixed(3)} TND</span>
-                                        </div>
-                                    )}
-                                    <Badge variant="outline" className={
-                                        pStatus === 'paid' ? 'bg-green-100 text-green-700 border-green-200' :
-                                        pStatus === 'partial' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
-                                        'bg-red-100 text-red-700 border-red-200'
-                                    }>
-                                        {pStatus === 'paid' ? 'Paid' : pStatus === 'partial' ? 'Partially Paid' : 'Unpaid'}
-                                    </Badge>
-                                    {pStatus !== 'paid' && (
-                                        <div className="flex gap-2 pt-1">
-                                            <Input
-                                                type="number"
-                                                step="0.001"
-                                                min="0"
-                                                placeholder="Amount"
-                                                value={paymentAmount}
-                                                onChange={(e) => setPaymentAmount(e.target.value)}
-                                                className="h-9 flex-1"
-                                            />
-                                            <Button size="sm" onClick={handleRecordPayment} disabled={loading || !paymentAmount}>
-                                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Record Payment'}
-                                            </Button>
-                                        </div>
-                                    )}
-                                </div>
-                            )
-                        })()}
-                    </div>
 
                     {/* Actions */}
                     <div className="space-y-2">
@@ -529,6 +612,13 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                         </div>
                     </div>
                 </div>
+
+                <PaymentDialog
+                    open={paymentOpen}
+                    onOpenChange={setPaymentOpen}
+                    target={paymentTarget}
+                    onDone={handlePaymentDone}
+                />
             </DialogContent>
         </Dialog>
     )

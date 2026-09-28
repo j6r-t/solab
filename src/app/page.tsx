@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useSyncExternalStore } from 'react'
-import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '@/stores/auth-store'
 import { useViewStore } from '@/stores/view-store'
 import { VIEW_ROLES } from '@/components/layouts/nav-config'
 import { AppShell } from '@/components/layouts/AppShell'
+import { LoginPage } from '@/modules/system/auth/LoginPage'
 import { DashboardPage } from '@/modules/system/dashboard/DashboardPage'
 import { ClientsPage } from '@/modules/partners/clients/ClientsPage'
 import { ClientDetailPage } from '@/modules/partners/clients/ClientDetailPage'
@@ -24,6 +24,7 @@ import { ImportPage } from '@/modules/system/import/ImportPage'
 import { PurchaseInvoicesPage } from '@/modules/inventory/purchase-invoices/PurchaseInvoicesPage'
 import { LensBlanksPage } from '@/modules/inventory/lens-blanks/LensBlanksPage'
 import { AtelierWorkOrdersPage } from '@/modules/sales/atelier-work-orders/AtelierWorkOrdersPage'
+import { InvoicesPage } from '@/modules/invoices/InvoicesPage'
 import { AuditLogsPage } from '@/modules/system/audit/AuditLogsPage'
 
 const views: Record<string, React.FC> = {
@@ -44,6 +45,7 @@ const views: Record<string, React.FC> = {
   'purchase-invoices': PurchaseInvoicesPage,
   'lens-blanks': LensBlanksPage,
   'atelier-work-orders': AtelierWorkOrdersPage,
+  invoices: InvoicesPage,
   'audit-logs': AuditLogsPage,
 }
 
@@ -52,14 +54,7 @@ const emptySubscribe = () => () => {}
 export default function Home() {
   const { isAuthenticated, user } = useAuthStore()
   const { currentView } = useViewStore()
-  const router = useRouter()
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false)
-
-  useEffect(() => {
-    if (mounted && !isAuthenticated) {
-      router.push('/en/login') // Use locale-based route
-    }
-  }, [mounted, isAuthenticated, router])
 
   // Self-heal: if the render-time role gate had to mask the requested view,
   // correct the store so stale views never linger across role switches.
@@ -76,7 +71,9 @@ export default function Home() {
   }, [mounted, isAuthenticated, role, currentView])
 
   if (!mounted || !isAuthenticated) {
-    return null
+    // Render the login inline at `/` — no navigation, so visitors never depend
+    // on a separate locale route resolving.
+    return <LoginPage />
   }
 
   const requestedView = currentView in views ? currentView : 'dashboard'

@@ -25,6 +25,7 @@ export type ViewName =
   | 'purchase-invoices'
   | 'lens-blanks'
   | 'atelier-work-orders'
+  | 'invoices'
   | 'audit-logs'
 
 interface ViewState {

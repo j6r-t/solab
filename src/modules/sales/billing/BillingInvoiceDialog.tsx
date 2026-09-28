@@ -5,6 +5,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Printer, Receipt } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { formatCurrency } from '@/lib/utils/currency'
+import { formatDate } from '@/lib/utils/dates'
 import { printFacture, printRecu } from './billing.print'
 import type { BillingRecord } from './billing.types'
 
@@ -20,7 +21,7 @@ export function BillingInvoiceDialog({ selected, onClose }: Props) {
     const deposit = s.payments.find((p) => p.type === 'deposit')
     const designation = s.items.map((i) => `${i.productName}${i.brand ? ` (${i.brand})` : ''}`).join(', ')
     const promiseDate = s.turnaroundDays
-        ? new Date(new Date(s.createdAt).getTime() + s.turnaroundDays * 86400000).toLocaleDateString('fr-TN', { day: 'numeric', month: 'numeric', year: 'numeric' })
+        ? formatDate(new Date(s.createdAt).getTime() + s.turnaroundDays * 86400000)
         : null
 
     return (
@@ -52,7 +53,7 @@ export function BillingInvoiceDialog({ selected, onClose }: Props) {
                                 <FieldRow label="N de Tel:" value={s.client.phone} />
                                 <FieldRow label="Designation:" value={designation || '—'} />
                                 {s.orderType !== 'direct_sale' && s.prescription?.dateWritten && (
-                                    <FieldRow label="Date Ordonnance:" value={new Date(s.prescription.dateWritten).toLocaleDateString('fr-TN', { day: 'numeric', month: 'numeric', year: 'numeric' })} />
+                                    <FieldRow label="Date Ordonnance:" value={formatDate(s.prescription.dateWritten)} />
                                 )}
                                 {s.orderType !== 'direct_sale' && s.prescription?.doctorName && <FieldRow label="Medecin:" value={s.prescription.doctorName} />}
                             </div>
@@ -112,10 +113,6 @@ export function BillingInvoiceDialog({ selected, onClose }: Props) {
             </DialogContent>
         </Dialog>
     )
-}
-
-function formatDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 function FieldRow({ label, value }: { label: string; value: string }) {

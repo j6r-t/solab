@@ -21,6 +21,33 @@ interface ChequeSupplierPaymentInput {
     } | null
 }
 
+interface ChequeOpticianShopPaymentInput {
+    id: string
+    bill?: {
+        id: string
+        billNumber: string
+        opticianShop?: { id: string; name: string } | null
+    } | null
+}
+
+interface ChequeConsolidatedPaymentInput {
+    id: string
+    consolidatedInvoice?: {
+        id: string
+        invoiceNumber: string
+        opticianShop?: { id: string; name: string } | null
+    } | null
+}
+
+interface ChequeSupplierConsolidatedPaymentInput {
+    id: string
+    consolidatedInvoice?: {
+        id: string
+        invoiceNumber: string
+        fournisseur?: { id: string; name: string } | null
+    } | null
+}
+
 interface ChequeInput {
     id: string
     number: string
@@ -34,11 +61,20 @@ interface ChequeInput {
     notes?: string | null
     payments?: ChequePaymentInput[]
     supplierPayments?: ChequeSupplierPaymentInput[]
+    opticianShopPayments?: ChequeOpticianShopPaymentInput[]
+    consolidatedPayments?: ChequeConsolidatedPaymentInput[]
+    supplierConsolidatedPayments?: ChequeSupplierConsolidatedPaymentInput[]
 }
 
 export function toChequeResponse(cheque: ChequeInput): ChequeResponse {
     const payment = cheque.payments?.[0]
     const supplierPayment = cheque.supplierPayments?.[0]
+    const opticianShopPayment = cheque.opticianShopPayments?.[0]
+    const consolidatedPayment = cheque.consolidatedPayments?.[0]
+    const supplierConsolidatedPayment = cheque.supplierConsolidatedPayments?.[0]
+    const bill = opticianShopPayment?.bill
+    const consolidatedInvoice = consolidatedPayment?.consolidatedInvoice
+    const supplierConsolidatedInvoice = supplierConsolidatedPayment?.consolidatedInvoice
     return {
         id: cheque.id,
         number: cheque.number,
@@ -68,6 +104,36 @@ export function toChequeResponse(cheque: ChequeInput): ChequeResponse {
                 fournisseur: {
                     id: supplierPayment.purchaseInvoice.fournisseur?.id || '',
                     name: supplierPayment.purchaseInvoice.fournisseur?.name || '',
+                },
+            }
+            : null,
+        opticianBill: bill
+            ? {
+                id: bill.id,
+                billNumber: bill.billNumber,
+                opticianShop: {
+                    id: bill.opticianShop?.id || '',
+                    name: bill.opticianShop?.name || '',
+                },
+            }
+            : null,
+        consolidatedInvoice: consolidatedInvoice
+            ? {
+                id: consolidatedInvoice.id,
+                invoiceNumber: consolidatedInvoice.invoiceNumber,
+                opticianShop: {
+                    id: consolidatedInvoice.opticianShop?.id || '',
+                    name: consolidatedInvoice.opticianShop?.name || '',
+                },
+            }
+            : null,
+        supplierConsolidated: supplierConsolidatedInvoice
+            ? {
+                id: supplierConsolidatedInvoice.id,
+                invoiceNumber: supplierConsolidatedInvoice.invoiceNumber,
+                fournisseur: {
+                    id: supplierConsolidatedInvoice.fournisseur?.id || '',
+                    name: supplierConsolidatedInvoice.fournisseur?.name || '',
                 },
             }
             : null,

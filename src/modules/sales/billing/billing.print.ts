@@ -1,10 +1,7 @@
 import { formatCurrency } from '@/lib/utils/currency'
+import { formatDate } from '@/lib/utils/dates'
 import { effectivePaymentTotal, pendingInstrumentTotal } from '@/lib/utils/payments'
 import type { BillingRecord } from './billing.types'
-
-function formatDateFr(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString('fr-TN', { day: 'numeric', month: 'numeric', year: 'numeric' })
-}
 
 export function printFacture(selected: BillingRecord) {
     const printWindow = window.open('', '_blank')
@@ -67,7 +64,7 @@ export function printFacture(selected: BillingRecord) {
                 ${client.address ? `<div class="info-row"><span class="label">Adresse:</span><span>${client.address}</span></div>` : ''}
             </div>
             <div class="col">
-                <div class="info-row"><span class="label">Date d&rsquo;achat:</span><span>${formatDateFr(createdAt)}</span></div>
+                <div class="info-row"><span class="label">Date d&rsquo;achat:</span><span>${formatDate(createdAt)}</span></div>
                 <div class="info-row"><span class="label">Facture N&deg;:</span><span>${selected.orderNumber}</span></div>
             </div>
         </div>
@@ -101,9 +98,9 @@ export function printRecu(selected: BillingRecord) {
     const pendingTotal = pendingInstrumentTotal(payments, 'client')
     const reste = parseFloat(totalAmount) - paidTotal
     const promiseDate = turnaroundDays
-        ? new Date(new Date(createdAt).getTime() + turnaroundDays * 86400000).toLocaleDateString('fr-TN', { day: 'numeric', month: 'numeric', year: 'numeric' })
+        ? formatDate(new Date(createdAt).getTime() + turnaroundDays * 86400000)
         : ''
-    const purchaseDate = formatDateFr(createdAt)
+    const purchaseDate = formatDate(createdAt)
     const isDirectSale = selected.orderType === 'direct_sale'
     const rxRows = !isDirectSale && prescription
         ? `

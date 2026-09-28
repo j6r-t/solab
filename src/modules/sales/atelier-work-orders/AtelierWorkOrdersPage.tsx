@@ -17,6 +17,7 @@ import {
 import { WorkOrderDetailDialog } from './WorkOrderDetailDialog'
 import { NewWorkOrderDialog } from './NewWorkOrderDialog'
 import { useRepairs } from '../repairs/useRepairs'
+import { formatDate } from '@/lib/utils/dates'
 
 interface WorkOrder {
     id: string
@@ -55,10 +56,6 @@ const STATUS_BADGE: Record<string, string> = {
     completed: 'bg-green-100 text-green-700 border-green-200',
     delivered: 'bg-gray-100 text-gray-700 border-gray-200',
     cancelled: 'bg-red-100 text-red-700 border-red-200',
-}
-
-function formatDateFr(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString('fr-TN', { day: 'numeric', month: 'numeric', year: 'numeric' })
 }
 
 function daysUntil(dateStr: string): number {
@@ -176,10 +173,10 @@ export function AtelierWorkOrdersPage() {
                     </p>
                 </div>
             ) : (
-                <div className="border rounded-xl bg-card overflow-x-auto">
+                <div className="border rounded-xl bg-card overflow-x-auto overflow-y-auto max-h-[340px]">
                     <table className="w-full">
                         <thead>
-                            <tr className="bg-muted/30 border-b">
+                            <tr className="bg-muted border-b sticky top-0 z-10">
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Client / Shop</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Source</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Services</th>
@@ -215,7 +212,7 @@ export function AtelierWorkOrdersPage() {
                                         <td className="py-3 px-4 text-sm text-muted-foreground">
                                             {dueDate ? (
                                                 <div className="flex flex-col items-start gap-1">
-                                                    <span>{formatDateFr(dueDate)}</span>
+                                                    <span>{formatDate(dueDate)}</span>
                                                     {daysLeft !== null && daysLeft < 0 && (
                                                         <Badge variant="outline" className="text-xs bg-red-100 text-red-700 border-red-200">
                                                             {t('repairs.overdue')}

@@ -19,6 +19,7 @@ import { PurchaseInvoiceForm } from './PurchaseInvoiceForm'
 import { downloadPurchaseInvoice } from './purchase-invoice.print'
 import { PurchaseInvoicePreviewDialog } from './PurchaseInvoicePreviewDialog'
 import { usePurchaseInvoices, type PurchaseInvoice } from './usePurchaseInvoices'
+import { formatDate } from '@/lib/utils/dates'
 import { toast } from 'sonner'
 
 export function PurchaseInvoicesPage() {
@@ -120,10 +121,10 @@ export function PurchaseInvoicesPage() {
                     </Button>
                 </div>
             ) : (
-                <div className="border rounded-xl bg-card overflow-x-auto">
+                <div className="border rounded-xl bg-card overflow-x-auto overflow-y-auto max-h-[340px]">
                     <table className="w-full">
                         <thead>
-                            <tr className="bg-muted/30 border-b">
+                            <tr className="bg-muted border-b sticky top-0 z-10">
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('purchaseInvoice.invoiceNumber')}</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('purchaseInvoice.supplier')}</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('purchaseInvoice.date')}</th>
@@ -140,7 +141,7 @@ export function PurchaseInvoicesPage() {
                                     <tr key={inv.id} className="row-hover">
                                         <td className="py-3 px-4 font-medium">{inv.invoiceNumber}</td>
                                         <td className="py-3 px-4">{inv.fournisseur.name}</td>
-                                        <td className="py-3 px-4 text-sm">{new Date(inv.date).toLocaleDateString()}</td>
+                                        <td className="py-3 px-4 text-sm">{formatDate(inv.date)}</td>
                                         <td className="py-3 px-4 text-right">{parseFloat(inv.totalAmount).toFixed(3)}</td>
                                         <td className="py-3 px-4 text-right">{parseFloat(inv.paidAmount).toFixed(3)}</td>
                                         <td className="py-3 px-4 text-center">

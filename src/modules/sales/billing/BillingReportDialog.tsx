@@ -92,10 +92,10 @@ export function BillingReportDialog({ open, onOpenChange, reportPeriod, reportDa
                             </Button>
                         </div>
 
-                        <div className="max-h-64 overflow-y-auto overflow-x-auto border rounded-lg">
+                        <div className="border rounded-lg overflow-x-auto overflow-y-auto max-h-[340px]">
                             <table className="w-full text-sm">
-                                <thead className="bg-card sticky top-0 z-10">
-                                    <tr>
+                                <thead>
+                                    <tr className="bg-muted sticky top-0 z-10">
                                         <th className="text-left p-2.5 font-medium text-xs text-muted-foreground uppercase">N°</th>
                                         <th className="text-left p-2.5 font-medium text-xs text-muted-foreground uppercase">{t('orders.client')}</th>
                                         <th className="text-left p-2.5 font-medium text-xs text-muted-foreground uppercase">{t('orders.type')}</th>

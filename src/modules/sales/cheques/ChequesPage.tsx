@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select'
 import { useCheques, useUpdateChequeStatus } from './useCheques'
 import type { Cheque } from './cheques.api'
+import { formatDate } from '@/lib/utils/dates'
 import { toast } from 'sonner'
 
 const statusStyles: Record<string, string> = {
@@ -74,7 +75,7 @@ export function ChequesPage() {
         if (!confirmTarget) return { title: '', description: '', confirmLabel: '' }
         const { cheque, action } = confirmTarget
         const earlyWarning = traiteNotYetDue(cheque)
-            ? ` ${t('cheques.traiteBeforeDue', { date: new Date(cheque.dueDate).toLocaleDateString() })}`
+            ? ` ${t('cheques.traiteBeforeDue', { date: formatDate(cheque.dueDate) })}`
             : ''
         if (action === 'bounced') {
             return {
@@ -161,10 +162,10 @@ export function ChequesPage() {
                     <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">{t('cheques.noChequesDesc')}</p>
                 </div>
             ) : (
-                <div className="border rounded-xl bg-card overflow-x-auto">
+                <div className="border rounded-xl bg-card overflow-x-auto overflow-y-auto max-h-[340px]">
                     <table className="w-full">
                         <thead>
-                            <tr className="bg-muted/30 border-b">
+                            <tr className="bg-muted border-b sticky top-0 z-10">
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('cheques.number')}</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('cheques.type')}</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('cheques.bank')}</th>
@@ -182,7 +183,7 @@ export function ChequesPage() {
                                     <td className="py-3 px-4">{cheque.type === 'traite' ? t('cheques.traite') : t('cheques.standard')}</td>
                                     <td className="py-3 px-4">{cheque.bankName || '—'}</td>
                                     <td className="py-3 px-4 text-right">{parseFloat(cheque.amount).toFixed(3)}</td>
-                                    <td className="py-3 px-4 text-sm">{new Date(cheque.dueDate).toLocaleDateString()}</td>
+                                    <td className="py-3 px-4 text-sm">{formatDate(cheque.dueDate)}</td>
                                     <td className="py-3 px-4 text-sm">
                                         {cheque.order ? (
                                             <span>#{cheque.order.orderNumber} — {cheque.order.client.name} {cheque.order.client.familyName}</span>
@@ -199,7 +200,7 @@ export function ChequesPage() {
                                             </Badge>
                                             {traiteNotYetDue(cheque) && (
                                                 <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-xs">
-                                                    {t('cheques.notDue')} · {new Date(cheque.dueDate).toLocaleDateString()}
+                                                    {t('cheques.notDue')} · {formatDate(cheque.dueDate)}
                                                 </Badge>
                                             )}
                                         </div>

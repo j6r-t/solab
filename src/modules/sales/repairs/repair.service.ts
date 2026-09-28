@@ -1,8 +1,8 @@
 import { repairRepo, opticianShopRepo } from '@/lib/database/repositories'
 import { db } from '@/lib/database/db'
-import { sendRepairReadySms } from '@/lib/services/sms'
 import { BadRequestError, NotFoundError } from '@/lib/errors'
 import { auditService } from '@/modules/system/audit'
+import { recordBillPayment } from '@/modules/partners/optician-shop-bills/optician-shop-bill.service'
 import { LensType, LensMaterial, LensCoating, BillItemType, AtelierWorkOrderStatus } from '@prisma/client'
 import { Prisma } from '@prisma/client'
 
@@ -173,20 +173,22 @@ export async function createRepair(data: {
             })
         }
 
-        // 4. If lenses from stock: decrement blank stock + create bill (per-blank)
+        // 4. Bill line items — every optician work order is invoiced.
+        //    Service lines always; blank lines only when lenses come from our stock.
+        const billItems: { description: string; quantity: number; unitPrice: number; itemType: BillItemType; lensBlankId?: string }[] = []
+
+        // Service line items
+        for (const svc of services) {
+            billItems.push({
+                description: svc.name,
+                quantity: 1,
+                unitPrice: Number(svc.defaultPrice),
+                itemType: 'service' as BillItemType,
+            })
+        }
+
+        // 5. If lenses from stock: decrement blank stock + add per-blank bill items
         if (data.lensSource === 'stock' && (data.lensBlankLeftId || data.lensBlankRightId)) {
-            const billItems: { description: string; quantity: number; unitPrice: number; itemType: BillItemType; lensBlankId?: string }[] = []
-
-            // Service line items
-            for (const svc of services) {
-                billItems.push({
-                    description: svc.name,
-                    quantity: 1,
-                    unitPrice: Number(svc.defaultPrice),
-                    itemType: 'service' as BillItemType,
-                })
-            }
-
             // Left blank: decrement + adjust + bill item
             if (data.lensBlankLeftId) {
                 const leftBlank = await tx.lensBlank.findUnique({ where: { id: data.lensBlankLeftId } })
@@ -222,43 +224,42 @@ export async function createRepair(data: {
                     })
                 }
             }
+        }
 
-            // Create the bill (only if at least one blank was assigned)
-            if (data.lensBlankLeftId || data.lensBlankRightId) {
-                const totalAmount = billItems.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
+        // 6. Create the bill — every optician-source work order gets an invoice
+        //    (optician-supplied lenses: services-only lines; no stock movement happened)
+        const totalAmount = billItems.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
 
-                // Generate bill number
-                const abbr = supplierAbbreviation(shop.name)
-                const existingBills = await tx.opticianShopBill.findMany({
-                    where: { opticianShopId: data.opticianShopId },
-                    select: { billNumber: true },
-                })
-                let maxSeq = 0
-                const prefix = `FAC-${abbr}-`
-                for (const b of existingBills) {
-                    if (b.billNumber.startsWith(prefix)) {
-                        const num = parseInt(b.billNumber.slice(prefix.length), 10)
-                        if (!isNaN(num) && num > maxSeq) maxSeq = num
-                    }
-                }
-                const billNumber = `${prefix}${String(maxSeq + 1).padStart(3, '0')}`
-
-                // Create the bill
-                await tx.opticianShopBill.create({
-                    data: {
-                        billNumber,
-                        opticianShopId: data.opticianShopId,
-                        workOrderId: wo.id,
-                        totalAmount,
-                        paidAmount: 0,
-                        status: 'unpaid',
-                        items: {
-                            create: billItems,
-                        },
-                    },
-                })
+        // Generate bill number — billNumber is globally unique, so the sequence
+        // scans ALL bills (two shops sharing an abbreviation must never collide)
+        const abbr = supplierAbbreviation(shop.name)
+        const existingBills = await tx.opticianShopBill.findMany({
+            select: { billNumber: true },
+        })
+        let maxSeq = 0
+        const prefix = `FAC-${abbr}-`
+        for (const b of existingBills) {
+            if (b.billNumber.startsWith(prefix)) {
+                const num = parseInt(b.billNumber.slice(prefix.length), 10)
+                if (!isNaN(num) && num > maxSeq) maxSeq = num
             }
         }
+        const billNumber = `${prefix}${String(maxSeq + 1).padStart(3, '0')}`
+
+        // Create the bill
+        await tx.opticianShopBill.create({
+            data: {
+                billNumber,
+                opticianShopId: data.opticianShopId,
+                workOrderId: wo.id,
+                totalAmount,
+                paidAmount: 0,
+                status: 'unpaid',
+                items: {
+                    create: billItems,
+                },
+            },
+        })
 
         return wo
     }, { timeout: 15000 })
@@ -293,8 +294,29 @@ export async function updateRepairStatus(id: string, status: string) {
     if (!repair) throw new NotFoundError('Work order not found')
 
     if (status === 'completed') {
-        await sendRepairReadySms(id)
         await auditService.log({ action: 'REPAIR_COMPLETED', entityType: 'REPAIR', entityId: id })
+
+        if (repair.orderId) {
+            const siblings = await db.atelierWorkOrder.findMany({
+                where: { orderId: repair.orderId, status: { not: 'cancelled' } },
+                select: { status: true },
+            })
+            if (siblings.every((s) => s.status === 'completed' || s.status === 'delivered')) {
+                const order = await db.order.findUnique({
+                    where: { id: repair.orderId },
+                    select: { status: true, orderNumber: true },
+                })
+                if (order?.status === 'pending') {
+                    await db.order.update({ where: { id: repair.orderId }, data: { status: 'ready' } })
+                    await auditService.log({
+                        action: 'ORDER_AUTO_READY',
+                        entityType: 'ORDER',
+                        entityId: repair.orderId,
+                        metadata: { workOrderId: id, orderNumber: order.orderNumber },
+                    })
+                }
+            }
+        }
     }
 
     return repair
@@ -390,11 +412,22 @@ export async function deleteRepair(id: string) {
 }
 
 export async function recordPayment(id: string, amount: number) {
-    const repair = await repairRepo.findUnique({ where: { id } })
+    const repair = await repairRepo.findUnique({ where: { id }, include: { bill: true } })
     if (!repair) throw new NotFoundError('Work order not found')
 
+    // Work orders with a bill are paid through the bill: it derives the stored
+    // paid state, mirrors the work order ledger and audits BILL_PAYMENT_RECORDED.
+    if (repair.bill) {
+        await recordBillPayment(repair.bill.id, { amount, method: 'cash' })
+        const updated = await repairRepo.findUnique({ where: { id }, include: { ...WORK_ORDER_INCLUDE } })
+        if (!updated) throw new NotFoundError('Work order not found')
+        return updated
+    }
+
+    if (amount <= 0) throw new BadRequestError('Payment amount must be positive')
     const totalDue = Number(repair.servicePrice) + Number(repair.lensBlankPrice || 0)
     const newAmountPaid = Number(repair.amountPaid) + amount
+    if (newAmountPaid > totalDue + 0.001) throw new BadRequestError('Payment exceeds remaining balance')
     const paymentStatus = newAmountPaid >= totalDue ? 'paid' : newAmountPaid > 0 ? 'partial' : 'pending'
 
     const updated = await repairRepo.update({
@@ -406,5 +439,13 @@ export async function recordPayment(id: string, amount: number) {
         include: { ...WORK_ORDER_INCLUDE },
     })
     if (!updated) throw new NotFoundError('Work order not found')
+
+    await auditService.log({
+        action: 'WO_PAYMENT_RECORDED',
+        entityType: 'REPAIR',
+        entityId: id,
+        metadata: { workOrderId: id, amount },
+    })
+
     return updated
 }

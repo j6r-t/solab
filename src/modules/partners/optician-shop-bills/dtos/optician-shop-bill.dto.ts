@@ -22,14 +22,27 @@ export interface OpticianShopBillResponse {
         method: string | null
         notes: string | null
         paidAt: Date
+        cheque: {
+            status: string | null
+            type: string | null
+            number: string | null
+            bankName: string | null
+            dueDate: Date | string | null
+        } | null
     }[]
+    groupedIntoId: string | null
+    groupedInvoiceNumber: string | null
     notes: string | null
     createdAt: Date
 }
 
 export interface RecordBillPaymentInput {
     amount: number
-    method: 'cash' | 'cheque' | 'card'
+    method: 'cash' | 'card' | 'cheque' | 'traite'
     chequeId?: string
+    chequeNumber?: string
+    chequeBankName?: string
+    chequeDueDate?: string
+    chequeType?: 'standard' | 'traite'
     notes?: string
 }

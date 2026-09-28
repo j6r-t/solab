@@ -42,6 +42,7 @@ import {
 import { PrescriptionForm } from '@/modules/sales/prescriptions/PrescriptionForm'
 import type { PrescriptionFormData } from '@/modules/sales/prescriptions/prescription.schema'
 import { formatCurrency } from '@/lib/utils/currency'
+import { formatDate } from '@/lib/utils/dates'
 
 const statusBadge: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
     pending: { label: 'orders.pending', variant: 'secondary' },
@@ -205,10 +206,10 @@ export function ClientDetailPage() {
                         <p className="text-muted-foreground">{t('clients.noPrescriptions')}</p>
                     </div>
                 ) : (
-                    <div className="max-h-[350px] overflow-y-auto border rounded-xl bg-card">
+                    <div className="border rounded-xl bg-card overflow-x-auto overflow-y-auto max-h-[340px]">
                         <table className="w-full text-sm">
-                            <thead className="sticky top-0 bg-card">
-                                <tr className="border-b">
+                            <thead>
+                                <tr className="bg-muted border-b sticky top-0 z-10">
                                     <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">{t('billing.date')}</th>
                                     <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">{t('prescriptions.doctor')}</th>
                                     <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">OD</th>
@@ -222,7 +223,7 @@ export function ClientDetailPage() {
                                         className="border-b last:border-0 cursor-pointer hover:bg-muted/40 transition-colors"
                                         onClick={() => setDetailsPrescription(rx)}
                                     >
-                                        <td className="px-4 py-2.5 whitespace-nowrap">{new Date(rx.dateWritten || rx.createdAt).toLocaleDateString('fr-FR')}</td>
+                                        <td className="px-4 py-2.5 whitespace-nowrap">{formatDate(rx.dateWritten || rx.createdAt)}</td>
                                         <td className="px-4 py-2.5">{rx.doctor?.name ?? '—'}</td>
                                         <td className="px-4 py-2.5 whitespace-nowrap">{`${rx.sphRight} (${rx.cylRight} , ${rx.axisRight}°)`}</td>
                                         <td className="px-4 py-2.5 whitespace-nowrap">{`${rx.sphLeft} (${rx.cylLeft} , ${rx.axisLeft}°)`}</td>
@@ -265,7 +266,7 @@ export function ClientDetailPage() {
                                                 <Badge variant={pb.variant}>{t(pb.label)}</Badge>
                                             </div>
                                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                                <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> {new Date(order.createdAt).toLocaleDateString()}</span>
+                                                <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> {formatDate(order.createdAt)}</span>
                                                 <span>{order.items?.length || 0} {t('orders.items')}</span>
                                             </div>
                                         </div>
@@ -294,7 +295,7 @@ export function ClientDetailPage() {
                             <DialogHeader>
                                 <DialogTitle>{client.name} {client.familyName}</DialogTitle>
                                 <DialogDescription>
-                                    {new Date(detailsPrescription.dateWritten || detailsPrescription.createdAt).toLocaleDateString('fr-FR')}
+                                    {formatDate(detailsPrescription.dateWritten || detailsPrescription.createdAt)}
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-3">

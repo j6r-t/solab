@@ -394,7 +394,36 @@ Lens blanks live separately because a "product" here is a combination of values,
 4. **Breakage**: if a blank breaks, open the work order and use **Déclarer une casse** — choose **Gauche**, **Droite** or **Les deux**, and optionally pick a replacement blank from stock for each broken eye (a work order can be reported late; the button disappears once a breakage is already declared).
 5. The replacement is consumed from stock, but the work order and bill amounts never increase — the atelier takes responsibility for the breakage. Both the declaration and the replacement are journaled, so the stock stays honest.
 6. Every declaration feeds the **Taux de casse** and **Casse par verre** stats in **Rapports**, so recurring breakages become visible.
-7. **Payments**: record what the optician pays; the bill becomes **Payée** when covered.
+7. **Invoice**: every work order automatically gets an invoice (number **FAC-…**), including orders where the optician supplies the lenses (service lines only). The dialog's invoice panel shows **Total / Payé / Reste**, the payment history (date, method, amount, instrument badge **En attente / Encaissé / Rejeté**) and a **Enregistrer un paiement** button.
+8. **Recording a payment**: enter the amount (prefilled with the remaining) and the method — **Espèces**, **Carte**, **Chèque** or **Traite**. Chèque and traite require the **numéro**, the **banque** and the **Date d'échéance**. Espèces and carte count immediately; a cheque or traite counts only once marked **Encaissé** — if it bounces (**Rejeté**), it counts as nothing and the amount stays due.
+
+### The Factures view (**Factures**)
+
+**One hub for every atelier invoice: optician shops, suppliers, and the paper in between.** Visible on the admin and atelier accounts only — the shop account never sees it.
+
+1. Open **Factures** in the Atelier section of the menu. Three tabs: **Opticiens**, **Fournisseurs**, **Échéances**.
+
+### Factures — Opticiens tab
+
+1. Cards at the top give, per partner shop, the number of invoices and the total still owed (**Reste dû**). Below, the invoice list: number, shop, date, total, paid, reste, status badge.
+2. Row actions: 👁 preview (invoice lines + payment history), 💶 record a payment (same rules as above), 🖨 print the **FACTURE** (Total / Payé / Reste à payer + payment history).
+
+### Factures — grouping optician invoices
+
+1. Tick at least **2** not-fully-paid invoices of the **same** shop (grouped ones cannot be picked). A green bar shows the count and the total remaining — click **Regrouper en facture** and confirm.
+2. The consolidated invoice (number **FAC-G-…**) has one line per source invoice: its **remaining** amount at grouping time. Payments are then recorded on the group invoice; the source invoices become read-only, badged **Groupée**.
+3. The group invoice behaves like any other: 👁 preview with the source-invoice lines, 💶 payments and history, 🖨 print.
+
+### Factures — Fournisseurs tab
+
+1. The same table for supplier invoices, filtered by entity (**Magasin** / **Atelier**). Payments use the same dialog — supplier side offers **Espèces / Chèque / Traite** (no card), and supplier cheques/traites count once marked **Payé**.
+2. Same grouping: tick ≥ 2 not-fully-paid invoices of the same fournisseur → **Regrouper en facture** → a **FAC-G-…** group invoice per fournisseur, printed the same way.
+
+### Factures — Échéances tab
+
+1. Follow-up list of all running cheques and traites tied to atelier invoices (optician and supplier side), sorted by due date; past-due rows are highlighted in red. Filters: **Tout / À venir / En retard / Encaissés / Rejetés**.
+2. Actions: **Encaisser** (optician-side instruments), **Marquer payé** (supplier-side), **Rejeter** with confirmation. Each one updates the linked invoice instantly: encaissé or payé counts the amount, rejeté puts it back on the reste.
+3. The 3-day pop-up alert (**Chèques à échoir**) now also covers these instruments on the atelier account.
 
 ---
 
@@ -404,7 +433,7 @@ Lens blanks live separately because a "product" here is a combination of values,
 
 | Notification | Meaning | What to do |
 |---|---|---|
-| **Chèques à échoir** | A cheque or traite reaches its due date within 7 days | Deposit it or check the bank; cash it when it returns |
+| **Chèques à échoir** | A cheque or traite reaches its due date within 3 days | Deposit it or check the bank; cash it when it returns |
 | **Stock bas** | Products at 3 or fewer | Restock (section 8) |
 | **Réparations en attente** | Repairs not finished | Open **Réparations** and move them forward |
 | **Commandes prêtes** | Orders ready for pickup | Call the clients; hand over the glasses |
@@ -468,7 +497,7 @@ In the tables below, labels are quoted for the default **Ce mois** period.
 | **Origine des ordres** | Orders of the period split **Interne** (your own shop) vs **Opticien** (partners) | Where the work comes from |
 | **Débit hebdomadaire (12 semaines)** | Always the last 12 weeks: **Créés** vs **Terminés** per week | If created runs above completed, the backlog is growing |
 | **Ancienneté des arriérés** | Current backlog grouped by days since creation: **0–3 j**, **4–7 j**, **8–14 j**, **15 j +** | Which old jobs to unblock first |
-| **Partenaires opticiens** | Per optician: orders and revenue in the period, **Délai moyen** over all time, **Dette** (all bills minus payments, all time — red when above zero), **Dernière activité** | Who is active, who pays, who has gone quiet |
+| **Partenaires opticiens** | Per optician: orders and revenue in the period, **Délai moyen** over all time, **Dette** (unpaid balance on all bills and grouped invoices, all time — red when above zero), **Dernière activité** | Who is active, who pays, who has gone quiet |
 | **Charge atelier** | Live: **En attente**, **En cours**, and **Âge moyen (attente + cours)** | Accept or postpone new work |
 | **Verres consommés** | Blanks used for mounting in the period (**Consommés**) next to the **En stock** quantity today (amber at 3 or fewer) | Restock the blanks you actually use |
 | **Casse par verre** | Blanks broken during mounting, per reference, in the period | Which references break most — handling or quality |

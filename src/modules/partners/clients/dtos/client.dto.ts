@@ -31,4 +31,7 @@ export interface ClientResponse {
     notes: string | null
     organization: string | null
     createdAt: Date
+    revenue?: string
+    balance?: string
+    lastVisitAt?: Date | string | null
 }

@@ -15,6 +15,7 @@ import {
     PackageOpen,
     History,
     Wallet,
+    FileText,
     type LucideIcon,
 } from 'lucide-react'
 import type { ViewName } from '@/stores/view-store'
@@ -78,6 +79,7 @@ export const navGroups: NavGroup[] = [
         flattenRoles: ['atelier'],
         items: [
             { icon: Wrench, view: 'atelier-work-orders', labelKey: 'atelierWorkOrders', roles: ['admin', 'atelier'] },
+            { icon: FileText, view: 'invoices', labelKey: 'invoices', roles: ['admin', 'atelier'] },
             { icon: Store, view: 'optician-shops', labelKey: 'opticianShops', roles: ['admin', 'atelier'] },
         ],
     },
@@ -87,7 +89,7 @@ export const navGroups: NavGroup[] = [
         roles: ['admin', 'shop', 'atelier'],
         flattenRoles: ['atelier'],
         items: [
-            { icon: ClipboardList, view: 'purchase-invoices', labelKey: 'purchaseInvoices', roles: ['admin', 'shop', 'atelier'] },
+            { icon: ClipboardList, view: 'purchase-invoices', labelKey: 'purchaseInvoices', roles: ['admin', 'shop'] },
             { icon: Truck, view: 'fournisseurs', labelKey: 'fournisseurs', roles: ['admin', 'shop', 'atelier'] },
         ],
     },
@@ -133,9 +135,10 @@ export const VIEW_ROLES: Record<ViewName, string[]> = {
     'optician-shops': ['admin', 'atelier'],
     qrcode: ['admin', 'shop'],
     import: ['admin', 'shop'],
-    'purchase-invoices': ['admin', 'shop', 'atelier'],
+    'purchase-invoices': ['admin', 'shop'],
     'lens-blanks': ['admin', 'atelier'],
     'atelier-work-orders': ['admin', 'atelier'],
+    invoices: ['admin', 'atelier'],
     'audit-logs': ['admin'],
 }
 

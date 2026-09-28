@@ -10,10 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Search, History, Loader2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react'
-
-function formatDateTime(value: string) {
-    return new Date(value).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })
-}
+import { formatDateTime } from '@/lib/utils/dates'
 
 function metadataSummary(metadata: Record<string, unknown>): string {
     const entries = Object.entries(metadata)
