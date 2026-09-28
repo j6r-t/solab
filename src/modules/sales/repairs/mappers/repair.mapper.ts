@@ -24,7 +24,7 @@ export function toRepairResponse(repair: RepairWithRelations): AtelierWorkOrderR
         id: repair.id,
         orderId: repair.orderId || null,
         opticianShopId: repair.opticianShopId || null,
-        source: repair.opticianShopId ? 'optician' : 'internal',
+        source: repair.source,
         status: repair.status,
         servicePrice: (repair.servicePrice || 0).toString(),
         lensBlankPrice: repair.lensBlankPrice != null ? repair.lensBlankPrice.toString() : null,

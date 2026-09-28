@@ -213,7 +213,7 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                 repairs,
                 prescriptionId: selectedPrescriptionId || undefined,
                 turnaroundDays: expectedCompletionDate
-                    ? Math.ceil((new Date(expectedCompletionDate).getTime() - new Date().getTime()) / 86400000)
+                    ? Math.max(0, Math.round((new Date(expectedCompletionDate + 'T00:00:00').getTime() - new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00').getTime()) / 86400000))
                     : undefined,
             })
         } catch (error) {

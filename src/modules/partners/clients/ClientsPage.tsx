@@ -15,7 +15,8 @@ import {
 } from '@/components/ui/dialog'
 import { ClientWizardDialog } from './ClientWizardDialog'
 import { ExportButton } from '@/components/ui/export-button'
-import { Plus, Search, Users, Pencil, Trash2, Loader2, Eye } from 'lucide-react'
+import { Plus, Search, Users, Pencil, Trash2, Eye } from 'lucide-react'
+import { ListSkeleton } from '@/components/ui/skeleton'
 import { formatCurrency } from '@/lib/utils/currency'
 import { formatDate } from '@/lib/utils/dates'
 import type { ClientFormData } from './client.schema'
@@ -154,9 +155,7 @@ export function ClientsPage() {
                 </div>
 
                 {loading && clients.length === 0 ? (
-                    <div className="flex items-center justify-center py-16">
-                        <Loader2 className="h-6 w-6 animate-spinner text-muted-foreground" />
-                    </div>
+                    <ListSkeleton />
                 ) : showEmptyState ? (
                     <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center max-w-[600px] mx-auto">
                         <Users className="w-12 h-12 text-muted-foreground/50 mb-6" />

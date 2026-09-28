@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Search, FileText, Loader2, Download, Eye } from 'lucide-react'
+import { Plus, Search, FileText, Download, Eye } from 'lucide-react'
+import { ListSkeleton } from '@/components/ui/skeleton'
 import { useAuthStore } from '@/stores/auth-store'
 import {
     Select,
@@ -107,9 +108,7 @@ export function PurchaseInvoicesPage() {
             </div>
 
             {loading ? (
-                <div className="flex items-center justify-center py-16">
-                    <Loader2 className="h-6 w-6 animate-spinner text-muted-foreground" />
-                </div>
+                <ListSkeleton />
             ) : invoices.length === 0 ? (
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center max-w-[600px] mx-auto">
                     <FileText className="w-12 h-12 text-muted-foreground/50 mb-6" />

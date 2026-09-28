@@ -3,7 +3,7 @@ import { db } from '@/lib/database/db'
 import { BadRequestError, NotFoundError } from '@/lib/errors'
 import { auditService } from '@/modules/system/audit'
 import { recordBillPayment } from '@/modules/partners/optician-shop-bills/optician-shop-bill.service'
-import { LensType, LensMaterial, LensCoating, BillItemType, AtelierWorkOrderStatus } from '@prisma/client'
+import { LensType, LensMaterial, LensCoating, BillItemType, AtelierWorkOrderStatus, WorkOrderSource } from '@prisma/client'
 import { Prisma } from '@prisma/client'
 
 export const WORK_ORDER_INCLUDE = {
@@ -36,11 +36,7 @@ function supplierAbbreviation(name: string): string {
 export async function listRepairs(params?: { status?: string; search?: string; source?: string; type?: string }) {
     const where: Prisma.AtelierWorkOrderWhereInput = {}
     if (params?.status) where.status = params.status as AtelierWorkOrderStatus
-    if (params?.source === 'internal') {
-        where.orderId = { not: null }
-    } else if (params?.source === 'optician') {
-        where.opticianShopId = { not: null }
-    }
+    if (params?.source) where.source = params.source as WorkOrderSource
     if (params?.search) {
         where.OR = [
             { order: { client: { name: { contains: params.search } } } },

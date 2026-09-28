@@ -7,7 +7,8 @@ import { useDebounce } from '@/lib/hooks/useDebounce'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Plus, Box, Search, Loader2 } from 'lucide-react'
+import { Plus, Box, Search } from 'lucide-react'
+import { ListSkeleton } from '@/components/ui/skeleton'
 import { ProductForm } from './ProductForm'
 import { StockFilters } from './StockFilters'
 import { StockTable } from './StockTable'
@@ -153,9 +154,7 @@ export function StockPage() {
             />
 
             {loading && products.length === 0 ? (
-                <div className="flex items-center justify-center py-16">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
+                <ListSkeleton />
             ) : showEmptyState ? (
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center max-w-[600px] mx-auto">
                     <Box className="w-12 h-12 text-muted-foreground/50 mb-6" />

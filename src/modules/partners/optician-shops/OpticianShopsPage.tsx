@@ -14,6 +14,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Search, Store, Plus, Pencil, Trash2, Loader2 } from 'lucide-react'
+import { ListSkeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 import { useOpticianShops, useDeleteOpticianShop } from './useOpticianShops'
 
@@ -121,9 +122,7 @@ export function OpticianShopsPage() {
             </div>
 
             {loading ? (
-                <div className="flex items-center justify-center py-16">
-                    <Loader2 className="h-6 w-6 animate-spinner text-muted-foreground" />
-                </div>
+                <ListSkeleton />
             ) : showEmptyState ? (
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center max-w-[600px] mx-auto">
                     <Store className="w-12 h-12 text-muted-foreground/50 mb-6" />

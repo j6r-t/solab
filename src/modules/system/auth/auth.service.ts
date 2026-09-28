@@ -106,3 +106,25 @@ export async function changePassword(email: string, currentPassword: string, new
     await auditService.log({ userId: user.id, action: 'PASSWORD_CHANGED', entityType: 'USER', entityId: user.id })
     return { success: true }
 }
+
+export async function updateProfile(currentEmail: string, data: { name?: string | null; email?: string }) {
+    const user = await userRepo.findUnique({ where: { email: currentEmail } })
+    if (!user) throw new NotFoundError('User not found')
+
+    const updateData: { name?: string | null; email?: string } = {}
+    if (data.name !== undefined) updateData.name = data.name
+
+    if (data.email !== undefined && data.email.toLowerCase() !== user.email.toLowerCase()) {
+        const newEmail = data.email
+        const existing = await userRepo.findMany()
+        if (existing.some((u) => u.id !== user.id && u.email.toLowerCase() === newEmail.toLowerCase())) {
+            throw new BadRequestError('Email already taken')
+        }
+        updateData.email = newEmail
+    }
+
+    const updated = await userRepo.update({ where: { id: user.id }, data: updateData })
+    await auditService.log({ userId: updated.id, action: 'PROFILE_UPDATED', entityType: 'USER', entityId: updated.id, metadata: { fields: Object.keys(updateData) } })
+    const token = await createToken({ email: updated.email, role: updated.role })
+    return { user: { id: updated.id, email: updated.email, name: updated.name, role: updated.role }, token }
+}

@@ -4,6 +4,21 @@ interface RequestOptions extends RequestInit {
     keepEnvelope?: boolean
 }
 
+const CONNECTION_ERROR_MESSAGE = 'Connection lost — check that the server is running, then try again'
+
+async function fetchWithRetry(url: string, init?: RequestInit, retries = 2): Promise<Response> {
+    const isGet = !init?.method || init.method === 'GET'
+    for (let attempt = 0; ; attempt++) {
+        try {
+            return await fetch(url, init)
+        } catch (error) {
+            if (!(error instanceof TypeError)) throw error
+            if (!isGet || attempt >= retries) throw new Error(CONNECTION_ERROR_MESSAGE)
+            await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)))
+        }
+    }
+}
+
 async function request<T>(url: string, init?: RequestOptions): Promise<T> {
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null
 
@@ -12,7 +27,7 @@ async function request<T>(url: string, init?: RequestOptions): Promise<T> {
     if (init?.method && init.method !== 'GET') headers['Content-Type'] = 'application/json'
     if (token) headers['Authorization'] = `Bearer ${token}`
 
-    const res = await fetch(url, { ...init, headers })
+    const res = await fetchWithRetry(url, { ...init, headers })
     const body = await res.json().catch(() => null)
 
     if (!res.ok) {

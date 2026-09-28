@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Globe, User, Wrench, Plus, Pencil, Trash2, Eye, KeyRound, Loader2, Sun, Moon, Monitor } from 'lucide-react'
-import { changePassword } from '@/modules/system/auth/auth.api'
+import { changePassword, updateProfile } from '@/modules/system/auth/auth.api'
 import { useAuthStore } from '@/stores/auth-store'
 import { useThemeStore } from '@/stores/theme-store'
 import { fetchRepairServices, createRepairService, updateRepairService, deleteRepairService, fetchNamedItems } from './settings.api'
@@ -149,11 +149,11 @@ export function SettingsPage() {
     const { t } = useTranslation()
     const { locale, setLocale } = useLocaleStore()
     const { theme, setTheme } = useThemeStore()
-    const { user } = useAuthStore()
+    const { user, setAuth } = useAuthStore()
     const role = user?.role || 'admin'
     const showAtelierSettings = role === 'admin' || role === 'atelier'
-    const [userName, setUserName] = useState('Sofien')
-    const [userEmail, setUserEmail] = useState('')
+    const [userName, setUserName] = useState(user?.name ?? '')
+    const [userEmail, setUserEmail] = useState(user?.email ?? '')
     const [services, setServices] = useState<RepairService[]>([])
     const [serviceDialogOpen, setServiceDialogOpen] = useState(false)
     const [editingService, setEditingService] = useState<RepairService | null>(null)
@@ -165,6 +165,21 @@ export function SettingsPage() {
     const [pwNew, setPwNew] = useState('')
     const [pwConfirm, setPwConfirm] = useState('')
     const [pwSaving, setPwSaving] = useState(false)
+    const [profileSaving, setProfileSaving] = useState(false)
+    async function handleSaveProfile() {
+        setProfileSaving(true)
+        try {
+            const payload: { name?: string | null; email?: string } = { name: userName.trim() || null }
+            if (userEmail.trim()) payload.email = userEmail.trim()
+            const { user: updatedUser, token } = await updateProfile(payload)
+            setAuth(token, updatedUser)
+            toast.success(t('settings.profileUpdated'))
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to update profile')
+        } finally {
+            setProfileSaving(false)
+        }
+    }
     async function handleChangePassword() {
         if (!pwCurrent || !pwNew) return
         if (pwNew !== pwConfirm) return toast.error(t('settings.passwordMismatch'))
@@ -280,6 +295,10 @@ export function SettingsPage() {
                         <Label>Email</Label>
                         <Input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} placeholder="owner@sofien.tn" />
                     </div>
+                    <Button size="sm" onClick={handleSaveProfile} disabled={profileSaving}>
+                        {profileSaving && <Loader2 className="h-4 w-4 mr-1 animate-spinner" />}
+                        {t('common.save')}
+                    </Button>
                     <div className="border-t pt-4 space-y-3">
                         <p className="text-sm font-medium flex items-center gap-2"><KeyRound className="h-4 w-4" />{t('settings.updatePassword')}</p>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

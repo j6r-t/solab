@@ -3,11 +3,11 @@ import { ok, noContent } from '@/lib/api/response'
 import { handleError } from '@/lib/middlewares/errorHandler'
 import { parseBody } from '@/lib/api/parse'
 import { getAuthenticatedUser } from '@/lib/api/auth'
-import { authenticateUser, setupAdmin, changePassword } from './auth.service'
+import { authenticateUser, setupAdmin, changePassword, updateProfile } from './auth.service'
 import { AUTH_COOKIE_MAX_AGE } from '@/lib/constants'
 import { auditService } from '@/modules/system/audit'
 import { toLoginResponse, toSetupResponse } from '@/modules/system/auth/mappers/auth.mapper'
-import { loginSchema, changePasswordSchema } from '@/modules/system/auth/auth.schema'
+import { loginSchema, changePasswordSchema, updateProfileSchema } from '@/modules/system/auth/auth.schema'
 
 export async function loginPOST(request: NextRequest) {
     try {
@@ -53,6 +53,17 @@ export async function changePasswordPOST(request: NextRequest) {
         const { currentPassword, newPassword } = await parseBody(request, changePasswordSchema)
         await changePassword(email, currentPassword, newPassword)
         return noContent()
+    } catch (error) {
+        return handleError(error)
+    }
+}
+
+export async function updateProfilePATCH(request: NextRequest) {
+    try {
+        const email = await getAuthenticatedUser(request)
+        const data = await parseBody(request, updateProfileSchema)
+        const { user, token } = await updateProfile(email, data)
+        return ok({ user, token })
     } catch (error) {
         return handleError(error)
     }

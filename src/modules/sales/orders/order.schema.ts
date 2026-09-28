@@ -46,7 +46,7 @@ export const createOrderSchema = z.object({
     payments: z.array(orderPaymentSchema).optional(),
     repairs: z.array(orderRepairSchema).optional(),
     prescriptionId: z.string().optional(),
-    turnaroundDays: z.number().int().positive().optional(),
+    turnaroundDays: z.number().int().nonnegative().optional(),
 }).refine(
     (data) => data.items?.length || data.repairs?.length,
     { message: 'Order must have at least one item or repair', path: ['items'] }

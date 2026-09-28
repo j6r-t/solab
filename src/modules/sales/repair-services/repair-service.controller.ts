@@ -8,11 +8,12 @@ import { listRepairServices, createRepairService, updateRepairService, deleteRep
 import { toRepairServiceResponse } from '@/modules/sales/repair-services/mappers/repair-service.mapper'
 import { repairServiceSchema } from '@/modules/sales/repair-services/repair-service.schema'
 
-const REPAIR_SERVICE_ROLES = ['admin', 'atelier']
+const REPAIR_SERVICE_READ_ROLES = ['admin', 'shop', 'atelier']
+const REPAIR_SERVICE_WRITE_ROLES = ['admin', 'atelier']
 
 export async function GET(request: NextRequest) {
     try {
-        requireRole(REPAIR_SERVICE_ROLES)(request)
+        requireRole(REPAIR_SERVICE_READ_ROLES)(request)
         const { page, limit } = parsePagination(request)
         const services = await listRepairServices()
         return ok(paginated(services.map(toRepairServiceResponse), page, limit))
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        requireRole(REPAIR_SERVICE_ROLES)(request)
+        requireRole(REPAIR_SERVICE_WRITE_ROLES)(request)
         const body = await parseBody(request, repairServiceSchema)
         const service = await createRepairService(body)
         return created(toRepairServiceResponse(service))
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        requireRole(REPAIR_SERVICE_ROLES)(request)
+        requireRole(REPAIR_SERVICE_WRITE_ROLES)(request)
         const { id } = await params
         const body = await parseBody(request, repairServiceSchema.partial())
         const service = await updateRepairService(id, body)
@@ -46,7 +47,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        requireRole(REPAIR_SERVICE_ROLES)(request)
+        requireRole(REPAIR_SERVICE_WRITE_ROLES)(request)
         const { id } = await params
         await deleteRepairService(id)
         return noContent()

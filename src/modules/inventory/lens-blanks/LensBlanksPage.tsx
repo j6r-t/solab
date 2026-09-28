@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Search, Loader2, EyeOff, PackageOpen } from 'lucide-react'
+import { Plus, Search, EyeOff, PackageOpen } from 'lucide-react'
+import { ListSkeleton } from '@/components/ui/skeleton'
 import {
     Select,
     SelectContent,
@@ -202,9 +203,7 @@ export function LensBlanksPage() {
             </div>
 
             {loading ? (
-                <div className="flex items-center justify-center py-16">
-                    <Loader2 className="h-6 w-6 animate-spinner text-muted-foreground" />
-                </div>
+                <ListSkeleton />
             ) : blanks.length === 0 ? (
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center max-w-[600px] mx-auto">
                     <PackageOpen className="w-12 h-12 text-muted-foreground/50 mb-6" />

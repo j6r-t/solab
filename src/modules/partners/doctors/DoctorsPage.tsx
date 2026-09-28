@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { DoctorFormDialog } from './DoctorFormDialog'
 import { DoctorPatientsDialog } from './DoctorPatientsDialog'
-import { Search, Stethoscope, Plus, Pencil, Trash2, Loader2, Users } from 'lucide-react'
+import { Search, Stethoscope, Plus, Pencil, Trash2, Users } from 'lucide-react'
+import { ListSkeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 import { useDoctors, useDeleteDoctor } from './useDoctors'
 import type { PaginatedResponse } from '@/lib/api/pagination'
@@ -143,9 +144,7 @@ export function DoctorsPage() {
             </div>
 
             {loading ? (
-                <div className="flex items-center justify-center py-16">
-                    <Loader2 className="h-6 w-6 animate-spinner text-muted-foreground" />
-                </div>
+                <ListSkeleton />
             ) : showEmptyState ? (
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center max-w-[600px] mx-auto">
                     <Stethoscope className="w-12 h-12 text-muted-foreground/50 mb-6" />

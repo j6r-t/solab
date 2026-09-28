@@ -8,11 +8,12 @@ import { listLensBlanks, createLensBlank, updateLensBlank, adjustLensBlankStock,
 import { toLensBlankResponse } from '@/modules/inventory/lens-blanks/mappers/lens-blank.mapper'
 import { lensBlankSchema, adjustStockSchema } from '@/modules/inventory/lens-blanks/lens-blank.schema'
 
-const LENS_BLANK_ROLES = ['admin', 'atelier']
+const LENS_BLANK_READ_ROLES = ['admin', 'shop', 'atelier']
+const LENS_BLANK_WRITE_ROLES = ['admin', 'atelier']
 
 export async function GET(request: NextRequest) {
     try {
-        requireRole(LENS_BLANK_ROLES)(request)
+        requireRole(LENS_BLANK_READ_ROLES)(request)
         const { page, limit } = parsePagination(request)
         const { search, brand, lensType, material, coating, thickness, lowStock, sphRight, cylRight, sphLeft, cylLeft } = parseQuery(request, 'search', 'brand', 'lensType', 'material', 'coating', 'thickness', 'lowStock', 'sphRight', 'cylRight', 'sphLeft', 'cylLeft')
         const blanks = await listLensBlanks({ search, brand, lensType, material, coating, thickness, lowStock, sphRight, cylRight, sphLeft, cylLeft })
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        requireRole(LENS_BLANK_ROLES)(request)
+        requireRole(LENS_BLANK_WRITE_ROLES)(request)
         const body = await parseBody(request, lensBlankSchema)
         const blank = await createLensBlank(body)
         return created(toLensBlankResponse(blank))
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        requireRole(LENS_BLANK_ROLES)(request)
+        requireRole(LENS_BLANK_WRITE_ROLES)(request)
         const { id } = await params
         const url = new URL(request.url)
         if (url.searchParams.get('action') === 'adjust-stock') {
@@ -53,7 +54,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        requireRole(LENS_BLANK_ROLES)(request)
+        requireRole(LENS_BLANK_WRITE_ROLES)(request)
         const { id } = await params
         await deleteLensBlank(id)
         return noContent()

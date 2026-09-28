@@ -10,7 +10,8 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { FournisseurFormDialog } from './FournisseurFormDialog'
 import { FournisseurProductsDialog } from './FournisseurProductsDialog'
 import { ExportButton } from '@/components/ui/export-button'
-import { Search, Truck, Plus, Pencil, Trash2, Loader2, Package } from 'lucide-react'
+import { Search, Truck, Plus, Pencil, Trash2, Package } from 'lucide-react'
+import { ListSkeleton } from '@/components/ui/skeleton'
 import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
 import { useFournisseurs, useDeleteFournisseur } from './useFournisseurs'
@@ -155,9 +156,7 @@ export function FournisseursPage() {
             </div>
 
             {loading ? (
-                <div className="flex items-center justify-center py-16">
-                    <Loader2 className="h-6 w-6 animate-spinner text-muted-foreground" />
-                </div>
+                <ListSkeleton />
             ) : showEmptyState ? (
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center max-w-[600px] mx-auto">
                     <Truck className="w-12 h-12 text-muted-foreground/50 mb-6" />

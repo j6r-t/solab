@@ -22,3 +22,11 @@ export const login = (email: string, password: string) =>
 
 export const changePassword = (currentPassword: string, newPassword: string) =>
     api.post('/api/auth/change-password', { currentPassword, newPassword })
+
+interface UpdateProfileResponse {
+    user: User
+    token: string
+}
+
+export const updateProfile = (data: { name?: string | null; email?: string }) =>
+    api.patch<UpdateProfileResponse>('/api/auth/profile', data)

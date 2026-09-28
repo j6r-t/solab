@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Receipt, Search, ShoppingCart, FileBarChart, Loader2 } from 'lucide-react'
+import { Receipt, Search, ShoppingCart, FileBarChart } from 'lucide-react'
+import { ListSkeleton } from '@/components/ui/skeleton'
 import { OrderForm, type OrderFormData } from '@/modules/sales/orders/OrderForm'
 import { formatCurrency } from '@/lib/utils/currency'
 import { formatDate } from '@/lib/utils/dates'
@@ -156,9 +157,7 @@ export function BillingPage() {
             </div>
 
             {loading && records.length === 0 ? (
-                <div className="flex items-center justify-center py-16">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
+                <ListSkeleton />
             ) : showEmptyState ? (
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center max-w-[600px] mx-auto">
                     <Receipt className="w-12 h-12 text-muted-foreground/50 mb-6" />

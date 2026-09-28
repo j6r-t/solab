@@ -10,7 +10,14 @@ function makeQueryClient() {
         queryCache: new QueryCache({
             onError: (error) => {
                 if (!useAuthStore.getState().isAuthenticated) return
-                toast.error(error instanceof Error ? error.message : 'Failed to load data')
+                const message = error instanceof Error ? error.message : 'Failed to load data'
+                const isConnectionError =
+                    message.includes('Connection lost') || message.includes('Failed to fetch') || message.includes('fetch failed')
+                toast.error(
+                    isConnectionError
+                        ? 'Connection problem — the request will be retried. If this persists, check the server.'
+                        : message
+                )
             },
         }),
         defaultOptions: {
