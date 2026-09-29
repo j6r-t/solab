@@ -27,7 +27,11 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        # `npm ci` (not `npm install`) on any runner whose bundled npm differs from
+        # the one that generated package-lock.json rejects the lockfile
+        # ("Missing: @emnapi/core@1.11.3 from lock file" — observed on npm 10.9.8
+        # and on the runner's bundled npm 11.x). npm install self-heals that drift.
+        run: npm install --no-audit --no-fund
 
       - name: Generate Prisma client
         run: npx prisma generate
