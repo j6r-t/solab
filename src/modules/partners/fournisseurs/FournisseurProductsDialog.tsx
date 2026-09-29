@@ -25,6 +25,7 @@ interface FournisseurProduct {
     model: string
     category: string | null
     price: string
+    priceAfterTax: string | null
     quantity: number
     _count: { orderItems: number }
 }
@@ -101,7 +102,12 @@ export function FournisseurProductsDialog({
                                             <p className="text-xs text-muted-foreground">{p.brand} / {p.model}</p>
                                         </td>
                                         <td className="p-3 text-muted-foreground">{p.category || '—'}</td>
-                                        <td className="p-3 text-right font-medium">{formatCurrency(p.price)}</td>
+                                        <td className="p-3 text-right font-medium">
+                                            {formatCurrency(p.price)}
+                                            {p.priceAfterTax != null && (
+                                                <p className="text-xs font-normal text-muted-foreground">{t('stock.priceAfterTax')}: {formatCurrency(p.priceAfterTax)}</p>
+                                            )}
+                                        </td>
                                         <td className="p-3 text-right">{p.quantity}</td>
                                         <td className="p-3 text-right">
                                             <Badge variant={p._count?.orderItems > 0 ? 'default' : 'secondary'}>

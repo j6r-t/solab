@@ -10,6 +10,7 @@ export const lensBlankSchema = z.object({
     cyl: z.number(),
     costPrice: z.number().nonnegative('Cost price must be non-negative'),
     sellingPrice: z.number().nonnegative('Selling price must be non-negative'),
+    priceAfterTax: z.number().nonnegative().optional(),
     quantity: z.number().int().nonnegative().optional(),
     fournisseurId: z.string().optional(),
 })

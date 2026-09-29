@@ -4,6 +4,10 @@ export const PRODUCT_CATEGORIES = ['lunette', 'lentille', 'verre', 'accessory', 
 
 export const QR_CODE_PREFIX = 'SOPT'
 
+// Tunisia standard VAT rate — single source of truth for price-after-tax math.
+// Never inline this value elsewhere; import TAX_RATE or use computePriceAfterTax().
+export const TAX_RATE = 0.19
+
 export const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 
 // JWT_SECRET must be set in environment variables - no fallback for security

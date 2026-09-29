@@ -33,6 +33,7 @@ interface LensBlank {
     cyl: string
     costPrice: string
     sellingPrice: string
+    priceAfterTax: string | null
     quantity: number
     fournisseur: { id: string; name: string } | null
 }
@@ -240,7 +241,12 @@ export function LensBlanksPage() {
                                     <td className="py-3 px-4 text-sm text-muted-foreground">{blank.sph}</td>
                                     <td className="py-3 px-4 text-sm text-muted-foreground">{blank.cyl}</td>
                                     <td className="py-3 px-4 text-right text-sm">{parseFloat(blank.costPrice).toFixed(3)}</td>
-                                    <td className="py-3 px-4 text-right text-sm">{parseFloat(blank.sellingPrice).toFixed(3)}</td>
+                                    <td className="py-3 px-4 text-right text-sm">
+                                        {parseFloat(blank.sellingPrice).toFixed(3)}
+                                        {blank.priceAfterTax != null && (
+                                            <p className="text-xs text-muted-foreground">{t('stock.priceAfterTax')}: {parseFloat(blank.priceAfterTax).toFixed(3)}</p>
+                                        )}
+                                    </td>
                                     <td className="py-3 px-4 text-center">
                                         <Badge variant={blank.quantity <= LOW_STOCK_MAX_QTY ? 'destructive' : 'secondary'} className="text-xs">
                                             {blank.quantity}
@@ -269,6 +275,7 @@ export function LensBlanksPage() {
                             cyl: parseFloat(editBlank.cyl),
                             costPrice: parseFloat(editBlank.costPrice),
                             sellingPrice: parseFloat(editBlank.sellingPrice),
+                            priceAfterTax: editBlank.priceAfterTax != null ? parseFloat(editBlank.priceAfterTax) : undefined,
                             quantity: editBlank.quantity,
                             fournisseurId: editBlank.fournisseur?.id,
                         } : undefined}

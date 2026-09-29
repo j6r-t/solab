@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select'
 import { SearchSelect, type SearchSelectOption } from '@/components/ui/search-select'
 import { fetchFournisseurs } from '@/modules/partners/fournisseurs/fournisseurs.api'
+import { computePriceAfterTax } from '@/lib/utils/pricing'
 
 interface LensBlankFormData {
     brand: string
@@ -25,6 +26,7 @@ interface LensBlankFormData {
     cyl: number
     costPrice: number
     sellingPrice: number
+    priceAfterTax?: number | null
     quantity: number
     fournisseurId?: string
 }
@@ -53,6 +55,7 @@ export function LensBlankForm({ defaultValues, onSubmit, onCancel, saving: exter
         cyl: defaultValues?.cyl || 0,
         costPrice: defaultValues?.costPrice || 0,
         sellingPrice: defaultValues?.sellingPrice || 0,
+        priceAfterTax: defaultValues?.priceAfterTax ?? null,
         quantity: defaultValues?.quantity || 0,
         fournisseurId: defaultValues?.fournisseurId,
     })
@@ -68,6 +71,11 @@ export function LensBlankForm({ defaultValues, onSubmit, onCancel, saving: exter
     }, [])
 
     function handleChange(field: keyof LensBlankFormData, value: string | number | undefined) {
+        if (field === 'sellingPrice') {
+            const price = typeof value === 'number' ? value : parseFloat(value ?? '') || 0
+            setFormData((prev) => ({ ...prev, sellingPrice: price, priceAfterTax: computePriceAfterTax(price) }))
+            return
+        }
         setFormData((prev) => ({ ...prev, [field]: value }))
     }
 
@@ -75,7 +83,7 @@ export function LensBlankForm({ defaultValues, onSubmit, onCancel, saving: exter
         e.preventDefault()
         setInternalSaving(true)
         try {
-            await onSubmit(formData)
+            await onSubmit({ ...formData, priceAfterTax: formData.priceAfterTax ?? undefined })
         } finally {
             setInternalSaving(false)
         }
@@ -153,12 +161,16 @@ export function LensBlankForm({ defaultValues, onSubmit, onCancel, saving: exter
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label>{t('stock.costPrice')}</Label>
-                    <Input type="number" step="0.001" min="0" value={formData.costPrice} onChange={(e) => handleChange('costPrice', parseFloat(e.target.value) || 0)} />
-                </div>
-                <div className="space-y-2">
                     <Label>{t('stock.sellingPrice')} *</Label>
                     <Input type="number" step="0.001" min="0" value={formData.sellingPrice} onChange={(e) => handleChange('sellingPrice', parseFloat(e.target.value) || 0)} />
+                </div>
+                <div className="space-y-2">
+                    <Label>{t('stock.priceAfterTax')}</Label>
+                    <Input type="number" step="0.001" min="0" value={formData.priceAfterTax ?? ''} onChange={(e) => handleChange('priceAfterTax', e.target.value ? parseFloat(e.target.value) : undefined)} />
+                </div>
+                <div className="space-y-2">
+                    <Label>{t('stock.costPrice')}</Label>
+                    <Input type="number" step="0.001" min="0" value={formData.costPrice} onChange={(e) => handleChange('costPrice', parseFloat(e.target.value) || 0)} />
                 </div>
             </div>
 

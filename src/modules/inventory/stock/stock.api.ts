@@ -9,6 +9,7 @@ interface StockProduct {
     model: string
     category: string
     price: string
+    priceAfterTax: string | null
     costPrice: string | null
     quantity: number
     thickness: string | null

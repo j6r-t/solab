@@ -17,6 +17,7 @@ interface Product {
     model: string
     category: string
     price: number
+    priceAfterTax: number | null
 }
 
 export function QRCodePage() {
@@ -106,6 +107,9 @@ export function QRCodePage() {
                             <div><span className="text-muted-foreground">{t('stock.model')}:</span> {product.model || '—'}</div>
                             <div><span className="text-muted-foreground">{t('stock.category')}:</span> {categoryLabel(product.category)}</div>
                             <div><span className="text-muted-foreground">{t('stock.sellingPrice')}:</span> {formatCurrency(product.price.toString())}</div>
+                            {product.priceAfterTax != null && (
+                                <div><span className="text-muted-foreground">{t('stock.priceAfterTax')}:</span> {formatCurrency(product.priceAfterTax.toString())}</div>
+                            )}
                             <div><span className="text-muted-foreground">QR Code:</span> <span className="font-mono text-xs">{code}</span></div>
                         </div>
 

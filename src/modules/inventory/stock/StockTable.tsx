@@ -80,7 +80,12 @@ export function StockTable({ products, onEdit, onDelete, onShowQr, categoryLabel
                                         <span className="text-xs text-muted-foreground">{t('reports.qty')}: {product.quantity}</span>
                                     </div>
                                 </td>
-                                <td className="py-3 px-4 text-right font-semibold">{formatCurrency(product.price)}</td>
+                                <td className="py-3 px-4 text-right font-semibold">
+                                    {formatCurrency(product.price)}
+                                    {product.priceAfterTax != null && (
+                                        <p className="text-xs font-normal text-muted-foreground">{t('stock.priceAfterTax')}: {formatCurrency(product.priceAfterTax)}</p>
+                                    )}
+                                </td>
                                 <td className="py-3 px-4 text-center">
                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onShowQr(product)} title={t('stock.qrCode')}>
                                         <QrCode className="h-4 w-4" />

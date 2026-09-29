@@ -32,9 +32,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         } else if (entity === 'products') {
             const { productRepo } = await import('@/lib/database/repositories')
             const items = await productRepo.findMany({ orderBy: { name: 'asc' } })
-            headers = ['name', 'brand', 'model', 'category', 'price', 'costPrice', 'quantity', 'lensType', 'material', 'coating', 'sph', 'cyl', 'add', 'thickness']
+            headers = ['name', 'brand', 'model', 'category', 'price', 'priceAfterTax', 'costPrice', 'quantity', 'lensType', 'material', 'coating', 'sph', 'cyl', 'add', 'thickness']
             rows = items.map((p: Record<string, unknown>) => [
-                p.name as string, p.brand as string | null, p.model as string | null, p.category as string | null, p.price as number | null, p.costPrice as number | null, p.quantity as number | null,
+                p.name as string, p.brand as string | null, p.model as string | null, p.category as string | null, p.price as number | null, p.priceAfterTax as number | null, p.costPrice as number | null, p.quantity as number | null,
                 p.lensType as string | null, p.material as string | null, p.coating as string | null, p.sph as string | null, p.cyl as string | null, p.add as string | null, p.thickness as string | null,
             ]) as (string | number | null | undefined)[][]
         } else if (entity === 'orders') {

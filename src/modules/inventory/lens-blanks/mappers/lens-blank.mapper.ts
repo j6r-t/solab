@@ -14,6 +14,7 @@ interface LensBlankInput {
     cyl: Numeric
     costPrice: Numeric
     sellingPrice: Numeric
+    priceAfterTax: Numeric | null
     quantity: number
     fournisseur?: { id: string; name: string } | null
     createdAt: Date
@@ -38,6 +39,7 @@ export function toLensBlankResponse(blank: LensBlankInput): LensBlankResponse {
         cyl: toStr(blank.cyl),
         costPrice: toStr(blank.costPrice),
         sellingPrice: toStr(blank.sellingPrice),
+        priceAfterTax: blank.priceAfterTax != null ? toStr(blank.priceAfterTax) : null,
         quantity: blank.quantity,
         fournisseur: blank.fournisseur || null,
         createdAt: blank.createdAt,

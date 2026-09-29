@@ -8,6 +8,7 @@ export interface CreateLensBlankInput {
     cyl: number
     costPrice: number
     sellingPrice: number
+    priceAfterTax?: number
     quantity?: number
     fournisseurId?: string
 }
@@ -22,6 +23,7 @@ export interface UpdateLensBlankInput {
     cyl?: number
     costPrice?: number
     sellingPrice?: number
+    priceAfterTax?: number
     quantity?: number
     fournisseurId?: string
 }
@@ -37,6 +39,7 @@ export interface LensBlankResponse {
     cyl: string
     costPrice: string
     sellingPrice: string
+    priceAfterTax: string | null
     quantity: number
     fournisseur: { id: string; name: string } | null
     createdAt: Date

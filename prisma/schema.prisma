@@ -264,6 +264,7 @@ model Product {
   model            String
   category         ProductCategory?
   price            Decimal
+  priceAfterTax    Decimal?
   costPrice        Decimal?
   quantity         Int               @default(0)
   thickness        String?
@@ -422,6 +423,7 @@ model LensBlank {
   cyl           Decimal
   costPrice     Decimal
   sellingPrice  Decimal
+  priceAfterTax Decimal?
   quantity      Int       @default(0)
   fournisseurId String?
   fournisseur   Fournisseur?           @relation(fields: [fournisseurId], references: [id])

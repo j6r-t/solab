@@ -108,11 +108,19 @@ export async function listProducts(params?: StockQuery) {
 export async function createProduct(data: {
     name: string
     price: number
+    priceAfterTax?: number | null
+    costPrice?: number | null
     quantity: number
     category?: string
     brand?: string | null
     model?: string | null
+    thickness?: string | null
     lensType?: string | null
+    material?: string | null
+    coating?: string | null
+    sph?: number | null
+    cyl?: number | null
+    add?: number | null
     fournisseurId?: string | null
 }) {
     const code = `${QR_CODE_PREFIX}-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
@@ -121,11 +129,19 @@ export async function createProduct(data: {
         data: {
             name: data.name,
             price: data.price,
+            priceAfterTax: data.priceAfterTax ?? null,
+            costPrice: data.costPrice ?? null,
             quantity: data.quantity,
             category: (data.category || 'lunette') as ProductCategory,
             brand: data.brand || '—',
             model: data.model || '—',
+            thickness: data.thickness || null,
             lensType: data.lensType as LensType | null,
+            material: data.material as LensMaterial | null,
+            coating: data.coating as LensCoating | null,
+            sph: data.sph ?? null,
+            cyl: data.cyl ?? null,
+            add: data.add ?? null,
             fournisseurId: data.fournisseurId || null,
             qrcode: { create: { code } },
         },
@@ -137,11 +153,19 @@ export async function createProduct(data: {
 export async function updateProduct(id: string, data: Partial<{
     name: string
     price: number
+    priceAfterTax: number | null
+    costPrice: number | null
     quantity: number
     category: ProductCategory
     brand: string
     model: string
+    thickness: string
     lensType: LensType
+    material: LensMaterial
+    coating: LensCoating
+    sph: number
+    cyl: number
+    add: number
     fournisseurId: string
 }>) {
     const result = await productRepo.update({ where: { id }, data })

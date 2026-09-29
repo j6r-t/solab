@@ -35,6 +35,7 @@ interface FournisseurProduct {
     model: string
     category: string | null
     price: string
+    priceAfterTax: string | null
     quantity: number
     _count: { orderItems: number }
 }
