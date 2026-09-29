@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      # Build-time dummies only: route modules are imported during `next build`
+      # (auth.service.ts throws without JWT_SECRET at module scope; the Prisma
+      # client constructor requires a DATABASE_URL). No real values needed —
+      # nothing is queried or signed during build.
+      JWT_SECRET: ci-dummy-secret-build-only
+      DATABASE_URL: file:./ci-dummy.db
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Typecheck (blocking)
+        run: npx tsc --noEmit
+
+      - name: Lint (non-blocking)
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Build (blocking)
+        run: npm run build
