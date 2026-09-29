@@ -110,6 +110,12 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
     const [breakageReplLeft, setBreakageReplLeft] = useState('')
     const [breakageReplRight, setBreakageReplRight] = useState('')
 
+    function statusLabel(s: string): string {
+        const key = `workOrders.status.${s}`
+        const translated = t(key)
+        return translated === key ? s.replace('_', ' ') : translated
+    }
+
     const { data: blanksData } = useLensBlanks<LensBlank[]>({ lowStock: 'false' })
     const lensBlanks = blanksData ?? []
 
@@ -148,12 +154,12 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status }),
             })
-            if (!res.ok) throw new Error('Failed to update status')
-            toast.success(`Status updated to ${status}`)
+            if (!res.ok) throw new Error(t('workOrders.statusUpdateFailed'))
+            toast.success(t('workOrders.statusUpdatedTo', { status: statusLabel(status) }))
             onUpdated()
             onOpenChange(false)
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to update')
+            toast.error(error instanceof Error ? error.message : t('workOrders.statusUpdateFailed'))
         } finally {
             setLoading(false)
         }
@@ -172,12 +178,12 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                     lensBlankPrice: lensBlankPrice || undefined,
                 }),
             })
-            if (!res.ok) throw new Error('Failed to assign lens blanks')
-            toast.success('Lens blanks assigned')
+            if (!res.ok) throw new Error(t('workOrders.assignFailed'))
+            toast.success(t('workOrders.blanksAssigned'))
             onUpdated()
             onOpenChange(false)
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to assign')
+            toast.error(error instanceof Error ? error.message : t('workOrders.assignFailed'))
         } finally {
             setLoading(false)
         }
@@ -196,7 +202,7 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
             onUpdated()
             onOpenChange(false)
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to declare breakage')
+            toast.error(error instanceof Error ? error.message : t('workOrders.breakage.failed'))
         } finally {
             setLoading(false)
         }
@@ -264,9 +270,9 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
             <DialogContent className="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
-                        Work Order #{workOrder.id.slice(0, 8)}
+                        {t('workOrders.detailTitle', { number: workOrder.id.slice(0, 8) })}
                         <Badge variant="outline" className={`ml-2 ${STATUS_BADGE[workOrder.status] || ''}`}>
-                            {workOrder.status}
+                            {statusLabel(workOrder.status)}
                         </Badge>
                     </DialogTitle>
                 </DialogHeader>
@@ -274,15 +280,15 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                 <div className="space-y-5">
                     <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
-                            <p className="text-muted-foreground text-xs">Client / Shop</p>
+                            <p className="text-muted-foreground text-xs">{t('workOrders.clientOrShop')}</p>
                             <p className="font-medium">{clientName}</p>
                         </div>
                         <div>
-                            <p className="text-muted-foreground text-xs">Source</p>
-                            <p className="font-medium capitalize">{workOrder.source}</p>
+                            <p className="text-muted-foreground text-xs">{t('repairs.source')}</p>
+                            <p className="font-medium capitalize">{workOrder.source === 'internal' ? t('workOrders.sourceInternal') : t('repairs.optician')}</p>
                         </div>
                         <div>
-                            <p className="text-muted-foreground text-xs">Services</p>
+                            <p className="text-muted-foreground text-xs">{t('workOrders.services')}</p>
                             <div className="flex flex-wrap gap-1">
                                 {workOrder.workOrderServices.map((s) => (
                                     <Badge key={s.id} variant="secondary" className="text-xs">{s.repairService.name}</Badge>
@@ -291,11 +297,11 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                             </div>
                         </div>
                         <div>
-                            <p className="text-muted-foreground text-xs">Service Price</p>
+                            <p className="text-muted-foreground text-xs">{t('workOrders.servicePrice')}</p>
                             <p className="font-medium">{parseFloat(workOrder.servicePrice).toFixed(3)} TND</p>
                         </div>
                         <div>
-                            <p className="text-muted-foreground text-xs">Created</p>
+                            <p className="text-muted-foreground text-xs">{t('workOrders.createdAt')}</p>
                             <p className="font-medium">{formatDate(workOrder.createdAt)}</p>
                         </div>
                         <div>
@@ -313,27 +319,27 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                         <div className="space-y-2 p-3 bg-muted/20 rounded-lg border">
                             <h3 className="text-sm font-medium flex items-center gap-2">
                                 <Eye className="h-4 w-4" />
-                                Ordonnance
+                                {t('workOrders.prescription')}
                             </h3>
                             <div className="grid grid-cols-2 gap-4 text-xs">
                                 <div>
-                                    <p className="text-muted-foreground mb-1">Œil droit</p>
+                                    <p className="text-muted-foreground mb-1">{t('prescriptions.rightEye')}</p>
                                     <p>SPH: {workOrder.prescription.sphRight} · CYL: {workOrder.prescription.cylRight}</p>
                                     <p>AXIS: {workOrder.prescription.axisRight} · ADD: {workOrder.prescription.addRight}</p>
                                     <p>PD: {workOrder.prescription.pdRight}</p>
                                 </div>
                                 <div>
-                                    <p className="text-muted-foreground mb-1">Œil gauche</p>
+                                    <p className="text-muted-foreground mb-1">{t('prescriptions.leftEye')}</p>
                                     <p>SPH: {workOrder.prescription.sphLeft} · CYL: {workOrder.prescription.cylLeft}</p>
                                     <p>AXIS: {workOrder.prescription.axisLeft} · ADD: {workOrder.prescription.addLeft}</p>
                                     <p>PD: {workOrder.prescription.pdLeft}</p>
                                 </div>
                             </div>
                             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                {workOrder.prescription.thickness && <span>Ép: {workOrder.prescription.thickness}</span>}
-                                {workOrder.prescription.lensType && <span>Type: {workOrder.prescription.lensType}</span>}
-                                {workOrder.prescription.material && <span>Mat: {workOrder.prescription.material}</span>}
-                                {workOrder.prescription.coating && <span>Traitement: {workOrder.prescription.coating}</span>}
+                                {workOrder.prescription.thickness && <span>{t('lensBlank.thickness')}: {workOrder.prescription.thickness}</span>}
+                                {workOrder.prescription.lensType && <span>{t('orders.type')}: {workOrder.prescription.lensType}</span>}
+                                {workOrder.prescription.material && <span>{t('stock.material')}: {workOrder.prescription.material}</span>}
+                                {workOrder.prescription.coating && <span>{t('stock.coating')}: {workOrder.prescription.coating}</span>}
                             </div>
                             {workOrder.prescription.notes && (
                                 <p className="text-xs text-muted-foreground italic">{workOrder.prescription.notes}</p>
@@ -343,37 +349,37 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
 
                     {/* Lens Blanks assignment */}
                     <div className="space-y-3 p-4 bg-muted/20 rounded-lg border">
-                        <h3 className="text-sm font-medium">Lens Blanks</h3>
+                        <h3 className="text-sm font-medium">{t('orders.lensBlanks')}</h3>
                         {!hasLensBlanks ? (
-                            <p className="text-sm text-muted-foreground">No lens blanks in stock. Add some first.</p>
+                            <p className="text-sm text-muted-foreground">{t('workOrders.noBlanksInStock')}</p>
                         ) : (
                             <>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
-                                        <label className="text-xs text-muted-foreground block mb-1">Left Eye</label>
+                                        <label className="text-xs text-muted-foreground block mb-1">{t('workOrders.breakage.left')}</label>
                                         <SearchSelect
-                                            options={[{ value: '', label: 'None' }, ...blankOptions]}
+                                            options={[{ value: '', label: t('stock.none') }, ...blankOptions]}
                                             value={assignLeft}
                                             onChange={setAssignLeft}
-                                            placeholder="Select..."
-                                            title="Left Eye Lens Blank"
-                                            searchPlaceholder="Search by brand, type..."
+                                            placeholder={t('common.select')}
+                                            title={t('workOrders.leftEyeBlank')}
+                                            searchPlaceholder={t('workOrders.searchBlanksPlaceholder')}
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-xs text-muted-foreground block mb-1">Right Eye</label>
+                                        <label className="text-xs text-muted-foreground block mb-1">{t('workOrders.breakage.right')}</label>
                                         <SearchSelect
-                                            options={[{ value: '', label: 'None' }, ...blankOptions]}
+                                            options={[{ value: '', label: t('stock.none') }, ...blankOptions]}
                                             value={assignRight}
                                             onChange={setAssignRight}
-                                            placeholder="Select..."
-                                            title="Right Eye Lens Blank"
-                                            searchPlaceholder="Search by brand, type..."
+                                            placeholder={t('common.select')}
+                                            title={t('workOrders.rightEyeBlank')}
+                                            searchPlaceholder={t('workOrders.searchBlanksPlaceholder')}
                                         />
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-xs text-muted-foreground block mb-1">Blank Price (TND)</label>
+                                    <label className="text-xs text-muted-foreground block mb-1">{t('workOrders.blankPrice')} (TND)</label>
                                     <input
                                         type="number"
                                         step="0.001"
@@ -383,7 +389,7 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                                     />
                                 </div>
                                 <Button size="sm" onClick={handleAssignLensBlanks} disabled={loading} className="w-full">
-                                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Assign & Save'}
+                                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('workOrders.assignSave')}
                                 </Button>
                             </>
                         )}
@@ -392,13 +398,13 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                     {/* Assigned blanks display */}
                     {workOrder.lensBlankLeft && (
                         <div className="space-y-1 text-sm">
-                            <p className="text-muted-foreground text-xs">Assigned Lens Blanks</p>
-                            <p>Left: {workOrder.lensBlankLeft.brand} {workOrder.lensBlankLeft.lensType} {workOrder.lensBlankLeft.thickness} — {Number(workOrder.lensBlankLeft.sellingPrice).toFixed(3)} TND</p>
+                            <p className="text-muted-foreground text-xs">{t('workOrders.assignedBlanks')}</p>
+                            <p>{t('workOrders.breakage.left')}: {workOrder.lensBlankLeft.brand} {workOrder.lensBlankLeft.lensType} {workOrder.lensBlankLeft.thickness} — {Number(workOrder.lensBlankLeft.sellingPrice).toFixed(3)} TND</p>
                             {workOrder.lensBlankRight && (
-                                <p>Right: {workOrder.lensBlankRight.brand} {workOrder.lensBlankRight.lensType} {workOrder.lensBlankRight.thickness} — {Number(workOrder.lensBlankRight.sellingPrice).toFixed(3)} TND</p>
+                                <p>{t('workOrders.breakage.right')}: {workOrder.lensBlankRight.brand} {workOrder.lensBlankRight.lensType} {workOrder.lensBlankRight.thickness} — {Number(workOrder.lensBlankRight.sellingPrice).toFixed(3)} TND</p>
                             )}
                             {workOrder.lensBlankPrice && (
-                                <p>Blank price: {parseFloat(workOrder.lensBlankPrice).toFixed(3)} TND</p>
+                                <p>{t('workOrders.blankPrice')}: {parseFloat(workOrder.lensBlankPrice).toFixed(3)} TND</p>
                             )}
                         </div>
                     )}
@@ -439,7 +445,7 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                                         <option value="">{t('workOrders.breakage.noReplacement')}</option>
                                         {inStockBlanks.map((lb) => (
                                             <option key={lb.id} value={lb.id}>
-                                                {`${lb.brand} ${lb.thickness} (${lb.sph}/${lb.cyl}) — qté ${lb.quantity}`}
+                                                {`${lb.brand} ${lb.thickness} (${lb.sph}/${lb.cyl}) — ${t('reports.qty')} ${lb.quantity}`}
                                             </option>
                                         ))}
                                     </select>
@@ -458,7 +464,7 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                                         <option value="">{t('workOrders.breakage.noReplacement')}</option>
                                         {inStockBlanks.map((lb) => (
                                             <option key={lb.id} value={lb.id}>
-                                                {`${lb.brand} ${lb.thickness} (${lb.sph}/${lb.cyl}) — qté ${lb.quantity}`}
+                                                {`${lb.brand} ${lb.thickness} (${lb.sph}/${lb.cyl}) — ${t('reports.qty')} ${lb.quantity}`}
                                             </option>
                                         ))}
                                     </select>
@@ -596,7 +602,7 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
 
                     {/* Actions */}
                     <div className="space-y-2">
-                        <h3 className="text-sm font-medium">Actions</h3>
+                        <h3 className="text-sm font-medium">{t('common.actions')}</h3>
                         <div className="flex flex-wrap gap-2">
                             {STATUS_TRANSITIONS[workOrder.status]?.map((nextStatus) => (
                                 <Button
@@ -606,7 +612,7 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                                     onClick={() => handleStatusTransition(nextStatus)}
                                     disabled={loading}
                                 >
-                                    Mark {nextStatus.replace('_', ' ')}
+                                    {t('workOrders.markStatus', { status: statusLabel(nextStatus) })}
                                 </Button>
                             ))}
                         </div>

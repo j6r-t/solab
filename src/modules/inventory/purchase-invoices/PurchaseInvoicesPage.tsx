@@ -45,13 +45,13 @@ export function PurchaseInvoicesPage() {
             })
             if (!res.ok) {
                 const err = await res.json()
-                throw new Error(err.error || 'Failed to create invoice')
+                throw new Error(err.error || t('purchaseInvoice.createFailed'))
             }
-            toast.success('Invoice created')
+            toast.success(t('purchaseInvoice.created'))
             setDialogOpen(false)
             await reFetch()
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to create')
+            toast.error(error instanceof Error ? error.message : t('purchaseInvoice.createFailed'))
         } finally {
             setSaving(false)
         }
@@ -66,7 +66,7 @@ export function PurchaseInvoicesPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-[22px] font-medium">{t('purchaseInvoice.title')}</h1>
-                    <p className="text-sm text-muted-foreground mt-1">Manage supplier invoices for shop and atelier</p>
+                    <p className="text-sm text-muted-foreground mt-1">{t('purchaseInvoice.description')}</p>
                 </div>
                 <Button onClick={() => setDialogOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -92,7 +92,7 @@ export function PurchaseInvoicesPage() {
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1 min-w-[200px]">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search invoices..." className="pl-10 h-10" />
+                    <Input placeholder={t('purchaseInvoice.searchPlaceholder')} className="pl-10 h-10" />
                 </div>
                 <Select value={paymentFilter} onValueChange={setPaymentFilter}>
                     <SelectTrigger className="w-[160px] h-10">
@@ -113,10 +113,10 @@ export function PurchaseInvoicesPage() {
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center max-w-[600px] mx-auto">
                     <FileText className="w-12 h-12 text-muted-foreground/50 mb-6" />
                     <h2 className="text-lg font-medium text-foreground mb-2">{t('purchaseInvoice.noInvoices')}</h2>
-                    <p className="text-sm text-muted-foreground mb-6 max-w-sm leading-relaxed">Create your first supplier invoice to track purchases.</p>
+                    <p className="text-sm text-muted-foreground mb-6 max-w-sm leading-relaxed">{t('purchaseInvoice.noInvoicesDesc')}</p>
                     <Button onClick={() => setDialogOpen(true)}>
                         <Plus className="h-4 w-4 mr-2" />
-                        Create Invoice
+                        {t('purchaseInvoice.create')}
                     </Button>
                 </div>
             ) : (
@@ -149,12 +149,12 @@ export function PurchaseInvoicesPage() {
                                             </Badge>
                                         </td>
                                         <td className="py-3 px-4 text-center">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewInvoice(inv)} title="Preview invoice">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewInvoice(inv)} title={t('invoices.opticiens.preview')}>
                                                 <Eye className="h-4 w-4" />
                                             </Button>
                                         </td>
                                         <td className="py-3 px-4 text-center">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => downloadPurchaseInvoice(inv)} title="Download invoice">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => downloadPurchaseInvoice(inv)} title={t('purchaseInvoice.download')}>
                                                 <Download className="h-4 w-4" />
                                             </Button>
                                         </td>

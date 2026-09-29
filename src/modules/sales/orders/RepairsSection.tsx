@@ -76,7 +76,7 @@ export function RepairsSection({ repairServices, repairs, selectedServiceIds, us
                                     step="0.001"
                                     value={r.price || ''}
                                     onChange={(e) => onUpdateRepair(i, 'price', parseFloat(e.target.value) || 0)}
-                                    placeholder="Price"
+                                    placeholder={t('workOrders.price')}
                                     className="w-20 h-7 text-xs"
                                 />
                                 <Input

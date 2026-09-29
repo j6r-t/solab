@@ -25,7 +25,7 @@ export function QrScanDialog({ open, onClose, qrScanning, qrError, qrReaderId, t
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Camera className="h-4 w-4" />
-                        Scan QR Code
+                        {t('common.scanQrCode')}
                     </DialogTitle>
                 </DialogHeader>
                 <div className="flex flex-col items-center gap-3 py-2">
@@ -36,7 +36,7 @@ export function QrScanDialog({ open, onClose, qrScanning, qrError, qrReaderId, t
                     {!qrScanning && !qrError && (
                         <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
                             <Loader2 className="h-6 w-6 animate-spinner" />
-                            <p className="text-sm">Starting camera...</p>
+                            <p className="text-sm">{t('common.cameraStarting')}</p>
                         </div>
                     )}
                     <Button type="button" variant="outline" size="sm" onClick={onClose}>

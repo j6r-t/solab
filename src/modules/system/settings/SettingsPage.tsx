@@ -65,7 +65,7 @@ function NamedItemCard({ title, icon: Icon, description, apiPath }: {
                 toast.success(t('settings.itemCreated'))
             }
             setDialogOpen(false); await refetch()
-        } catch { toast.error('Failed to save') }
+        } catch { toast.error(t('settings.saveFailed')) }
         finally { setSaving(false) }
     }
 
@@ -77,7 +77,7 @@ function NamedItemCard({ title, icon: Icon, description, apiPath }: {
             toast.success(t('settings.itemDeleted'))
             setDeleteTarget(null); await refetch()
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to delete')
+            toast.error(error instanceof Error ? error.message : t('settings.deleteFailed'))
         }
     }
 
@@ -175,7 +175,7 @@ export function SettingsPage() {
             setAuth(token, updatedUser)
             toast.success(t('settings.profileUpdated'))
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to update profile')
+            toast.error(error instanceof Error ? error.message : t('settings.profileUpdateFailed'))
         } finally {
             setProfileSaving(false)
         }
@@ -183,14 +183,14 @@ export function SettingsPage() {
     async function handleChangePassword() {
         if (!pwCurrent || !pwNew) return
         if (pwNew !== pwConfirm) return toast.error(t('settings.passwordMismatch'))
-        if (pwNew.length < 6) return toast.error('Password must be at least 6 characters')
+        if (pwNew.length < 6) return toast.error(t('settings.passwordTooShort'))
         setPwSaving(true)
         try {
             await changePassword(pwCurrent, pwNew)
             toast.success(t('settings.passwordUpdated'))
             setPwCurrent(''); setPwNew(''); setPwConfirm('')
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to update password')
+            toast.error(error instanceof Error ? error.message : t('settings.passwordUpdateFailed'))
         } finally {
             setPwSaving(false)
         }
@@ -218,7 +218,7 @@ export function SettingsPage() {
                 toast.success(t('settings.serviceCreated'))
             }
             setServiceDialogOpen(false); loadServices()
-        } catch { toast.error('Failed to save service') }
+        } catch { toast.error(t('settings.serviceSaveFailed')) }
         finally { setSaving(false) }
     }
 

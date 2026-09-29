@@ -82,12 +82,12 @@ export function LensBlanksPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
             })
-            if (!res.ok) throw new Error('Failed to create')
-            toast.success('Lens blank created')
+            if (!res.ok) throw new Error(t('atelier.createFailed'))
+            toast.success(t('atelier.created'))
             setDialogOpen(false)
             await reFetch()
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to create')
+            toast.error(error instanceof Error ? error.message : t('atelier.createFailed'))
         } finally {
             setSaving(false)
         }
@@ -102,13 +102,13 @@ export function LensBlanksPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
             })
-            if (!res.ok) throw new Error('Failed to update')
-            toast.success('Lens blank updated')
+            if (!res.ok) throw new Error(t('atelier.updateFailed'))
+            toast.success(t('atelier.updated'))
             setEditBlank(null)
             setDialogOpen(false)
             await reFetch()
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to update')
+            toast.error(error instanceof Error ? error.message : t('atelier.updateFailed'))
         } finally {
             setSaving(false)
         }
@@ -117,12 +117,12 @@ export function LensBlanksPage() {
     async function handleDelete(blank: LensBlank) {
         try {
             const res = await fetch(`/api/lens-blanks/${blank.id}`, { method: 'DELETE' })
-            if (!res.ok) throw new Error('Failed to delete')
-            toast.success('Lens blank deleted')
+            if (!res.ok) throw new Error(t('atelier.deleteFailed'))
+            toast.success(t('atelier.deleted'))
             setDeleteTarget(null)
             await reFetch()
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to delete')
+            toast.error(error instanceof Error ? error.message : t('atelier.deleteFailed'))
         }
     }
 
@@ -137,7 +137,7 @@ export function LensBlanksPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-[22px] font-medium">{t('atelier.lensBlanks')}</h1>
-                    <p className="text-sm text-muted-foreground mt-1">Manage atelier lens blank inventory</p>
+                    <p className="text-sm text-muted-foreground mt-1">{t('atelier.description')}</p>
                 </div>
                 <Button onClick={() => { setEditBlank(null); setDialogOpen(true) }}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -147,19 +147,19 @@ export function LensBlanksPage() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="rounded-lg border bg-card p-3">
-                    <p className="text-xs text-muted-foreground">References</p>
+                    <p className="text-xs text-muted-foreground">{t('atelier.statRefs')}</p>
                     <p className="text-lg font-semibold mt-1">{totalRefs}</p>
                 </div>
                 <div className="rounded-lg border bg-card p-3">
-                    <p className="text-xs text-muted-foreground">Total Qty</p>
+                    <p className="text-xs text-muted-foreground">{t('atelier.statTotalQty')}</p>
                     <p className="text-lg font-semibold mt-1">{totalQty}</p>
                 </div>
                 <div className="rounded-lg border bg-card p-3">
-                    <p className="text-xs text-muted-foreground">Low Stock</p>
+                    <p className="text-xs text-muted-foreground">{t('stock.lowStock')}</p>
                     <p className="text-lg font-semibold mt-1 text-destructive">{lowStockCount}</p>
                 </div>
                 <div className="rounded-lg border bg-card p-3">
-                    <p className="text-xs text-muted-foreground">Stock Value</p>
+                    <p className="text-xs text-muted-foreground">{t('reports.stockValue')}</p>
                     <p className="text-lg font-semibold mt-1">{totalValue.toFixed(3)} TND</p>
                 </div>
             </div>
@@ -167,7 +167,7 @@ export function LensBlanksPage() {
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1 min-w-[200px]">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by brand or thickness..." className="pl-10 h-10" />
+                    <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('atelier.searchPlaceholder')} className="pl-10 h-10" />
                 </div>
                 <Select value={brandFilter} onValueChange={setBrandFilter}>
                     <SelectTrigger className="w-[150px] h-10">
@@ -198,7 +198,7 @@ export function LensBlanksPage() {
                     className="h-10"
                 >
                     <EyeOff className="h-4 w-4 mr-1" />
-                    Low stock
+                    {t('stock.lowStock')}
                 </Button>
             </div>
 
@@ -207,11 +207,11 @@ export function LensBlanksPage() {
             ) : blanks.length === 0 ? (
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center max-w-[600px] mx-auto">
                     <PackageOpen className="w-12 h-12 text-muted-foreground/50 mb-6" />
-                    <h2 className="text-lg font-medium text-foreground mb-2">No lens blanks</h2>
-                    <p className="text-sm text-muted-foreground mb-6 max-w-sm leading-relaxed">Add your first lens blank to start tracking atelier stock.</p>
+                    <h2 className="text-lg font-medium text-foreground mb-2">{t('atelier.noBlanks')}</h2>
+                    <p className="text-sm text-muted-foreground mb-6 max-w-sm leading-relaxed">{t('atelier.noBlanksDesc')}</p>
                     <Button onClick={() => { setEditBlank(null); setDialogOpen(true) }}>
                         <Plus className="h-4 w-4 mr-2" />
-                        Add First Lens Blank
+                        {t('atelier.addFirst')}
                     </Button>
                 </div>
             ) : (
@@ -220,14 +220,14 @@ export function LensBlanksPage() {
                         <thead>
                             <tr className="bg-muted border-b sticky top-0 z-10">
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('lensBlank.brand')}</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Type</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Material</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('orders.type')}</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('stock.material')}</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('lensBlank.thickness')}</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">SPH</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">CYL</th>
-                                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Cost</th>
-                                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Sell</th>
-                                <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">Qty</th>
+                                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">{t('atelier.cost')}</th>
+                                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">{t('atelier.sell')}</th>
+                                <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">{t('reports.qty')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y">
@@ -256,7 +256,7 @@ export function LensBlanksPage() {
             <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) setEditBlank(null); setDialogOpen(open) }}>
                 <DialogContent className="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>{editBlank ? 'Edit Lens Blank' : 'New Lens Blank'}</DialogTitle>
+                        <DialogTitle>{editBlank ? t('atelier.editBlank') : t('atelier.newBlank')}</DialogTitle>
                     </DialogHeader>
                     <LensBlankForm
                         defaultValues={editBlank ? {

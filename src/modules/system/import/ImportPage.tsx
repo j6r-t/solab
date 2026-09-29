@@ -30,21 +30,21 @@ type EntityType = 'clients' | 'fournisseurs'
 
 const targetFields: Record<EntityType, { key: string; label: string; required: boolean }[]> = {
     clients: [
-        { key: 'name', label: 'First Name', required: true },
-        { key: 'familyName', label: 'Family Name', required: true },
-        { key: 'phone', label: 'Phone', required: true },
-        { key: 'address', label: 'Address', required: false },
-        { key: 'gender', label: 'Gender', required: false },
-        { key: 'birthDate', label: 'Birth Date', required: false },
-        { key: 'notes', label: 'Notes', required: false },
-        { key: 'organization', label: 'Organization', required: false },
+        { key: 'name', label: 'clients.name', required: true },
+        { key: 'familyName', label: 'clients.familyName', required: true },
+        { key: 'phone', label: 'clients.phone', required: true },
+        { key: 'address', label: 'clients.address', required: false },
+        { key: 'gender', label: 'clients.gender', required: false },
+        { key: 'birthDate', label: 'clients.birthDate', required: false },
+        { key: 'notes', label: 'clients.notes', required: false },
+        { key: 'organization', label: 'clients.organization', required: false },
     ],
     fournisseurs: [
-        { key: 'name', label: 'Name', required: true },
-        { key: 'phone', label: 'Phone', required: false },
-        { key: 'address', label: 'Address', required: false },
-        { key: 'email', label: 'Email', required: false },
-        { key: 'taxId', label: 'Tax ID', required: false },
+        { key: 'name', label: 'fournisseurs.name', required: true },
+        { key: 'phone', label: 'fournisseurs.phone', required: false },
+        { key: 'address', label: 'fournisseurs.address', required: false },
+        { key: 'email', label: 'fournisseurs.email', required: false },
+        { key: 'taxId', label: 'fournisseurs.taxId', required: false },
     ],
 }
 
@@ -100,7 +100,7 @@ export function ImportPage() {
             const text = ev.target?.result as string
             const parsed = parseCSV(text)
             if (parsed.headers.length === 0 || parsed.rows.length === 0) {
-                toast.error('File appears empty or unreadable')
+                toast.error(t('import.emptyFile'))
                 return
             }
             setHeaders(parsed.headers)
@@ -135,7 +135,7 @@ export function ImportPage() {
             )
             setStep(3)
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to generate preview')
+            toast.error(error instanceof Error ? error.message : t('import.previewFailed'))
         }
     }
 
@@ -152,10 +152,10 @@ export function ImportPage() {
             const data = await res.json()
             setSummary(data)
             setStep(4)
-            if (data.imported > 0) toast.success(`${data.imported} records imported successfully`)
-            if (data.errors.length > 0) toast.error(`${data.errors.length} records failed`)
+            if (data.imported > 0) toast.success(t('import.importedToast', { count: data.imported }))
+            if (data.errors.length > 0) toast.error(t('import.failedToast', { count: data.errors.length }))
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Import failed')
+            toast.error(error instanceof Error ? error.message : t('import.importFailed'))
         } finally {
             setImporting(false)
         }
@@ -238,9 +238,9 @@ export function ImportPage() {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="bg-muted sticky top-0 z-10">
-                                    <th className="text-left p-3 font-medium text-muted-foreground">CSV Column</th>
-                                    <th className="text-left p-3 font-medium text-muted-foreground">First value</th>
-                                    <th className="text-left p-3 font-medium text-muted-foreground">Maps to</th>
+                                    <th className="text-left p-3 font-medium text-muted-foreground">{t('import.csvColumn')}</th>
+                                    <th className="text-left p-3 font-medium text-muted-foreground">{t('import.firstValue')}</th>
+                                    <th className="text-left p-3 font-medium text-muted-foreground">{t('import.mapsTo')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y">
@@ -262,7 +262,7 @@ export function ImportPage() {
                                                     <SelectItem value="">— {t('import.skipColumn')} —</SelectItem>
                                                     {targetFields[entity].map((f) => (
                                                         <SelectItem key={f.key} value={f.key}>
-                                                            {f.label} {f.required ? '*' : ''}
+                                                            {t(f.label)} {f.required ? '*' : ''}
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>

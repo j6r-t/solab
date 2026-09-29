@@ -54,8 +54,8 @@ export function OpticianShopsPage() {
     }
 
     async function handleSave() {
-        if (!formName.trim()) return toast.error('Name is required')
-        if (!formPhone.trim()) return toast.error('Phone is required')
+        if (!formName.trim()) return toast.error(t('opticianShops.nameRequired'))
+        if (!formPhone.trim()) return toast.error(t('opticianShops.phoneRequired'))
         setSaving(true)
         try {
             const url = editShop ? `/api/optician-shops/${editShop.id}` : '/api/optician-shops'
@@ -72,13 +72,13 @@ export function OpticianShopsPage() {
             })
             if (!res.ok) {
                 const body = await res.json()
-                throw new Error(body.message || 'Failed to save')
+                throw new Error(body.message || t('common.saveFailed'))
             }
-            toast.success(editShop ? 'Optician shop updated' : 'Optician shop created')
+            toast.success(editShop ? t('opticianShops.updated') : t('opticianShops.created'))
             setDialogOpen(false)
             await reFetch()
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to save')
+            toast.error(error instanceof Error ? error.message : t('common.saveFailed'))
         } finally {
             setSaving(false)
         }
@@ -87,11 +87,11 @@ export function OpticianShopsPage() {
     async function handleDelete(shop: OpticianShop) {
         try {
             await deleteShopMutation.mutateAsync(shop.id)
-            toast.success('Optician shop deleted')
+            toast.success(t('opticianShops.deleted'))
             setDeleteTarget(null)
             await reFetch()
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to delete')
+            toast.error(error instanceof Error ? error.message : t('common.deleteFailed'))
         }
     }
 
@@ -111,13 +111,13 @@ export function OpticianShopsPage() {
                     <Input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search by name or phone..."
+                        placeholder={t('opticianShops.searchPlaceholder')}
                         className="pl-10"
                     />
                 </div>
                 <Button onClick={() => openForm()}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Shop
+                    {t('opticianShops.newShop')}
                 </Button>
             </div>
 
@@ -126,11 +126,11 @@ export function OpticianShopsPage() {
             ) : showEmptyState ? (
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center max-w-[600px] mx-auto">
                     <Store className="w-12 h-12 text-muted-foreground/50 mb-6" />
-                    <h2 className="text-lg font-medium text-foreground mb-2">No optician shops yet</h2>
-                    <p className="text-sm text-muted-foreground mb-6 max-w-sm leading-relaxed">Add partner optician shops to track repairs done for them.</p>
+                    <h2 className="text-lg font-medium text-foreground mb-2">{t('opticianShops.noShops')}</h2>
+                    <p className="text-sm text-muted-foreground mb-6 max-w-sm leading-relaxed">{t('opticianShops.noShopsDesc')}</p>
                     <Button onClick={() => openForm()}>
                         <Plus className="h-4 w-4 mr-2" />
-                        Add Shop
+                        {t('opticianShops.newShop')}
                     </Button>
                 </div>
             ) : showNoResults ? (
@@ -161,10 +161,10 @@ export function OpticianShopsPage() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
-                                <Button variant="ghost" size="icon" onClick={() => openForm(shop)} title="Edit">
+                                <Button variant="ghost" size="icon" onClick={() => openForm(shop)} title={t('common.edit')}>
                                     <Pencil className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(shop)} title="Delete">
+                                <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(shop)} title={t('common.delete')}>
                                     <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                             </div>
@@ -176,30 +176,30 @@ export function OpticianShopsPage() {
             <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) { setDialogOpen(false); setEditShop(null) } }}>
                 <DialogContent className="w-full sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>{editShop ? 'Edit Optician Shop' : 'Add Optician Shop'}</DialogTitle>
+                        <DialogTitle>{editShop ? t('opticianShops.editShop') : t('opticianShops.newShop')}</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label>Name *</Label>
+                            <Label>{t('opticianShops.name')} *</Label>
                             <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Shop name" />
                         </div>
                         <div className="space-y-2">
-                            <Label>Phone *</Label>
+                            <Label>{t('opticianShops.phone')} *</Label>
                             <Input value={formPhone} onChange={(e) => setFormPhone(e.target.value)} placeholder="Phone number" />
                         </div>
                         <div className="space-y-2">
-                            <Label>Address</Label>
+                            <Label>{t('opticianShops.address')}</Label>
                             <Input value={formAddress} onChange={(e) => setFormAddress(e.target.value)} placeholder="Address" />
                         </div>
                         <div className="space-y-2">
-                            <Label>Notes</Label>
+                            <Label>{t('opticianShops.notes')}</Label>
                             <Input value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Notes" />
                         </div>
                         <div className="flex justify-end gap-2 pt-2">
-                            <Button variant="outline" onClick={() => { setDialogOpen(false); setEditShop(null) }}>Cancel</Button>
+                            <Button variant="outline" onClick={() => { setDialogOpen(false); setEditShop(null) }}>{t('common.cancel')}</Button>
                             <Button onClick={handleSave} disabled={saving}>
                                 {saving && <Loader2 className="h-4 w-4 mr-2 animate-spinner" />}
-                                Save
+                                {t('common.save')}
                             </Button>
                         </div>
                     </div>
@@ -209,10 +209,10 @@ export function OpticianShopsPage() {
             <ConfirmDialog
                 open={!!deleteTarget}
                 onOpenChange={() => setDeleteTarget(null)}
-                title="Delete Optician Shop"
+                title={t('opticianShops.deleteTitle')}
                 description={deleteTarget?.name || ''}
-                confirmLabel="Delete"
-                cancelLabel="Cancel"
+                confirmLabel={t('common.delete')}
+                cancelLabel={t('common.cancel')}
                 onConfirm={() => deleteTarget && handleDelete(deleteTarget)}
             />
         </div>

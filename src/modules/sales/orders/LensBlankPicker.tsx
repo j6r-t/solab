@@ -126,7 +126,7 @@ export function LensBlankPicker({ prescriptions, selectedPrescriptionId, onAddBl
                                             {blank.coating !== 'none' && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{t(`stock.${blank.coating}`)}</Badge>}
                                         </div>
                                         <div className="text-xs text-muted-foreground mt-0.5">
-                                            {blank.thickness} Â· SPH {blank.sph} Â· CYL {blank.cyl} Â· {Number(blank.sellingPrice).toFixed(3)} TND Â· {blank.quantity ?? 0} in stock
+                                            {blank.thickness} · SPH {blank.sph} · CYL {blank.cyl} · {Number(blank.sellingPrice).toFixed(3)} TND · {blank.quantity ?? 0} {t('common.inStockSuffix')}
                                         </div>
                                     </div>
                                     <Button type="button" variant="ghost" size="sm" onClick={() => onAddBlank(blank)} disabled={!inStock} className="h-7 px-2 shrink-0">

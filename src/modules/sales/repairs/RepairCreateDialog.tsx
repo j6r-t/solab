@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Loader2 } from 'lucide-react'
+import { useTranslation } from '@/lib/hooks/useTranslation'
 
 interface OpticianShop {
     id: string
@@ -64,19 +65,20 @@ export function RepairCreateDialog({
     onFormDateChange,
     opticianShops,
 }: RepairCreateDialogProps) {
+    const { t } = useTranslation()
     const today = new Date().toISOString().split('T')[0]
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="w-full sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>New Optician Repair</DialogTitle>
+                    <DialogTitle>{t('repairs.newOpticianRepair')}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                     <div className="space-y-2">
-                        <Label>Optician Shop *</Label>
+                        <Label>{t('workOrders.opticianShop')} *</Label>
                         <Select value={formShopId} onValueChange={onFormShopIdChange}>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select optician shop" />
+                                <SelectValue placeholder={t('repairs.selectShop')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {opticianShops.map((shop) => (
@@ -86,7 +88,7 @@ export function RepairCreateDialog({
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label>Repair Service</Label>
+                        <Label>{t('repairs.repairService')}</Label>
                         <Select
                             value={formServiceId}
                             onValueChange={(v) => {
@@ -96,7 +98,7 @@ export function RepairCreateDialog({
                             }}
                         >
                             <SelectTrigger>
-                                <SelectValue placeholder="Select service" />
+                                <SelectValue placeholder={t('repairs.selectService')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {repairServices.map((svc) => (
@@ -106,7 +108,7 @@ export function RepairCreateDialog({
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label>Price *</Label>
+                        <Label>{t('workOrders.price')} *</Label>
                         <Input
                             type="number"
                             value={formPrice}
@@ -115,7 +117,7 @@ export function RepairCreateDialog({
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label>Expected Completion *</Label>
+                        <Label>{t('workOrders.expectedDate')} *</Label>
                         <Input
                             type="date"
                             min={today}
@@ -124,10 +126,10 @@ export function RepairCreateDialog({
                         />
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
-                        <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                        <Button variant="outline" onClick={() => onOpenChange(false)}>{t('common.cancel')}</Button>
                         <Button onClick={onSubmit} disabled={saving}>
                             {saving && <Loader2 className="h-4 w-4 mr-2 animate-spinner" />}
-                            Create Repair
+                            {t('repairs.createRepair')}
                         </Button>
                     </div>
                 </div>

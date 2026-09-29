@@ -61,7 +61,7 @@ export function DoctorsPage() {
     }
 
     async function handleSave() {
-        if (!formName.trim()) return toast.error('Name is required')
+        if (!formName.trim()) return toast.error(t('doctors.nameRequired'))
         setSaving(true)
         try {
             const url = editDoctor ? `/api/doctors/${editDoctor.id}` : '/api/doctors'
@@ -73,13 +73,13 @@ export function DoctorsPage() {
             })
             if (!res.ok) {
                 const body = await res.json()
-                throw new Error(body.error || 'Failed to save')
+                throw new Error(body.error || t('common.saveFailed'))
             }
-            toast.success(editDoctor ? 'Doctor updated' : 'Doctor created')
+            toast.success(editDoctor ? t('doctors.updated') : t('doctors.created'))
             setDialogOpen(false)
             await reFetch()
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to save doctor')
+            toast.error(error instanceof Error ? error.message : t('doctors.saveFailed'))
         } finally {
             setSaving(false)
         }
@@ -88,11 +88,11 @@ export function DoctorsPage() {
     async function handleDelete(doctor: Doctor) {
         try {
             await deleteDoctorMutation.mutateAsync(doctor.id)
-            toast.success('Doctor deleted')
+            toast.success(t('doctors.deleted'))
             setDeleteTarget(null)
             await reFetch()
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to delete doctor')
+            toast.error(error instanceof Error ? error.message : t('doctors.deleteFailed'))
         }
     }
 
@@ -102,7 +102,7 @@ export function DoctorsPage() {
         setPatientsLoading(true)
         try {
             const res = await fetch(`/api/prescriptions?doctorId=${doctor.id}&includeClient=true`)
-            if (!res.ok) throw new Error('Failed to fetch patients')
+            if (!res.ok) throw new Error(t('doctors.patientsLoadFailed'))
             const json: PaginatedResponse<Patient> | Patient[] = await res.json()
             setPatients((Array.isArray(json) ? json : (json?.data ?? [])).map((p) => ({
                 id: p.id,
@@ -111,7 +111,7 @@ export function DoctorsPage() {
             })))
         } catch (error) {
             console.error(error)
-            toast.error('Failed to load patients')
+            toast.error(t('doctors.patientsLoadFailed'))
         } finally {
             setPatientsLoading(false)
         }
@@ -133,13 +133,13 @@ export function DoctorsPage() {
                     <Input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search by name, phone or specialization..."
+                        placeholder={t('doctors.searchPlaceholder')}
                         className="pl-10"
                     />
                 </div>
                 <Button onClick={() => openForm()}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Doctor
+                    {t('doctors.newDoctor')}
                 </Button>
             </div>
 
@@ -148,11 +148,11 @@ export function DoctorsPage() {
             ) : showEmptyState ? (
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center max-w-[600px] mx-auto">
                     <Stethoscope className="w-12 h-12 text-muted-foreground/50 mb-6" />
-                    <h2 className="text-lg font-medium text-foreground mb-2">No doctors yet</h2>
-                    <p className="text-sm text-muted-foreground mb-6 max-w-sm leading-relaxed">Add your first doctor to link them with patient prescriptions.</p>
+                    <h2 className="text-lg font-medium text-foreground mb-2">{t('doctors.noDoctors')}</h2>
+                    <p className="text-sm text-muted-foreground mb-6 max-w-sm leading-relaxed">{t('doctors.noDoctorsDesc')}</p>
                     <Button onClick={() => openForm()}>
                         <Plus className="h-4 w-4 mr-2" />
-                        Add Doctor
+                        {t('doctors.newDoctor')}
                     </Button>
                 </div>
             ) : showNoResults ? (
@@ -185,10 +185,10 @@ export function DoctorsPage() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                                <Button variant="ghost" size="icon" onClick={() => openForm(doctor)} title="Edit">
+                                <Button variant="ghost" size="icon" onClick={() => openForm(doctor)} title={t('common.edit')}>
                                     <Pencil className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(doctor)} title="Delete">
+                                <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(doctor)} title={t('common.delete')}>
                                     <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                             </div>
@@ -216,10 +216,10 @@ export function DoctorsPage() {
             <ConfirmDialog
                 open={!!deleteTarget}
                 onOpenChange={() => setDeleteTarget(null)}
-                title="Delete Doctor"
+                title={t('doctors.deleteTitle')}
                 description={deleteTarget?.name || ''}
-                confirmLabel="Delete"
-                cancelLabel="Cancel"
+                confirmLabel={t('common.delete')}
+                cancelLabel={t('common.cancel')}
                 onConfirm={() => deleteTarget && handleDelete(deleteTarget)}
             />
 

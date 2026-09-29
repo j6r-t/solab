@@ -76,6 +76,12 @@ export function AtelierWorkOrdersPage() {
     const [detailOpen, setDetailOpen] = useState(false)
     const [newWOOpen, setNewWOOpen] = useState(false)
 
+    function statusLabel(s: string): string {
+        const key = `workOrders.status.${s}`
+        const translated = t(key)
+        return translated === key ? s.replace('_', ' ') : translated
+    }
+
     const debouncedSearch = useDebounce(search, 300)
 
     const { data: workOrdersData, isLoading: loading, refetch: reFetch } = useRepairs<WorkOrder[]>({
@@ -99,30 +105,30 @@ export function AtelierWorkOrdersPage() {
         <div className="space-y-6 max-w-[1000px]">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-[22px] font-medium">Atelier Work Orders</h1>
-                    <p className="text-sm text-muted-foreground mt-1">Manage mounting and repair jobs from shop and opticians</p>
+                    <h1 className="text-[22px] font-medium">{t('nav.atelierWorkOrders')}</h1>
+                    <p className="text-sm text-muted-foreground mt-1">{t('workOrders.pageDescription')}</p>
                 </div>
                 <Button onClick={() => setNewWOOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
-                    New Work Order
+                    {t('workOrders.new')}
                 </Button>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="rounded-lg border bg-card p-3">
-                    <p className="text-xs text-muted-foreground">Total</p>
+                    <p className="text-xs text-muted-foreground">{t('orders.total')}</p>
                     <p className="text-lg font-semibold mt-1">{statsOrders.length}</p>
                 </div>
                 <div className="rounded-lg border bg-card p-3">
-                    <p className="text-xs text-muted-foreground">Pending / Active</p>
+                    <p className="text-xs text-muted-foreground">{t('workOrders.statPendingActive')}</p>
                     <p className="text-lg font-semibold mt-1 text-amber-600">{pendingCount}</p>
                 </div>
                 <div className="rounded-lg border bg-card p-3">
-                    <p className="text-xs text-muted-foreground">Completed</p>
+                    <p className="text-xs text-muted-foreground">{t('workOrders.status.completed')}</p>
                     <p className="text-lg font-semibold mt-1 text-green-600">{countByStatus('completed')}</p>
                 </div>
                 <div className="rounded-lg border bg-card p-3">
-                    <p className="text-xs text-muted-foreground">Delivered</p>
+                    <p className="text-xs text-muted-foreground">{t('workOrders.status.delivered')}</p>
                     <p className="text-lg font-semibold mt-1">{countByStatus('delivered')}</p>
                 </div>
             </div>
@@ -138,7 +144,7 @@ export function AtelierWorkOrdersPage() {
                                 : 'border-transparent text-muted-foreground hover:text-foreground'
                         }`}
                     >
-                        {tab === 'all' ? 'All' : tab.replace('_', ' ')}
+                        {tab === 'all' ? t('common.all') : statusLabel(tab)}
                         <span className="ml-1.5 text-xs text-muted-foreground">({countByStatus(tab)})</span>
                     </button>
                 ))}
@@ -147,7 +153,7 @@ export function AtelierWorkOrdersPage() {
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1 min-w-[200px]">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by client or shop..." className="pl-10 h-10" />
+                    <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('workOrders.searchPlaceholder')} className="pl-10 h-10" />
                 </div>
                 <Select value={sourceFilter} onValueChange={setSourceFilter}>
                     <SelectTrigger className="w-[140px] h-10">
@@ -155,8 +161,8 @@ export function AtelierWorkOrdersPage() {
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="">{t('common.all')}</SelectItem>
-                        <SelectItem value="internal">Internal</SelectItem>
-                        <SelectItem value="optician">Optician</SelectItem>
+                        <SelectItem value="internal">{t('workOrders.sourceInternal')}</SelectItem>
+                        <SelectItem value="optician">{t('repairs.optician')}</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -166,9 +172,9 @@ export function AtelierWorkOrdersPage() {
             ) : workOrders.length === 0 ? (
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center max-w-[600px] mx-auto">
                     <Wrench className="w-12 h-12 text-muted-foreground/50 mb-6" />
-                    <h2 className="text-lg font-medium text-foreground mb-2">No work orders</h2>
+                    <h2 className="text-lg font-medium text-foreground mb-2">{t('workOrders.noWorkOrders')}</h2>
                     <p className="text-sm text-muted-foreground mb-6 max-w-sm leading-relaxed">
-                        Work orders appear here when created from orders or directly for optician shops.
+                        {t('workOrders.noWorkOrdersDesc')}
                     </p>
                 </div>
             ) : (
@@ -176,12 +182,12 @@ export function AtelierWorkOrdersPage() {
                     <table className="w-full">
                         <thead>
                             <tr className="bg-muted border-b sticky top-0 z-10">
-                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Client / Shop</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Source</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Services</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('workOrders.clientOrShop')}</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('repairs.source')}</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('workOrders.services')}</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('workOrders.expectedDate')}</th>
-                                <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
-                                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Price</th>
+                                <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">{t('orders.status')}</th>
+                                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">{t('workOrders.price')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y">
@@ -199,7 +205,7 @@ export function AtelierWorkOrdersPage() {
                                         onClick={() => { setSelectedWO(wo); setDetailOpen(true) }}
                                     >
                                         <td className="py-3 px-4 font-medium">{clientName}</td>
-                                        <td className="py-3 px-4 text-sm capitalize">{wo.source}</td>
+                                        <td className="py-3 px-4 text-sm capitalize">{wo.source === 'internal' ? t('workOrders.sourceInternal') : t('repairs.optician')}</td>
                                         <td className="py-3 px-4 text-sm text-muted-foreground">
                                             <div className="flex flex-wrap gap-1">
                                                 {wo.workOrderServices.map((s) => (
@@ -232,7 +238,7 @@ export function AtelierWorkOrdersPage() {
                                         </td>
                                         <td className="py-3 px-4 text-center">
                                             <Badge variant="outline" className={`text-xs ${STATUS_BADGE[wo.status] || ''}`}>
-                                                {wo.status.replace('_', ' ')}
+                                                {statusLabel(wo.status)}
                                             </Badge>
                                         </td>
                                         <td className="py-3 px-4 text-right text-sm">{parseFloat(wo.servicePrice).toFixed(3)}</td>

@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog'
 import { Stethoscope, Calendar } from 'lucide-react'
 import { formatDate } from '@/lib/utils/dates'
+import { useTranslation } from '@/lib/hooks/useTranslation'
 
 interface PatientPrescription {
     id: string
@@ -28,17 +29,18 @@ export function DoctorPatientsDialog({
     doctor,
     patients,
 }: DoctorPatientsDialogProps) {
+    const { t } = useTranslation()
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Stethoscope className="h-5 w-5 text-primary" />
-                        Patients of {doctor?.name}
+                        {t('doctors.patientsOf', { name: doctor?.name ?? '' })}
                     </DialogTitle>
                 </DialogHeader>
                 {patients.length === 0 ? (
-                    <p className="text-center py-8 text-muted-foreground">No patients linked to this doctor</p>
+                    <p className="text-center py-8 text-muted-foreground">{t('doctors.noPatients')}</p>
                 ) : (
                     <div className="space-y-2">
                         {patients.map((p) => (

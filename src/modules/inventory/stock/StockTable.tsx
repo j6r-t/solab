@@ -26,11 +26,11 @@ export function StockTable({ products, onEdit, onDelete, onShowQr, categoryLabel
                     <tr className="bg-muted border-b sticky top-0 z-10">
                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('stock.name')}</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('stock.category')}</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Details</th>
+                                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('auditLogs.details')}</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('stock.title')}</th>
                         <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">{t('stock.sellingPrice')}</th>
                         <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">QR</th>
-                        <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Actions</th>
+                                        <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">{t('common.actions')}</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -43,7 +43,7 @@ export function StockTable({ products, onEdit, onDelete, onShowQr, categoryLabel
                                     {product.category === 'lentille' ? (
                                         <p className="text-xs text-muted-foreground">{product.brand}</p>
                                     ) : product.category === 'lunette' ? (
-                                        <p className="text-xs text-muted-foreground">{product.brand} &mdash; Ref: {product.model}</p>
+                                        <p className="text-xs text-muted-foreground">{product.brand} &mdash; {t('stock.model')}: {product.model}</p>
                                     ) : product.category === 'verre' ? (
                                         <p className="text-xs text-muted-foreground">{product.brand}{product.thickness ? ` (${product.thickness})` : ''}</p>
                                     ) : product.category === 'nettoyant_lentilles' || product.category === 'nettoyant_monture' ? (
@@ -60,13 +60,13 @@ export function StockTable({ products, onEdit, onDelete, onShowQr, categoryLabel
                                             {(product.sph || product.cyl || product.add) && (
                                                 <p className="text-xs text-muted-foreground">{product.sph && `SPH ${product.sph}`}{product.cyl && ` / CYL ${product.cyl}`}{product.add && ` / ADD ${product.add}`}</p>
                                             )}
-                                            {product.costPrice && <p className="text-xs text-muted-foreground">Cost: {formatCurrency(product.costPrice)}</p>}
-                                            {product.fournisseur && <p className="text-xs text-muted-foreground">Supplier: {product.fournisseur.name}</p>}
+                                            {product.costPrice && <p className="text-xs text-muted-foreground">{t('stock.cost')}: {formatCurrency(product.costPrice)}</p>}
+                                            {product.fournisseur && <p className="text-xs text-muted-foreground">{t('stock.fournisseur')}: {product.fournisseur.name}</p>}
                                         </div>
                                     ) : product.category === 'lunette' ? (
-                                        product.costPrice ? <p className="text-xs text-muted-foreground">Cost: {formatCurrency(product.costPrice)}</p> : <span className="text-xs text-muted-foreground">—</span>
+                                        product.costPrice ? <p className="text-xs text-muted-foreground">{t('stock.cost')}: {formatCurrency(product.costPrice)}</p> : <span className="text-xs text-muted-foreground">—</span>
                                     ) : product.category === 'nettoyant_lentilles' || product.category === 'nettoyant_monture' ? (
-                                        <div className="space-y-0.5">{product.costPrice && <p className="text-xs text-muted-foreground">Cost: {formatCurrency(product.costPrice)}</p>}</div>
+                                        <div className="space-y-0.5">{product.costPrice && <p className="text-xs text-muted-foreground">{t('stock.cost')}: {formatCurrency(product.costPrice)}</p>}</div>
                                     ) : (
                                         <span className="text-xs text-muted-foreground">—</span>
                                     )}
@@ -77,7 +77,7 @@ export function StockTable({ products, onEdit, onDelete, onShowQr, categoryLabel
                                             <Package className="h-3 w-3" />
                                             {t(`stock.${status.label}`)}
                                         </Badge>
-                                        <span className="text-xs text-muted-foreground">Qty: {product.quantity}</span>
+                                        <span className="text-xs text-muted-foreground">{t('reports.qty')}: {product.quantity}</span>
                                     </div>
                                 </td>
                                 <td className="py-3 px-4 text-right font-semibold">{formatCurrency(product.price)}</td>

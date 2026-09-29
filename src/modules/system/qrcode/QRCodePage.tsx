@@ -35,12 +35,12 @@ export function QRCodePage() {
         try {
             const data = await lookupQRCode(trimmed)
             if (!data.product) {
-                toast.error('Product not found for this QR code')
+                toast.error(t('qrcode.notFoundToast'))
                 return
             }
             setProduct(data.product)
         } catch {
-            toast.error('Failed to look up QR code')
+            toast.error(t('qrcode.lookupFailed'))
         } finally {
             setLoading(false)
         }

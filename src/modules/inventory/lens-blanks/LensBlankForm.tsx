@@ -138,7 +138,7 @@ export function LensBlankForm({ defaultValues, onSubmit, onCancel, saving: exter
             </div>
 
             <div className="space-y-4 p-3 bg-muted/20 rounded-lg border">
-                <p className="text-sm font-medium text-muted-foreground">Puissance</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('lensBlank.power')}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label>SPH</Label>

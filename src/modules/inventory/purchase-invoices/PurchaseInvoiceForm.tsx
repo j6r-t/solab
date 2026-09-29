@@ -204,23 +204,23 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
         if (!formData.fournisseurId) {
-            toast.error('Please select a supplier'); return
+            toast.error(t('purchaseInvoice.errorSupplierRequired')); return
         }
         if (!formData.invoiceNumber.trim()) {
-            toast.error('Invoice number is required'); return
+            toast.error(t('purchaseInvoice.errorInvoiceNumberRequired')); return
         }
         if (formData.items.length === 0) {
-            toast.error('At least one item is required'); return
+            toast.error(t('purchaseInvoice.errorItemRequired')); return
         }
         for (const item of formData.items) {
             if (!item.category) {
-                toast.error('Each item must have a category selected'); return
+                toast.error(t('purchaseInvoice.errorCategoryRequired')); return
             }
             if (item.category === 'lunette' && (!item.fields.name.trim() || !item.fields.brand.trim())) {
-                toast.error('Frames need a brand and name'); return
+                toast.error(t('purchaseInvoice.errorFramesBrandName')); return
             }
             if (item.category === 'lentille' && !item.fields.name.trim()) {
-                toast.error('Contact lenses need a name'); return
+                toast.error(t('purchaseInvoice.errorLensesName')); return
             }
         }
 
@@ -286,25 +286,25 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
 
             <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium">Items</Label>
+                    <Label className="text-sm font-medium">{t('purchaseInvoice.items')}</Label>
                     <Button type="button" variant="outline" size="sm" onClick={addItem} disabled={!formData.fournisseurId}>
-                        <Plus className="h-3.5 w-3.5 mr-1" /> Add Item
+                        <Plus className="h-3.5 w-3.5 mr-1" /> {t('purchaseInvoice.addItem')}
                     </Button>
                 </div>
                 {formData.items.length === 0 && (
-                    <p className="text-sm text-muted-foreground italic">Select a supplier, then add items by category.</p>
+                    <p className="text-sm text-muted-foreground italic">{t('purchaseInvoice.itemsHint')}</p>
                 )}
                 {formData.items.map((item, index) => (
                     <div key={item.key} className="flex flex-col gap-2 p-3 bg-muted/20 rounded-lg border">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-muted-foreground">Item #{index + 1}</span>
+                            <span className="text-xs font-semibold text-muted-foreground">{t('purchaseInvoice.itemNumber', { n: index + 1 })}</span>
                             <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeItem(item.key)} disabled={formData.items.length === 1}>
                                 <Trash2 className="h-3 w-3" />
                             </Button>
                         </div>
 
                         <div>
-                            <Label className="text-xs text-muted-foreground">Category *</Label>
+                            <Label className="text-xs text-muted-foreground">{t('stock.category')} *</Label>
                             <Select value={item.category} onValueChange={(val) => updateItem(item.key, 'category', val)}>
                                 <SelectTrigger className="h-9"><SelectValue placeholder="--" /></SelectTrigger>
                                 <SelectContent>
@@ -318,15 +318,15 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                         {item.category === 'lunette' && (
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                 <div>
-                                    <Label className="text-xs text-muted-foreground">Brand *</Label>
+                                    <Label className="text-xs text-muted-foreground">{t('stock.brand')} *</Label>
                                     <Input value={item.fields.brand} onChange={(e) => updateItemField(item.key, 'brand', e.target.value)} placeholder="Ray-Ban..." className="h-9" />
                                 </div>
                                 <div>
-                                    <Label className="text-xs text-muted-foreground">Name *</Label>
+                                    <Label className="text-xs text-muted-foreground">{t('stock.name')} *</Label>
                                     <Input value={item.fields.name} onChange={(e) => updateItemField(item.key, 'name', e.target.value)} placeholder="Aviator..." className="h-9" />
                                 </div>
                                 <div>
-                                    <Label className="text-xs text-muted-foreground">Model / Ref</Label>
+                                    <Label className="text-xs text-muted-foreground">{t('stock.model')}</Label>
                                     <Input value={item.fields.model} onChange={(e) => updateItemField(item.key, 'model', e.target.value)} placeholder="RB3025..." className="h-9" />
                                 </div>
                             </div>
@@ -334,26 +334,26 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                         {item.category === 'lentille' && (
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
                                 <div>
-                                    <Label className="text-xs text-muted-foreground">Brand</Label>
+                                    <Label className="text-xs text-muted-foreground">{t('stock.brand')}</Label>
                                     <Input value={item.fields.brand} onChange={(e) => updateItemField(item.key, 'brand', e.target.value)} placeholder="CooperVision..." className="h-9" />
                                 </div>
                                 <div>
-                                    <Label className="text-xs text-muted-foreground">Name *</Label>
+                                    <Label className="text-xs text-muted-foreground">{t('stock.name')} *</Label>
                                     <Input value={item.fields.name} onChange={(e) => updateItemField(item.key, 'name', e.target.value)} placeholder="Biofinity..." className="h-9" />
                                 </div>
                                 <div>
-                                    <Label className="text-xs text-muted-foreground">Type</Label>
+                                    <Label className="text-xs text-muted-foreground">{t('orders.type')}</Label>
                                     <Select value={item.fields.lensType} onValueChange={(val) => updateItemField(item.key, 'lensType', val)}>
                                         <SelectTrigger className="h-9"><SelectValue placeholder="--" /></SelectTrigger>
                                         <SelectContent>
                                             {LENS_TYPES.map((lt) => (
-                                                <SelectItem key={lt} value={lt}>{lt === 'color' ? 'Color' : 'Optic'}</SelectItem>
+                                                <SelectItem key={lt} value={lt}>{lt === 'color' ? t('purchaseInvoice.lensTypeColor') : t('purchaseInvoice.lensTypeOptic')}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <div>
-                                    <Label className="text-xs text-muted-foreground">Size / Diameter</Label>
+                                    <Label className="text-xs text-muted-foreground">{t('purchaseInvoice.sizeDiameter')}</Label>
                                     <Input value={item.fields.thickness} onChange={(e) => updateItemField(item.key, 'thickness', e.target.value)} placeholder="e.g. 14.2mm" className="h-9" />
                                 </div>
                                 {item.fields.lensType === 'optic' && (
@@ -377,11 +377,11 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                         {item.category === 'accessory' && (
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <div>
-                                    <Label className="text-xs text-muted-foreground">Brand</Label>
+                                    <Label className="text-xs text-muted-foreground">{t('stock.brand')}</Label>
                                     <Input value={item.fields.brand} onChange={(e) => updateItemField(item.key, 'brand', e.target.value)} placeholder="Brand..." className="h-9" />
                                 </div>
                                 <div>
-                                    <Label className="text-xs text-muted-foreground">Name</Label>
+                                    <Label className="text-xs text-muted-foreground">{t('stock.name')}</Label>
                                     <Input value={item.fields.name} onChange={(e) => updateItemField(item.key, 'name', e.target.value)} placeholder="Étui Cuir..." className="h-9" />
                                 </div>
                             </div>
@@ -389,11 +389,11 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                         {(item.category === 'nettoyant_lentilles' || item.category === 'nettoyant_monture') && (
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <div>
-                                    <Label className="text-xs text-muted-foreground">Name</Label>
+                                    <Label className="text-xs text-muted-foreground">{t('stock.name')}</Label>
                                     <Input value={item.fields.name} onChange={(e) => updateItemField(item.key, 'name', e.target.value)} placeholder="Solution Lentilles..." className="h-9" />
                                 </div>
                                 <div>
-                                    <Label className="text-xs text-muted-foreground">Size</Label>
+                                    <Label className="text-xs text-muted-foreground">{t('stock.size')}</Label>
                                     <Input value={item.fields.thickness} onChange={(e) => updateItemField(item.key, 'thickness', e.target.value)} placeholder="e.g. 50ml, 100ml..." className="h-9" />
                                 </div>
                             </div>
@@ -401,58 +401,58 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <div>
-                                <Label className="text-xs text-muted-foreground">Qty</Label>
+                                <Label className="text-xs text-muted-foreground">{t('reports.qty')}</Label>
                                 <Input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(item.key, 'quantity', parseInt(e.target.value) || 1)} className="h-9" />
                             </div>
                             <div>
-                                <Label className="text-xs text-muted-foreground">Unit Cost Price</Label>
+                                <Label className="text-xs text-muted-foreground">{t('purchaseInvoice.unitCostPrice')}</Label>
                                 <Input type="number" step="0.001" min="0" value={item.unitPrice} onChange={(e) => updateItem(item.key, 'unitPrice', parseFloat(e.target.value) || 0)} className="h-9" />
                             </div>
                         </div>
 
                         {item.category && (
                             <p className="text-xs text-muted-foreground italic">
-                                Description: {buildDescription(item.category as Category, item.fields)}
+                                {t('purchaseInvoice.itemDescription')} {buildDescription(item.category as Category, item.fields)}
                             </p>
                         )}
                     </div>
                 ))}
                 <div className="text-right text-sm font-medium pt-1">
-                    Total: {totalAmount.toFixed(3)} TND
+                    {t('orders.total')}: {totalAmount.toFixed(3)} TND
                 </div>
             </div>
 
             <div className="space-y-3 p-3 bg-muted/20 rounded-lg border">
                 <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium">Payments</Label>
+                    <Label className="text-sm font-medium">{t('purchaseInvoice.payments')}</Label>
                     <Button type="button" variant="outline" size="sm" onClick={addPayment}>
-                        <Plus className="h-3.5 w-3.5 mr-1" /> Add Payment
+                        <Plus className="h-3.5 w-3.5 mr-1" /> {t('purchaseInvoice.addPayment')}
                     </Button>
                 </div>
                 {formData.payments.length === 0 && (
-                    <p className="text-sm text-muted-foreground italic">No payments added. Invoice will be marked unpaid.</p>
+                    <p className="text-sm text-muted-foreground italic">{t('purchaseInvoice.noPaymentsHint')}</p>
                 )}
                 {formData.payments.map((pay, index) => (
                     <div key={pay.key} className="flex flex-col gap-2 p-3 bg-background rounded-lg border">
                         <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-medium text-muted-foreground">Payment #{index + 1}</span>
+                            <span className="text-xs font-medium text-muted-foreground">{t('purchaseInvoice.paymentNumber', { n: index + 1 })}</span>
                             <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removePayment(pay.key)}>
                                 <Trash2 className="h-3 w-3" />
                             </Button>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Amount *</Label>
+                                <Label className="text-xs text-muted-foreground">{t('payments.amount')} *</Label>
                                 <Input type="number" step="0.001" min="0" value={pay.amount} onChange={(e) => updatePayment(pay.key, 'amount', parseFloat(e.target.value) || 0)} className="h-9" />
                             </div>
                             <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Type *</Label>
+                                <Label className="text-xs text-muted-foreground">{t('payments.method')} *</Label>
                                 <Select value={pay.method} onValueChange={(val) => updatePayment(pay.key, 'method', val)}>
                                     <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="cash">Cash</SelectItem>
-                                        <SelectItem value="cheque">Chèque</SelectItem>
-                                        <SelectItem value="traite">Traite</SelectItem>
+                                        <SelectItem value="cash">{t('payments.cash')}</SelectItem>
+                                        <SelectItem value="cheque">{t('payments.cheque')}</SelectItem>
+                                        <SelectItem value="traite">{t('payments.traite')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -461,26 +461,26 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                 {(pay.method === 'cheque' || pay.method === 'traite') && (
                                     <div className="space-y-1">
-                                        <Label className="text-xs text-muted-foreground">{pay.method === 'traite' ? 'Traite' : 'Chèque'} # *</Label>
+                                        <Label className="text-xs text-muted-foreground">{pay.method === 'traite' ? t('payments.traite') : t('payments.cheque')} # *</Label>
                                         <Input value={pay.number} onChange={(e) => updatePayment(pay.key, 'number', e.target.value)} placeholder={pay.method === 'traite' ? 'TRT-001' : 'CHQ-001'} className="h-9" />
                                     </div>
                                 )}
                                 {(pay.method === 'cheque' || pay.method === 'traite') && (
                                     <div className="space-y-1">
-                                        <Label className="text-xs text-muted-foreground">Banque *</Label>
+                                        <Label className="text-xs text-muted-foreground">{t('payments.bankName')} *</Label>
                                         <SearchSelect
                                             options={TUNISIAN_BANKS.map((b) => ({ value: b, label: b }))}
                                             value={pay.bank}
                                             onChange={(val) => updatePayment(pay.key, 'bank', val)}
                                             placeholder="BIAT"
                                             emptyMessage={t('common.noResults')}
-                                            title="Banque"
+                                            title={t('payments.bankName')}
                                         />
                                     </div>
                                 )}
                                 {(pay.method === 'cheque' || pay.method === 'traite') && (
                                     <div className="space-y-1">
-                                        <Label className="text-xs text-muted-foreground">Date d&apos;échéance *</Label>
+                                        <Label className="text-xs text-muted-foreground">{t('payments.dueDate')} *</Label>
                                         <Input type="date" value={pay.dueDate} onChange={(e) => updatePayment(pay.key, 'dueDate', e.target.value)} className="h-9" />
                                     </div>
                                 )}
@@ -490,17 +490,17 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                 ))}
                 {formData.payments.length > 0 && (
                     <div className="flex justify-end gap-4 text-sm pt-1">
-                        <span>Total paid: <strong>{totalPaid.toFixed(3)} TND</strong></span>
+                        <span>{t('payments.totalPaid')} <strong>{totalPaid.toFixed(3)} TND</strong></span>
                         <span className={totalPaid > totalAmount ? 'text-destructive' : totalPaid === totalAmount ? 'text-green-600' : ''}>
-                            Balance: <strong>{(totalAmount - totalPaid).toFixed(3)} TND</strong>
+                            {t('payments.balance')} <strong>{(totalAmount - totalPaid).toFixed(3)} TND</strong>
                         </span>
                     </div>
                 )}
             </div>
 
             <div className="space-y-2">
-                <Label>Notes</Label>
-                <textarea value={formData.notes} onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))} placeholder="Optional notes..." rows={2} className="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+                <Label>{t('clients.notes')}</Label>
+                <textarea value={formData.notes} onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))} placeholder={t('common.notesPlaceholder')} rows={2} className="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 pt-2">

@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Loader2 } from 'lucide-react'
+import { useTranslation } from '@/lib/hooks/useTranslation'
 
 interface FournisseurFormDialogProps {
     open: boolean
@@ -46,38 +47,39 @@ export function FournisseurFormDialog({
     onSave,
     saving,
 }: FournisseurFormDialogProps) {
+    const { t } = useTranslation()
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="w-full sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>{editingSupplier ? 'Edit Supplier' : 'Add Supplier'}</DialogTitle>
+                    <DialogTitle>{editingSupplier ? t('fournisseurs.editSupplier') : t('fournisseurs.newSupplier')}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                     <div className="space-y-2">
-                        <Label>Name *</Label>
+                        <Label>{t('fournisseurs.name')} *</Label>
                         <Input value={formName} onChange={(e) => onFormNameChange(e.target.value)} placeholder="Supplier name" />
                     </div>
                     <div className="space-y-2">
-                        <Label>Phone</Label>
+                        <Label>{t('fournisseurs.phone')}</Label>
                         <Input value={formPhone} onChange={(e) => onFormPhoneChange(e.target.value)} placeholder="Phone number" />
                     </div>
                     <div className="space-y-2">
-                        <Label>Email</Label>
+                        <Label>{t('fournisseurs.email')}</Label>
                         <Input type="email" value={formEmail} onChange={(e) => onFormEmailChange(e.target.value)} placeholder="supplier@example.com" />
                     </div>
                     <div className="space-y-2">
-                        <Label>Tax ID</Label>
+                        <Label>{t('fournisseurs.taxId')}</Label>
                         <Input value={formTaxId} onChange={(e) => onFormTaxIdChange(e.target.value)} placeholder="Matricule fiscal" />
                     </div>
                     <div className="space-y-2">
-                        <Label>Address</Label>
+                        <Label>{t('fournisseurs.address')}</Label>
                         <Input value={formAddress} onChange={(e) => onFormAddressChange(e.target.value)} placeholder="Address" />
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
-                        <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                        <Button variant="outline" onClick={() => onOpenChange(false)}>{t('common.cancel')}</Button>
                         <Button onClick={onSave} disabled={saving}>
                             {saving && <Loader2 className="h-4 w-4 mr-2 animate-spinner" />}
-                            Save
+                            {t('common.save')}
                         </Button>
                     </div>
                 </div>

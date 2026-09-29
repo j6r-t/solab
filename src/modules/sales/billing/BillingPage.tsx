@@ -74,7 +74,7 @@ export function BillingPage() {
             const data = await fetchBillingRecords({ start: start.toISOString(), end: end.toISOString() })
             setReportData(data)
         } catch {
-            toast.error('Failed to load report')
+            toast.error(t('billing.reportLoadFailed'))
         } finally {
             setReportLoading(false)
         }
@@ -93,7 +93,7 @@ export function BillingPage() {
             setQuickSaleOpen(false)
             await reFetch()
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Quick sale failed')
+            toast.error(error instanceof Error ? error.message : t('billing.quickSaleFailed'))
         } finally {
             setSaving(false)
         }

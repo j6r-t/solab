@@ -59,7 +59,7 @@ export function StockFilters(props: StockFiltersProps) {
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1 min-w-[200px]">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input value={search} onChange={(e) => onSearchChange(e.target.value)} placeholder="Search products by name, brand or model..." className="pl-10 h-10" />
+                    <Input value={search} onChange={(e) => onSearchChange(e.target.value)} placeholder={t('stock.filtersSearchPlaceholder')} className="pl-10 h-10" />
                 </div>
                 <Select value={category} onValueChange={(val) => onCategoryChange(val === '__all__' ? '' : val)}>
                     <SelectTrigger className="w-full sm:w-44 h-10">
@@ -164,12 +164,13 @@ export function StockFilters(props: StockFiltersProps) {
 }
 
 function RangeInput({ label, from, onFromChange, to, onToChange }: { label: string; from: string; onFromChange: (v: string) => void; to: string; onToChange: (v: string) => void }) {
+    const { t } = useTranslation()
     return (
         <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground shrink-0 w-7">{label}</span>
-            <Input value={from} onChange={(e) => onFromChange(e.target.value)} placeholder="All" className="w-20 h-9 text-sm" />
+            <Input value={from} onChange={(e) => onFromChange(e.target.value)} placeholder={t('common.all')} className="w-20 h-9 text-sm" />
             <span className="text-xs text-muted-foreground">—</span>
-            <Input value={to} onChange={(e) => onToChange(e.target.value)} placeholder="All" className="w-20 h-9 text-sm" />
+            <Input value={to} onChange={(e) => onToChange(e.target.value)} placeholder={t('common.all')} className="w-20 h-9 text-sm" />
         </div>
     )
 }

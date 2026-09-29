@@ -212,7 +212,7 @@ export function ProductForm({ defaultValues, onSubmit, onCancel, saving: externa
                     </div>
 
                     <div className="space-y-4 p-3 bg-muted/20 rounded-lg border">
-                        <p className="text-sm font-medium text-muted-foreground">Lens Parameters</p>
+                        <p className="text-sm font-medium text-muted-foreground">{t('stock.lensParameters')}</p>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="space-y-2">
                                 <Label>{t('stock.lensType')}</Label>
@@ -282,7 +282,7 @@ export function ProductForm({ defaultValues, onSubmit, onCancel, saving: externa
                     </div>
 
                     <div className="space-y-4 p-3 bg-muted/20 rounded-lg border">
-                        <p className="text-sm font-medium text-muted-foreground">Lens Parameters</p>
+                        <p className="text-sm font-medium text-muted-foreground">{t('stock.lensParameters')}</p>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="space-y-2">
                                 <Label>{t('stock.lensType')}</Label>

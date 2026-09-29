@@ -61,7 +61,7 @@ export function OrdersPage() {
             await reFetch()
             setPrintConfirmTarget(order)
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to create order')
+            toast.error(error instanceof Error ? error.message : t('orders.createFailed'))
         } finally {
             setSaving(false)
         }
@@ -155,7 +155,7 @@ export function OrdersPage() {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <div className="relative flex-1 min-w-[200px]">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by client name or order ID" className="pl-10 h-10" />
+                    <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('orders.searchPlaceholder')} className="pl-10 h-10" />
                 </div>
                 <ExportButton url="/api/export/orders" />
                 <Button variant="outline" className="w-full sm:w-auto" onClick={() => setCreateOpen(true)}>
@@ -243,9 +243,9 @@ export function OrdersPage() {
             <ConfirmDialog
                 open={!!statusConfirmTarget}
                 onOpenChange={() => setStatusConfirmTarget(null)}
-                title="Update Order Status"
-                description={statusConfirmTarget ? `Move order to "${statusConfirmTarget.status}"?` : ''}
-                confirmLabel="Update"
+                title={t('orders.updateStatusTitle')}
+                description={statusConfirmTarget ? t('orders.moveStatusDesc', { status: t(`orders.${statusConfirmTarget.status}`) }) : ''}
+                confirmLabel={t('common.update')}
                 cancelLabel={t('common.cancel')}
                 onConfirm={() => statusConfirmTarget && handleStatusUpdate(statusConfirmTarget.orderId, statusConfirmTarget.status)}
             />

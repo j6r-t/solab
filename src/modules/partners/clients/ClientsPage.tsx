@@ -159,10 +159,9 @@ export function ClientsPage() {
                 ) : showEmptyState ? (
                     <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center max-w-[600px] mx-auto">
                         <Users className="w-12 h-12 text-muted-foreground/50 mb-6" />
-                        <h2 className="text-lg font-medium text-foreground mb-2">No clients yet</h2>
+                        <h2 className="text-lg font-medium text-foreground mb-2">{t('empty.noClients')}</h2>
                         <p className="text-sm text-muted-foreground mb-6 max-w-sm leading-relaxed">
-                            Create your first client profile to start tracking prescriptions and orders.
-                            Each client can have multiple prescriptions and order history.
+                            {t('clients.noClientsDesc')}
                         </p>
                         <Button onClick={() => { setWizardOpen(true); setWizardStep(1); setNewClientId(''); setNewClientName('') }}>
                             <Plus className="h-4 w-4 mr-2" />
@@ -207,7 +206,7 @@ export function ClientsPage() {
                                                         variant="ghost"
                                                         size="icon"
                                                         onClick={() => setView('client-detail', { id: client.id })}
-                                                        title="View orders"
+                                                        title={t('clients.viewOrders')}
                                                     >
                                                         <Eye className="h-4 w-4" />
                                                     </Button>

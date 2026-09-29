@@ -75,7 +75,7 @@ export function FournisseursPage() {
     }
 
     async function handleSave() {
-        if (!formName.trim()) return toast.error('Name is required')
+        if (!formName.trim()) return toast.error(t('fournisseurs.nameRequired'))
         setSaving(true)
         try {
             const url = editSupplier ? `/api/fournisseurs/${editSupplier.id}` : '/api/fournisseurs'
@@ -87,13 +87,13 @@ export function FournisseursPage() {
             })
             if (!res.ok) {
                 const body = await res.json()
-                throw new Error(body.error || 'Failed to save')
+                throw new Error(body.error || t('common.saveFailed'))
             }
-            toast.success(editSupplier ? 'Supplier updated' : 'Supplier created')
+            toast.success(editSupplier ? t('fournisseurs.updated') : t('fournisseurs.created'))
             setDialogOpen(false)
             await reFetch()
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to save supplier')
+            toast.error(error instanceof Error ? error.message : t('fournisseurs.saveFailed'))
         } finally {
             setSaving(false)
         }
@@ -102,11 +102,11 @@ export function FournisseursPage() {
     async function handleDelete(supplier: Fournisseur) {
         try {
             await deleteFournisseurMutation.mutateAsync(supplier.id)
-            toast.success('Supplier deleted')
+            toast.success(t('fournisseurs.deleted'))
             setDeleteTarget(null)
             await reFetch()
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to delete supplier')
+            toast.error(error instanceof Error ? error.message : t('fournisseurs.deleteFailed'))
         }
     }
 
@@ -117,12 +117,12 @@ export function FournisseursPage() {
         setProductFilter('all')
         try {
             const res = await fetch(`/api/stock?fournisseurId=${supplier.id}`)
-            if (!res.ok) throw new Error('Failed to fetch products')
+            if (!res.ok) throw new Error(t('fournisseurs.productsLoadFailed'))
             const json: PaginatedResponse<FournisseurProduct> | FournisseurProduct[] = await res.json()
             setProducts(Array.isArray(json) ? json : (json?.data ?? []))
         } catch (error) {
             console.error(error)
-            toast.error('Failed to load products')
+            toast.error(t('fournisseurs.productsLoadFailed'))
         } finally {
             setProductsLoading(false)
         }
@@ -134,7 +134,7 @@ export function FournisseursPage() {
     return (
         <div className="space-y-6 max-w-[900px]">
             <div>
-                <h1 className="text-[22px] font-medium">{t('nav.fournisseurs') || 'Suppliers'}</h1>
+                <h1 className="text-[22px] font-medium">{t('nav.fournisseurs')}</h1>
                 <p className="text-sm text-muted-foreground mt-1">{t('fournisseurs.description')}</p>
             </div>
 
@@ -144,14 +144,14 @@ export function FournisseursPage() {
                     <Input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search by name or phone..."
+                        placeholder={t('fournisseurs.searchPlaceholder')}
                         className="pl-10"
                     />
                 </div>
                 <ExportButton url="/api/export/fournisseurs" />
                 <Button onClick={() => openForm()}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Supplier
+                    {t('fournisseurs.newSupplier')}
                 </Button>
             </div>
 
@@ -160,11 +160,11 @@ export function FournisseursPage() {
             ) : showEmptyState ? (
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center max-w-[600px] mx-auto">
                     <Truck className="w-12 h-12 text-muted-foreground/50 mb-6" />
-                    <h2 className="text-lg font-medium text-foreground mb-2">No suppliers yet</h2>
-                    <p className="text-sm text-muted-foreground mb-6 max-w-sm leading-relaxed">Add your first supplier to track product sourcing.</p>
+                    <h2 className="text-lg font-medium text-foreground mb-2">{t('fournisseurs.noSuppliers')}</h2>
+                    <p className="text-sm text-muted-foreground mb-6 max-w-sm leading-relaxed">{t('fournisseurs.noSuppliersDesc')}</p>
                     <Button onClick={() => openForm()}>
                         <Plus className="h-4 w-4 mr-2" />
-                        Add Supplier
+                        {t('fournisseurs.newSupplier')}
                     </Button>
                 </div>
             ) : showNoResults ? (
@@ -190,16 +190,16 @@ export function FournisseursPage() {
                                         <span>{supplier.phone}</span>
                                         <Badge variant="secondary" className="text-[10px] h-4 px-1.5">
                                             <Package className="h-3 w-3 mr-0.5" />
-                                            {supplier._count.products} products
+                                            {t('fournisseurs.productsCount', { n: supplier._count.products })}
                                         </Badge>
                                     </div>
                                 </div>
                             </div>
                             <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                                <Button variant="ghost" size="icon" onClick={() => openForm(supplier)} title="Edit">
+                                <Button variant="ghost" size="icon" onClick={() => openForm(supplier)} title={t('common.edit')}>
                                     <Pencil className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(supplier)} title="Delete">
+                                <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(supplier)} title={t('common.delete')}>
                                     <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                             </div>
@@ -229,10 +229,10 @@ export function FournisseursPage() {
             <ConfirmDialog
                 open={!!deleteTarget}
                 onOpenChange={() => setDeleteTarget(null)}
-                title="Delete Supplier"
+                title={t('fournisseurs.deleteTitle')}
                 description={deleteTarget?.name || ''}
-                confirmLabel="Delete"
-                cancelLabel="Cancel"
+                confirmLabel={t('common.delete')}
+                cancelLabel={t('common.cancel')}
                 onConfirm={() => deleteTarget && handleDelete(deleteTarget)}
             />
 

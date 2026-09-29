@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select'
 import { Filter, Truck } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils/currency'
+import { useTranslation } from '@/lib/hooks/useTranslation'
 
 interface FournisseurProduct {
     id: string
@@ -46,6 +47,7 @@ export function FournisseurProductsDialog({
     productFilter,
     onProductFilterChange,
 }: FournisseurProductsDialogProps) {
+    const { t } = useTranslation()
     const filteredProducts = products.filter((p) => {
         if (productFilter === 'sold') return p._count?.orderItems > 0
         if (productFilter === 'unsold') return !p._count || p._count.orderItems === 0
@@ -58,7 +60,7 @@ export function FournisseurProductsDialog({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Truck className="h-5 w-5 text-primary" />
-                        Products from {supplier?.name}
+                        {t('fournisseurs.productsFrom', { name: supplier?.name ?? '' })}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -66,29 +68,29 @@ export function FournisseurProductsDialog({
                     <Filter className="h-4 w-4 text-muted-foreground" />
                     <Select value={productFilter} onValueChange={(v) => onProductFilterChange(v as 'all' | 'sold' | 'unsold')}>
                         <SelectTrigger className="w-40">
-                            <SelectValue placeholder="Filter" />
+                            <SelectValue placeholder={t('common.filter')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All Products</SelectItem>
-                            <SelectItem value="sold">Sold</SelectItem>
-                            <SelectItem value="unsold">Not Sold</SelectItem>
+                            <SelectItem value="all">{t('fournisseurs.allProducts')}</SelectItem>
+                            <SelectItem value="sold">{t('fournisseurs.sold')}</SelectItem>
+                            <SelectItem value="unsold">{t('fournisseurs.notSold')}</SelectItem>
                         </SelectContent>
                     </Select>
-                    <span className="text-xs text-muted-foreground ml-auto">{filteredProducts.length} of {products.length} products</span>
+                    <span className="text-xs text-muted-foreground ml-auto">{t('fournisseurs.productsRange', { count: filteredProducts.length, total: products.length })}</span>
                 </div>
 
                 {filteredProducts.length === 0 ? (
-                    <p className="text-center py-8 text-muted-foreground">No products found</p>
+                    <p className="text-center py-8 text-muted-foreground">{t('common.noResults')}</p>
                 ) : (
                     <div className="border rounded-lg overflow-x-auto overflow-y-auto max-h-[340px]">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="bg-muted sticky top-0 z-10">
-                                    <th className="text-left p-3 font-medium text-muted-foreground">Product</th>
-                                    <th className="text-left p-3 font-medium text-muted-foreground">Category</th>
-                                    <th className="text-right p-3 font-medium text-muted-foreground">Price</th>
-                                    <th className="text-right p-3 font-medium text-muted-foreground">Qty</th>
-                                    <th className="text-right p-3 font-medium text-muted-foreground">Status</th>
+                                    <th className="text-left p-3 font-medium text-muted-foreground">{t('reports.product')}</th>
+                                    <th className="text-left p-3 font-medium text-muted-foreground">{t('stock.category')}</th>
+                                    <th className="text-right p-3 font-medium text-muted-foreground">{t('stock.price')}</th>
+                                    <th className="text-right p-3 font-medium text-muted-foreground">{t('reports.qty')}</th>
+                                    <th className="text-right p-3 font-medium text-muted-foreground">{t('payments.status')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y">
@@ -103,7 +105,7 @@ export function FournisseurProductsDialog({
                                         <td className="p-3 text-right">{p.quantity}</td>
                                         <td className="p-3 text-right">
                                             <Badge variant={p._count?.orderItems > 0 ? 'default' : 'secondary'}>
-                                                {p._count?.orderItems > 0 ? 'Sold' : 'In Stock'}
+                                                {p._count?.orderItems > 0 ? t('fournisseurs.sold') : t('common.inStock')}
                                             </Badge>
                                         </td>
                                     </tr>

@@ -145,7 +145,7 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
         } else {
             setItems((prev) => [...prev, { lensBlankId: blank.id, quantity: 1, unitPrice: price, name: displayName, sellingPrice: Number(blank.sellingPrice) || 0 }])
         }
-        toast.success(`${blank.brand} added to order`)
+        toast.success(t('orders.blankAdded', { brand: blank.brand }))
     }
 
     function handlePrescriptionCreated(created: Prescription) {
@@ -171,23 +171,23 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                 }))
                 for (const r of rows) {
                     if (!(r.effAmount > 0)) {
-                        toast.error('Le montant de chaque paiement doit être supérieur à 0')
+                        toast.error(t('payments.errors.amountPositive'))
                         return
                     }
                     if (r.method === 'cheque' || r.method === 'traite') {
                         if (!r.number.trim()) {
-                            toast.error(r.method === 'traite' ? 'Le numéro de la traite est requis' : 'Le numéro du chèque est requis')
+                            toast.error(r.method === 'traite' ? t('payments.errors.numberRequiredTraite') : t('payments.errors.numberRequiredCheque'))
                             return
                         }
                         if (!r.dueDate) {
-                            toast.error("La date d'échéance est requise pour un chèque ou une traite")
+                            toast.error(t('payments.errors.dueDateRequired'))
                             return
                         }
                     }
                 }
                 const paymentsTotal = rows.reduce((s, r) => s + r.effAmount, 0)
                 if (grandTotal > 0 && paymentsTotal > grandTotal + 0.0001) {
-                    toast.warning('La somme des paiements dépasse le total de la commande')
+                    toast.warning(t('payments.errors.overTotal'))
                 }
                 payments = rows.map((r) => ({
                     amount: r.effAmount,
@@ -217,7 +217,7 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                     : undefined,
             })
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to create order')
+            toast.error(error instanceof Error ? error.message : t('orders.createFailed'))
         } finally {
             setInternalSaving(false)
         }
@@ -256,7 +256,7 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
             {forcedOrderType ? (
                 <div className="rounded-lg bg-muted/30 p-3 border text-sm">
                     <span className="font-medium">{t(`orders.type_${forcedOrderType}`)}</span>
-                    <span className="text-muted-foreground ml-2">â€” {t(`orders.type_${forcedOrderType}_desc`)}</span>
+                    <span className="text-muted-foreground ml-2">— {t(`orders.type_${forcedOrderType}_desc`)}</span>
                 </div>
             ) : (
                 <div className="space-y-2">

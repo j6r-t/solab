@@ -132,7 +132,7 @@ export function PurchaseInvoicePreviewDialog({ invoice, onClose, consolidated }:
                         <div>
                             <p className="text-[22px] font-bold text-green-600">Sofien Optic</p>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                                {isGroup ? t('invoices.fournisseurs.groupInvoice') : 'Supplier Invoice'} &mdash; {number}
+                                {isGroup ? t('invoices.fournisseurs.groupInvoice') : t('purchaseInvoice.supplierInvoiceTitle')} &mdash; {number}
                             </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -142,7 +142,7 @@ export function PurchaseInvoicePreviewDialog({ invoice, onClose, consolidated }:
                             {!isGroup && (
                                 <Button size="sm" className="gap-1.5" onClick={() => downloadPurchaseInvoice(inv)}>
                                     <Printer className="h-4 w-4 mr-1.5" />
-                                    Print / Download
+                                    {t('purchaseInvoice.printDownload')}
                                 </Button>
                             )}
                             {isGroup && (
@@ -173,7 +173,7 @@ export function PurchaseInvoicePreviewDialog({ invoice, onClose, consolidated }:
                                     }
                                 >
                                     <Printer className="h-4 w-4 mr-1.5" />
-                                    Print / Download
+                                    {t('purchaseInvoice.printDownload')}
                                 </Button>
                             )}
                         </div>
@@ -182,15 +182,15 @@ export function PurchaseInvoicePreviewDialog({ invoice, onClose, consolidated }:
                     <div className="rounded-lg border bg-card p-5 space-y-5">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-2.5 text-sm">
                             <div className="space-y-2.5">
-                                <FieldRow label="Supplier:" value={supplierName} />
-                                {!isGroup && <FieldRow label="Phone:" value={inv.fournisseur.phone} />}
-                                <FieldRow label="Entity:" value={(isGroup ? group!.entity : inv.entity) === 'shop' ? 'Shop' : 'Atelier'} />
+                                <FieldRow label={`${t('purchaseInvoice.supplier')}:`} value={supplierName} />
+                                {!isGroup && <FieldRow label={`${t('clients.phone')}:`} value={inv.fournisseur.phone} />}
+                                <FieldRow label={`${t('purchaseInvoice.entity')}:`} value={(isGroup ? group!.entity : inv.entity) === 'shop' ? t('role.shop') : t('role.atelier')} />
                             </div>
                             <div className="space-y-2.5">
-                                <FieldRow label="Date:" value={formatDate(date)} />
-                                <FieldRow label="Invoice #:" value={number} />
+                                <FieldRow label={`${t('payments.date')}:`} value={formatDate(date)} />
+                                <FieldRow label={`${t('purchaseInvoice.invoiceNumber')}:`} value={number} />
                                 <FieldRow
-                                    label="Status:"
+                                    label={`${t('payments.status')}:`}
                                     value={
                                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${statusColor}`}>
                                             {statusLabel}
@@ -224,10 +224,10 @@ export function PurchaseInvoicePreviewDialog({ invoice, onClose, consolidated }:
                             <table className="w-full text-sm border-collapse">
                                 <thead>
                                     <tr className="bg-green-600 text-white">
-                                        <th className="p-2.5 text-left font-medium">Item</th>
-                                        <th className="p-2.5 text-center font-medium">Qty</th>
-                                        <th className="p-2.5 text-right font-medium">Unit Price</th>
-                                        <th className="p-2.5 text-right font-medium">Total</th>
+                                        <th className="p-2.5 text-left font-medium">{t('purchaseInvoice.item')}</th>
+                                        <th className="p-2.5 text-center font-medium">{t('reports.qty')}</th>
+                                        <th className="p-2.5 text-right font-medium">{t('purchaseInvoice.unitPrice')}</th>
+                                        <th className="p-2.5 text-right font-medium">{t('orders.total')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
@@ -252,15 +252,15 @@ export function PurchaseInvoicePreviewDialog({ invoice, onClose, consolidated }:
 
                         <div className="flex flex-col items-end gap-1.5 text-sm">
                             <div className="flex gap-6">
-                                <span className="font-medium">Subtotal:</span>
+                                <span className="font-medium">{t('purchaseInvoice.subtotal')}</span>
                                 <span className="w-24 text-right">{formatCurrency(isGroup ? group!.totalAmount : inv.totalAmount)}</span>
                             </div>
                             <div className="flex gap-6">
-                                <span className="font-medium">Paid:</span>
+                                <span className="font-medium">{t('payments.paid')}:</span>
                                 <span className="w-24 text-right">{formatCurrency(isGroup ? group!.paidAmount : inv.paidAmount)}</span>
                             </div>
                             <div className="flex gap-6 text-base font-bold text-green-600 border-t-2 border-green-600 pt-1">
-                                <span>Balance:</span>
+                                <span>{t('payments.balance')}</span>
                                 <span className="w-24 text-right">{formatCurrency(balance.toFixed(3))}</span>
                             </div>
                         </div>
@@ -307,13 +307,13 @@ export function PurchaseInvoicePreviewDialog({ invoice, onClose, consolidated }:
 
                         {!isGroup && inv.payments.length > 0 && (
                             <div className="overflow-y-auto max-h-[340px]">
-                                <p className="text-sm font-semibold text-muted-foreground mb-2">Payment History</p>
+                                <p className="text-sm font-semibold text-muted-foreground mb-2">{t('payments.history')}</p>
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="bg-muted sticky top-0 z-10">
-                                            <th className="p-2 text-left font-medium">Date</th>
-                                            <th className="p-2 text-left font-medium">Method</th>
-                                            <th className="p-2 text-right font-medium">Amount</th>
+                                            <th className="p-2 text-left font-medium">{t('payments.date')}</th>
+                                            <th className="p-2 text-left font-medium">{t('payments.method')}</th>
+                                            <th className="p-2 text-right font-medium">{t('payments.amount')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y">
@@ -331,7 +331,7 @@ export function PurchaseInvoicePreviewDialog({ invoice, onClose, consolidated }:
 
                         {(isGroup ? group!.notes : inv.notes) && (
                             <div className="p-3 bg-muted/30 rounded-lg text-sm">
-                                <p className="font-semibold text-muted-foreground mb-1">Notes</p>
+                                <p className="font-semibold text-muted-foreground mb-1">{t('clients.notes')}</p>
                                 <p className="text-muted-foreground">{isGroup ? group!.notes : inv.notes}</p>
                             </div>
                         )}
