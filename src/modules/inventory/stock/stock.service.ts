@@ -22,76 +22,147 @@ interface StockQuery {
     excludeCategory?: string
 }
 
-export async function listProducts(params?: StockQuery) {
-    const where: Prisma.ProductWhereInput = {}
-    const orConditions: Prisma.ProductWhereInput[] = []
+/**
+ * Build search conditions for product filtering
+ */
+function buildSearchConditions(params: StockQuery): Prisma.ProductWhereInput[] {
+    const conditions: Prisma.ProductWhereInput[] = []
 
-    if (params?.search) {
-        orConditions.push(
+    if (params.search) {
+        conditions.push(
             { name: { contains: params.search } },
             { brand: { contains: params.search } },
             { model: { contains: params.search } },
         )
     }
 
-    if (params?.brand) {
-        orConditions.push({ brand: { contains: params.brand } })
+    if (params.brand) {
+        conditions.push({ brand: { contains: params.brand } })
     }
 
-    if (orConditions.length > 0) {
-        where.OR = orConditions
+    return conditions
+}
+
+/**
+ * Build exact match conditions for product filtering
+ */
+function buildExactMatchConditions(params: StockQuery): Prisma.ProductWhereInput {
+    const conditions: Prisma.ProductWhereInput = {}
+
+    if (params.category && (PRODUCT_CATEGORIES as readonly string[]).includes(params.category)) {
+        conditions.category = params.category as ProductCategory
+    }
+    if (params.excludeCategory) {
+        conditions.category = { not: params.excludeCategory as ProductCategory }
+    }
+    if (params.fournisseurId) {
+        conditions.fournisseurId = params.fournisseurId
     }
 
-    if (params?.category && (PRODUCT_CATEGORIES as readonly string[]).includes(params.category)) {
-        where.category = params.category as ProductCategory
-    }
-    if (params?.excludeCategory) {
-        where.category = { not: params.excludeCategory as ProductCategory }
-    }
-    if (params?.fournisseurId) {
-        where.fournisseurId = params.fournisseurId
+    if (params.lensType) {
+        conditions.lensType = params.lensType as LensType
     }
 
-    if (params?.lensType) {
-        where.lensType = params.lensType as LensType
+    if (params.material) {
+        conditions.material = params.material as LensMaterial
     }
 
-    if (params?.material) {
-        where.material = params.material as LensMaterial
+    if (params.coating) {
+        conditions.coating = params.coating as LensCoating
     }
 
-    if (params?.coating) {
-        where.coating = params.coating as LensCoating
-    }
+    return conditions
+}
 
-    if (params?.thickness) {
-        where.thickness = { contains: params.thickness }
-    }
+/**
+ * Build range conditions for product filtering (sph, cyl, add)
+ */
+function buildRangeConditions(params: StockQuery): Prisma.ProductWhereInput {
+    const conditions: Prisma.ProductWhereInput = {}
 
-    const sphGte = params?.sphFrom ? parseFloat(params.sphFrom) : NaN
-    const sphLte = params?.sphTo ? parseFloat(params.sphTo) : NaN
+    const sphGte = params.sphFrom ? parseFloat(params.sphFrom) : NaN
+    const sphLte = params.sphTo ? parseFloat(params.sphTo) : NaN
     if (!isNaN(sphGte) || !isNaN(sphLte)) {
-        where.sph = { ...(isNaN(sphGte) ? {} : { gte: sphGte }), ...(isNaN(sphLte) ? {} : { lte: sphLte }) }
+        conditions.sph = { ...(isNaN(sphGte) ? {} : { gte: sphGte }), ...(isNaN(sphLte) ? {} : { lte: sphLte }) }
     }
 
-    const cylGte = params?.cylFrom ? parseFloat(params.cylFrom) : NaN
-    const cylLte = params?.cylTo ? parseFloat(params.cylTo) : NaN
+    const cylGte = params.cylFrom ? parseFloat(params.cylFrom) : NaN
+    const cylLte = params.cylTo ? parseFloat(params.cylTo) : NaN
     if (!isNaN(cylGte) || !isNaN(cylLte)) {
-        where.cyl = { ...(isNaN(cylGte) ? {} : { gte: cylGte }), ...(isNaN(cylLte) ? {} : { lte: cylLte }) }
+        conditions.cyl = { ...(isNaN(cylGte) ? {} : { gte: cylGte }), ...(isNaN(cylLte) ? {} : { lte: cylLte }) }
     }
 
-    const addGte = params?.addFrom ? parseFloat(params.addFrom) : NaN
-    const addLte = params?.addTo ? parseFloat(params.addTo) : NaN
+    const addGte = params.addFrom ? parseFloat(params.addFrom) : NaN
+    const addLte = params.addTo ? parseFloat(params.addTo) : NaN
     if (!isNaN(addGte) || !isNaN(addLte)) {
-        where.add = { ...(isNaN(addGte) ? {} : { gte: addGte }), ...(isNaN(addLte) ? {} : { lte: addLte }) }
+        conditions.add = { ...(isNaN(addGte) ? {} : { gte: addGte }), ...(isNaN(addLte) ? {} : { lte: addLte }) }
     }
 
-    if (params?.stockStatus === 'outOfStock') {
-        where.quantity = 0
-    } else if (params?.stockStatus === 'lowStock') {
-        where.quantity = { gt: 0, lte: STOCK_THRESHOLDS.lowStock }
-    } else if (params?.stockStatus === 'inStock') {
-        where.quantity = { gt: STOCK_THRESHOLDS.lowStock }
+    return conditions
+}
+
+/**
+ * Build thickness condition for product filtering
+ */
+function buildThicknessCondition(params: StockQuery): Prisma.ProductWhereInput | undefined {
+    if (params.thickness) {
+        return { thickness: { contains: params.thickness } }
+    }
+    return undefined
+}
+
+/**
+ * Build stock status condition for product filtering
+ */
+function buildStockStatusCondition(params: StockQuery): Prisma.ProductWhereInput | undefined {
+    if (params.stockStatus === 'outOfStock') {
+        return { quantity: 0 }
+    } else if (params.stockStatus === 'lowStock') {
+        return { quantity: { gt: 0, lte: STOCK_THRESHOLDS.lowStock } }
+    } else if (params.stockStatus === 'inStock') {
+        return { quantity: { gt: STOCK_THRESHOLDS.lowStock } }
+    }
+    return undefined
+}
+
+/**
+ * List products with filtering support
+ * - Search: name, brand, model (OR conditions)
+ * - Brand: partial match
+ * - Category: exact match or exclude
+ * - Fournisseur: exact match
+ * - Lens specs: exact match (type, material, coating)
+ * - Thickness: partial match
+ * - Ranges: sph, cyl, add (gte/lte)
+ * - Stock status: outOfStock, lowStock, inStock
+ */
+export async function listProducts(params?: StockQuery) {
+    const where: Prisma.ProductWhereInput = {}
+
+    // Build search conditions (OR logic)
+    const searchConditions = buildSearchConditions(params)
+    if (searchConditions.length > 0) {
+        where.OR = searchConditions
+    }
+
+    // Build exact match conditions
+    const exactMatchConditions = buildExactMatchConditions(params)
+    Object.assign(where, exactMatchConditions)
+
+    // Build range conditions
+    const rangeConditions = buildRangeConditions(params)
+    Object.assign(where, rangeConditions)
+
+    // Build thickness condition
+    const thicknessCondition = buildThicknessCondition(params)
+    if (thicknessCondition) {
+        where.thickness = thicknessCondition.thickness
+    }
+
+    // Build stock status condition
+    const stockStatusCondition = buildStockStatusCondition(params)
+    if (stockStatusCondition) {
+        Object.assign(where, stockStatusCondition)
     }
 
     return productRepo.findMany({

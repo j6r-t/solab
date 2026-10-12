@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Loader2 } from 'lucide-react'
+import { useTranslation } from '@/lib/hooks/useTranslation'
 
 interface DoctorFormDialogProps {
     open: boolean
@@ -42,34 +43,35 @@ export function DoctorFormDialog({
     onSave,
     saving,
 }: DoctorFormDialogProps) {
+    const { t } = useTranslation()
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="w-full sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>{editingDoctor ? 'Edit Doctor' : 'Add Doctor'}</DialogTitle>
+                    <DialogTitle>{editingDoctor ? t('doctors.editDoctor') : t('doctors.addDoctor')}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                     <div className="space-y-2">
-                        <Label>Name *</Label>
-                        <Input value={formName} onChange={(e) => onFormNameChange(e.target.value)} placeholder="Dr. ..." />
+                        <Label>{t('doctors.name')} *</Label>
+                        <Input value={formName} onChange={(e) => onFormNameChange(e.target.value)} placeholder={t('doctors.namePlaceholder')} />
                     </div>
                     <div className="space-y-2">
-                        <Label>Phone</Label>
-                        <Input value={formPhone} onChange={(e) => onFormPhoneChange(e.target.value)} placeholder="Phone number" />
+                        <Label>{t('doctors.phone')}</Label>
+                        <Input value={formPhone} onChange={(e) => onFormPhoneChange(e.target.value)} placeholder={t('doctors.phonePlaceholder')} />
                     </div>
                     <div className="space-y-2">
-                        <Label>Specialization</Label>
-                        <Input value={formSpecialization} onChange={(e) => onFormSpecializationChange(e.target.value)} placeholder="e.g. Ophthalmologist" />
+                        <Label>{t('doctors.specialization')}</Label>
+                        <Input value={formSpecialization} onChange={(e) => onFormSpecializationChange(e.target.value)} placeholder={t('doctors.specializationPlaceholder')} />
                     </div>
                     <div className="space-y-2">
-                        <Label>Address</Label>
-                        <Input value={formAddress} onChange={(e) => onFormAddressChange(e.target.value)} placeholder="Address" />
+                        <Label>{t('doctors.address')}</Label>
+                        <Input value={formAddress} onChange={(e) => onFormAddressChange(e.target.value)} placeholder={t('doctors.address')} />
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
-                        <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                        <Button variant="outline" onClick={() => onOpenChange(false)}>{t('common.cancel')}</Button>
                         <Button onClick={onSave} disabled={saving}>
                             {saving && <Loader2 className="h-4 w-4 mr-2 animate-spinner" />}
-                            Save
+                            {t('common.save')}
                         </Button>
                     </div>
                 </div>

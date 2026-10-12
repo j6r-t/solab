@@ -121,7 +121,7 @@ ${svgContent}
                 try { win.print() } catch { /* user may cancel */ }
             }, 400)
         } else {
-            toast.error('Please allow popups for this site to print labels.')
+            toast.error(t('stock.popupBlocked'))
         }
     }, [product, qrDataUrl])
 

@@ -31,7 +31,7 @@ export function BillingInvoiceDialog({ selected, onClose }: Props) {
                     <div className="flex items-start justify-between mb-4">
                         <div>
                             <p className="text-[22px] font-bold" style={{ color: '#37b34a' }}>Sofiene Optic</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">Facture #{s.orderNumber} &mdash; {formatDate(s.createdAt)}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{t('billing.invoiceLabel')} #{s.orderNumber} &mdash; {formatDate(s.createdAt)}</p>
                         </div>
                         <div className="flex gap-2">
                             <Button size="sm" variant="outline" onClick={() => printRecu(s)}>
@@ -48,20 +48,20 @@ export function BillingInvoiceDialog({ selected, onClose }: Props) {
                     <div className="border rounded-xl bg-card p-5 space-y-5">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-2.5 text-sm">
                             <div className="space-y-2.5">
-                                <FieldRow label="Date:" value={formatDate(s.createdAt)} />
-                                <FieldRow label="N &amp; P:" value={`${s.client.name} ${s.client.familyName}`} />
-                                <FieldRow label="N de Tel:" value={s.client.phone} />
-                                <FieldRow label="Designation:" value={designation || '—'} />
+                                <FieldRow label={`${t('billing.date')}:`} value={formatDate(s.createdAt)} />
+                                <FieldRow label={t('billing.nameAndPhone')} value={`${s.client.name} ${s.client.familyName}`} />
+                                <FieldRow label={t('billing.tel')} value={s.client.phone} />
+                                <FieldRow label={t('billing.designation')} value={designation || '—'} />
                                 {s.orderType !== 'direct_sale' && s.prescription?.dateWritten && (
-                                    <FieldRow label="Date Ordonnance:" value={formatDate(s.prescription.dateWritten)} />
+                                    <FieldRow label={`${t('prescriptions.dateWritten')}:`} value={formatDate(s.prescription.dateWritten)} />
                                 )}
-                                {s.orderType !== 'direct_sale' && s.prescription?.doctorName && <FieldRow label="Medecin:" value={s.prescription.doctorName} />}
+                                {s.orderType !== 'direct_sale' && s.prescription?.doctorName && <FieldRow label={`${t('prescriptions.doctor')}:`} value={s.prescription.doctorName} />}
                             </div>
                             <div className="space-y-2.5">
-                                <FieldRow label="Prix:" value={formatCurrency(s.totalAmount)} />
-                                <FieldRow label="Acompte:" value={deposit ? formatCurrency(deposit.amount) : '—'} />
-                                <FieldRow label="Reste:" value={formatCurrency(s.balance)} />
-                                <FieldRow label="Date promise:" value={promiseDate || '—'} />
+                                <FieldRow label={`${t('stock.price')}:`} value={formatCurrency(s.totalAmount)} />
+                                <FieldRow label={`${t('orders.deposit')}:`} value={deposit ? formatCurrency(deposit.amount) : '—'} />
+                                <FieldRow label={`${t('payments.remaining')}:`} value={formatCurrency(s.balance)} />
+                                <FieldRow label={t('billing.promiseDate')} value={promiseDate || '—'} />
                             </div>
                         </div>
 

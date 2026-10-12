@@ -35,12 +35,12 @@ export function QRCodePage() {
         try {
             const data = await lookupQRCode(trimmed)
             if (!data.product) {
-                toast.error('Product not found for this QR code')
+                toast.error(t('qrcode.productNotFound'))
                 return
             }
             setProduct(data.product)
         } catch {
-            toast.error('Failed to look up QR code')
+            toast.error(t('qrcode.lookupFailed'))
         } finally {
             setLoading(false)
         }
@@ -68,7 +68,7 @@ export function QRCodePage() {
                         value={code}
                         onChange={(e) => setCode(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
-                        placeholder="Enter or scan QR code..."
+                        placeholder={t('qrcode.searchPlaceholder')}
                         className="pl-10 h-10"
                     />
                 </div>
@@ -87,8 +87,8 @@ export function QRCodePage() {
             {searched && !loading && !product && (
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center py-16 px-8 text-center">
                     <QrCode className="w-12 h-12 text-muted-foreground/50 mb-4" />
-                    <h2 className="text-lg font-medium text-foreground mb-2">No product found</h2>
-                    <p className="text-sm text-muted-foreground">No product matches the entered QR code.</p>
+                    <h2 className="text-lg font-medium text-foreground mb-2">{t('qrcode.noProduct')}</h2>
+                    <p className="text-sm text-muted-foreground">{t('qrcode.noProductDesc')}</p>
                 </div>
             )}
 
@@ -106,7 +106,7 @@ export function QRCodePage() {
                             <div><span className="text-muted-foreground">{t('stock.model')}:</span> {product.model || '—'}</div>
                             <div><span className="text-muted-foreground">{t('stock.category')}:</span> {categoryLabel(product.category)}</div>
                             <div><span className="text-muted-foreground">{t('stock.sellingPrice')}:</span> {formatCurrency(product.price.toString())}</div>
-                            <div><span className="text-muted-foreground">QR Code:</span> <span className="font-mono text-xs">{code}</span></div>
+                            <div><span className="text-muted-foreground">{t('stock.qrCode')}:</span> <span className="font-mono text-xs">{code}</span></div>
                         </div>
 
                         {code && (

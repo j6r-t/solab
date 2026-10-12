@@ -171,23 +171,23 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                 }))
                 for (const r of rows) {
                     if (!(r.effAmount > 0)) {
-                        toast.error('Le montant de chaque paiement doit être supérieur à 0')
+                        toast.error(t('orders.paymentAmountPositive'))
                         return
                     }
                     if (r.method === 'cheque' || r.method === 'traite') {
                         if (!r.number.trim()) {
-                            toast.error(r.method === 'traite' ? 'Le numéro de la traite est requis' : 'Le numéro du chèque est requis')
+                            toast.error(r.method === 'traite' ? t('orders.traiteNumberRequired') : t('orders.chequeNumberRequired'))
                             return
                         }
                         if (!r.dueDate) {
-                            toast.error("La date d'échéance est requise pour un chèque ou une traite")
+                            toast.error(t('orders.dueDateRequired'))
                             return
                         }
                     }
                 }
                 const paymentsTotal = rows.reduce((s, r) => s + r.effAmount, 0)
                 if (grandTotal > 0 && paymentsTotal > grandTotal + 0.0001) {
-                    toast.warning('La somme des paiements dépasse le total de la commande')
+                    toast.warning(t('orders.paymentsExceedTotal'))
                 }
                 payments = rows.map((r) => ({
                     amount: r.effAmount,

@@ -364,6 +364,9 @@ model Cheque {
   notes              String?
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
+
+  @@index([number])
+  @@index([status])
 }
 
 model PurchaseInvoice {
@@ -384,6 +387,9 @@ model PurchaseInvoice {
   groupedItem     SupplierConsolidatedInvoiceItem? @relation("SupplierConsolidatedSource")
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
+
+  @@index([fournisseurId])
+  @@index([entity])
 }
 
 model PurchaseInvoiceItem {
@@ -398,6 +404,10 @@ model PurchaseInvoiceItem {
   category    String?
   quantity    Int
   unitPrice   Decimal
+
+  @@index([invoiceId])
+  @@index([productId])
+  @@index([lensBlankId])
 }
 
 model SupplierPayment {
@@ -409,6 +419,9 @@ model SupplierPayment {
   chequeId          String?
   cheque            Cheque?          @relation(fields: [chequeId], references: [id])
   paidAt            DateTime         @default(now())
+
+  @@index([purchaseInvoiceId])
+  @@index([chequeId])
 }
 
 model LensBlank {
@@ -448,6 +461,10 @@ model LensBlankAdjustment {
   invoiceId   String?
   invoice     PurchaseInvoice?          @relation(fields: [invoiceId], references: [id])
   createdAt   DateTime                  @default(now())
+
+  @@index([lensBlankId])
+  @@index([workOrderId])
+  @@index([invoiceId])
 }
 
 model AtelierWorkOrder {
@@ -534,11 +551,14 @@ model StockAdjustment {
 model AuditLog {
   id         String   @id @default(uuid())
   userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
   action     String
   entityType String
   entityId   String?
   metadata   String   @default("{}")
   createdAt  DateTime @default(now())
+
+  @@index([userId])
 }
 
 // ───────────────────────────────
@@ -616,6 +636,9 @@ model OpticianShopBillItem {
   lensBlankId     String?
   lensBlank       LensBlank?       @relation(fields: [lensBlankId], references: [id])
   createdAt       DateTime         @default(now())
+
+  @@index([billId])
+  @@index([lensBlankId])
 }
 
 model OpticianShopPayment {
@@ -628,6 +651,9 @@ model OpticianShopPayment {
   cheque    Cheque?          @relation(fields: [chequeId], references: [id])
   notes     String?
   paidAt    DateTime         @default(now())
+
+  @@index([billId])
+  @@index([chequeId])
 }
 
 model ConsolidatedInvoice {
@@ -655,6 +681,8 @@ model ConsolidatedInvoiceItem {
   sourceBillNumber      String
   amount                Decimal
   createdAt             DateTime            @default(now())
+
+  @@index([consolidatedInvoiceId])
 }
 
 model ConsolidatedPayment {
@@ -667,6 +695,9 @@ model ConsolidatedPayment {
   cheque                Cheque?             @relation(fields: [chequeId], references: [id])
   notes                 String?
   paidAt                DateTime            @default(now())
+
+  @@index([consolidatedInvoiceId])
+  @@index([chequeId])
 }
 
 model SupplierConsolidatedInvoice {
@@ -695,6 +726,8 @@ model SupplierConsolidatedInvoiceItem {
   sourceInvoiceNumber     String
   amount                  Decimal
   createdAt               DateTime                    @default(now())
+
+  @@index([consolidatedInvoiceId])
 }
 
 model SupplierConsolidatedPayment {
@@ -707,4 +740,7 @@ model SupplierConsolidatedPayment {
   cheque                Cheque?                     @relation(fields: [chequeId], references: [id])
   notes                 String?
   paidAt                DateTime                    @default(now())
+
+  @@index([consolidatedInvoiceId])
+  @@index([chequeId])
 }

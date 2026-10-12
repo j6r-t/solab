@@ -100,7 +100,7 @@ export function ImportPage() {
             const text = ev.target?.result as string
             const parsed = parseCSV(text)
             if (parsed.headers.length === 0 || parsed.rows.length === 0) {
-                toast.error('File appears empty or unreadable')
+                toast.error(t('import.fileEmpty'))
                 return
             }
             setHeaders(parsed.headers)
@@ -125,7 +125,7 @@ export function ImportPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ entity, rows, mapping }),
             })
-            if (!res.ok) throw new Error('Preview failed')
+            if (!res.ok) throw new Error(t('import.previewFailed'))
             const data = await res.json()
             setPreview(
                 data.preview.map((p: Record<string, unknown>, i: number) => ({
@@ -135,7 +135,7 @@ export function ImportPage() {
             )
             setStep(3)
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to generate preview')
+            toast.error(error instanceof Error ? error.message : t('import.previewGenerateFailed'))
         }
     }
 
@@ -148,7 +148,7 @@ export function ImportPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ entity, rows: mappedRows }),
             })
-            if (!res.ok) throw new Error('Import failed')
+            if (!res.ok) throw new Error(t('common.somethingWentWrong'))
             const data = await res.json()
             setSummary(data)
             setStep(4)

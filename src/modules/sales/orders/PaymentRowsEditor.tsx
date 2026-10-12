@@ -84,7 +84,7 @@ export function PaymentRowsEditor({ rows, onChange, paymentType, onPaymentTypeCh
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Montant *</Label>
+                                <Label className="text-xs text-muted-foreground">{t('payments.amount')} *</Label>
                                 <Input
                                     type="number"
                                     step="0.001"
@@ -96,14 +96,14 @@ export function PaymentRowsEditor({ rows, onChange, paymentType, onPaymentTypeCh
                                 />
                             </div>
                             <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Méthode *</Label>
+                                <Label className="text-xs text-muted-foreground">{t('payments.method')} *</Label>
                                 <Select value={row.method} onValueChange={(val) => updatePaymentRow(row.key, 'method', val)}>
                                     <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="cash">Espèces</SelectItem>
-                                        <SelectItem value="card">Carte</SelectItem>
-                                        <SelectItem value="cheque">Chèque</SelectItem>
-                                        <SelectItem value="traite">Traite</SelectItem>
+                                        <SelectItem value="cash">{t('payments.cash')}</SelectItem>
+                                        <SelectItem value="card">{t('payments.card')}</SelectItem>
+                                        <SelectItem value="cheque">{t('payments.cheque')}</SelectItem>
+                                        <SelectItem value="traite">{t('payments.traite')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -111,7 +111,7 @@ export function PaymentRowsEditor({ rows, onChange, paymentType, onPaymentTypeCh
                         {(row.method === 'cheque' || row.method === 'traite') && (
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                 <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Numéro *</Label>
+                                    <Label className="text-xs text-muted-foreground">{t('payments.instrumentNumber')} *</Label>
                                     <Input
                                         value={row.number}
                                         onChange={(e) => updatePaymentRow(row.key, 'number', e.target.value)}
@@ -120,18 +120,18 @@ export function PaymentRowsEditor({ rows, onChange, paymentType, onPaymentTypeCh
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Banque *</Label>
+                                    <Label className="text-xs text-muted-foreground">{t('payments.bankName')} *</Label>
                                     <SearchSelect
                                         options={TUNISIAN_BANKS.map((b) => ({ value: b, label: b }))}
                                         value={row.bank}
                                         onChange={(val) => updatePaymentRow(row.key, 'bank', val)}
                                         placeholder="BIAT"
                                         emptyMessage={t('common.noResults')}
-                                        title="Banque"
+                                        title={t('payments.bankName')}
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Date d&apos;échéance *</Label>
+                                    <Label className="text-xs text-muted-foreground">{t('payments.dueDate')} *</Label>
                                     <Input
                                         type="date"
                                         value={row.dueDate}
@@ -145,9 +145,9 @@ export function PaymentRowsEditor({ rows, onChange, paymentType, onPaymentTypeCh
                 ))}
                 {orderType !== 'direct_sale' && (
                     <div className="flex flex-wrap justify-end gap-4 text-sm pt-1">
-                        <span>Total payé : <strong>{paymentsTotal.toFixed(3)} TND</strong></span>
+                        <span>{t('payments.totalPaid')} <strong>{paymentsTotal.toFixed(3)} TND</strong></span>
                         <span className={paymentsTotal > grandTotal + 0.0001 ? 'text-destructive' : paymentsTotal === grandTotal ? 'text-green-600' : ''}>
-                            Solde : <strong>{Math.max(grandTotal - paymentsTotal, 0).toFixed(3)} TND</strong>
+                            {t('payments.balance')} <strong>{Math.max(grandTotal - paymentsTotal, 0).toFixed(3)} TND</strong>
                         </span>
                     </div>
                 )}

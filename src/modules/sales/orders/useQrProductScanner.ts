@@ -4,9 +4,11 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { toast } from 'sonner'
 import { Html5Qrcode } from 'html5-qrcode'
 import { lookupQRCode } from '@/modules/system/qrcode/qrcode.api'
+import { useTranslation } from '@/lib/hooks/useTranslation'
 import type { Product } from './order-form.types'
 
 export function useQrProductScanner(onScan: (product: Product) => void) {
+    const { t } = useTranslation()
     const [qrScanOpen, setQrScanOpen] = useState(false)
     const [qrScanning, setQrScanning] = useState(false)
     const [qrError, setQrError] = useState('')
@@ -43,12 +45,12 @@ export function useQrProductScanner(onScan: (product: Product) => void) {
             setQrScanning(false)
             try {
                 const data = await lookupQRCode(result)
-                if (!data.product) { toast.error('Product not found'); return }
+                if (!data.product) { toast.error(t('qrcode.productNotFoundShort')); return }
                 addItem(data.product)
-                toast.success(`${data.product.name} added`)
+                toast.success(t('qrcode.added', { name: data.product.name }))
                 setQrScanOpen(false)
             } catch {
-                toast.error('Failed to look up QR code')
+                toast.error(t('qrcode.lookupFailed'))
             }
         }
 
@@ -72,7 +74,7 @@ export function useQrProductScanner(onScan: (product: Product) => void) {
                 )
             } catch (err) {
                 if (!cancelled && mountedRef.current) {
-                    setQrError(err instanceof Error ? err.message : 'Camera access denied or not available')
+                    setQrError(err instanceof Error ? err.message : t('qrcode.cameraError'))
                     setQrScanning(false)
                 }
             }

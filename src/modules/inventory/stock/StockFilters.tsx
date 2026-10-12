@@ -59,7 +59,7 @@ export function StockFilters(props: StockFiltersProps) {
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1 min-w-[200px]">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input value={search} onChange={(e) => onSearchChange(e.target.value)} placeholder="Search products by name, brand or model..." className="pl-10 h-10" />
+                    <Input value={search} onChange={(e) => onSearchChange(e.target.value)} placeholder={t('stock.searchPlaceholder')} className="pl-10 h-10" />
                 </div>
                 <Select value={category} onValueChange={(val) => onCategoryChange(val === '__all__' ? '' : val)}>
                     <SelectTrigger className="w-full sm:w-44 h-10">

@@ -1,21 +1,28 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { verifyToken } from '@/modules/system/auth/auth.service'
+import { rateLimitMiddleware } from '@/lib/middlewares/rateLimiter'
 
 export async function middleware(request: NextRequest) {
+    // Run rate limiting first (before auth)
+    const rateLimitResponse = await rateLimitMiddleware(request)
+    if (rateLimitResponse.status === 429) {
+        return rateLimitResponse
+    }
+
     const { pathname } = request.nextUrl
-    
+
     // Completely skip auth for these public routes (no token verification needed)
     const publicRoutes = ['/api/auth/login', '/api/auth/setup', '/api/auth/logout', '/login']
     if (publicRoutes.some(route => pathname.startsWith(route))) {
         return NextResponse.next()
     }
-    
+
     // For auth endpoints that still require authentication (like change-password)
     // AND all other protected API routes
     if (pathname.startsWith('/api/')) {
         let token: string | undefined
-        
+
         // Check Authorization header first, then cookie
         const authHeader = request.headers.get('authorization')
         if (authHeader?.startsWith('Bearer ')) {
@@ -26,7 +33,7 @@ export async function middleware(request: NextRequest) {
                 token = cookieToken.value
             }
         }
-        
+
         if (!token) {
             return NextResponse.json(
                 { success: false, message: 'Unauthorized' },
@@ -34,26 +41,26 @@ export async function middleware(request: NextRequest) {
             )
         }
         const payload = await verifyToken(token)
-        
+
         if (!payload) {
             return NextResponse.json(
                 { success: false, message: 'Invalid token' },
                 { status: 401 }
             )
         }
-        
+
         // Add user info to request headers for controllers to use
         const requestHeaders = new Headers(request.headers)
         requestHeaders.set('x-user-email', payload.email)
         requestHeaders.set('x-user-role', payload.role)
-        
+
         return NextResponse.next({
             request: {
                 headers: requestHeaders,
             },
         })
     }
-    
+
     return NextResponse.next()
 }
 
