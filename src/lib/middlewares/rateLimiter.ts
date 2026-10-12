@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-// Simple in-memory rate limit store (for development)
-// In production, use Redis with @upstash/ratelimit
+// Simple in-memory rate limit store (for development and single-instance production)
+// For multi-instance production, deploy with Redis and use a distributed rate limiter
 type RateLimitStore = {
     [key: string]: {
         count: number
@@ -16,7 +16,7 @@ const RATE_LIMIT_MAX_REQUESTS = 100
 /**
  * Simple rate limiter using in-memory storage
  * WARNING: Not suitable for production with multiple instances
- * Use @upstash/ratelimit with Redis for production
+ * For production with multiple instances, use a distributed store like Redis
  */
 function isInRateLimit(ip: string): { allowed: boolean; remaining: number; resetAt: number } {
     const now = Date.now()
@@ -28,7 +28,7 @@ function isInRateLimit(ip: string): { allowed: boolean; remaining: number; reset
             count: 1,
             resetTime: now + RATE_LIMIT_WINDOW_MS,
         }
-        return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1, resetAt: record?.resetTime || now + RATE_LIMIT_WINDOW_MS }
+        return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1, resetAt: now + RATE_LIMIT_WINDOW_MS }
     }
 
     record.count++
@@ -46,10 +46,6 @@ function isInRateLimit(ip: string): { allowed: boolean; remaining: number; reset
  * Applies to all API routes
  */
 export async function rateLimitMiddleware(request: NextRequest) {
-    // Skip rate limiting in development (use simple in-memory limiter)
-    // In production, you should configure UPSTASH_REDIS_URL and UPSTASH_REDIS_TOKEN
-    // and use the Redis-based limiter instead
-
     // Skip rate limiting for health checks
     if (request.url.includes('/api/health')) {
         return NextResponse.next()
@@ -83,23 +79,4 @@ export async function rateLimitMiddleware(request: NextRequest) {
     }
 
     return response
-}
-
-// Export a factory function for production Redis-based rate limiting
-export function createRateLimiter(redisUrl?: string, redisToken?: string) {
-    if (redisUrl && redisToken) {
-        // Production: Use Upstash Redis
-        return import('@upstash/ratelimit').then(({ Ratelimit }) => {
-            return new Ratelimit({
-                redis: new (require('@upstash/redis'))({
-                    url: redisUrl,
-                    token: redisToken,
-                }),
-                limiter: Ratelimit.slidingWindow(100, '10 m'),
-                prefix: 'sofien_optic:',
-            })
-        })
-    }
-    // Development: Return simple in-memory limiter
-    return Promise.resolve({ limit: (id: string) => Promise.resolve({ success: true, remaining: 99, reset: Date.now() + 600000 }) })
 }
