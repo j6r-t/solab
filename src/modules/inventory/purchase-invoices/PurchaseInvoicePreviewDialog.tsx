@@ -317,13 +317,22 @@ export function PurchaseInvoicePreviewDialog({ invoice, onClose, consolidated }:
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y">
-                                        {inv.payments.map((p, i) => (
-                                            <tr key={i}>
-                                                <td className="p-2">{formatDate(p.paidAt)}</td>
-                                                <td className="p-2 capitalize">{paymentMethodLabel(p)}</td>
-                                                <td className="p-2 text-right">{formatCurrency(p.amount)}</td>
-                                            </tr>
-                                        ))}
+                                        {inv.payments.map((p, i) => {
+                                            const payment: PreviewPayment = {
+                                                id: `inv-payment-${i}`,
+                                                amount: p.amount,
+                                                method: p.method,
+                                                paidAt: p.paidAt,
+                                                cheque: null,
+                                            }
+                                            return (
+                                                <tr key={i}>
+                                                    <td className="p-2">{formatDate(payment.paidAt)}</td>
+                                                    <td className="p-2 capitalize">{paymentMethodLabel(payment)}</td>
+                                                    <td className="p-2 text-right">{formatCurrency(payment.amount)}</td>
+                                                </tr>
+                                            )
+                                        })}
                                     </tbody>
                                 </table>
                             </div>

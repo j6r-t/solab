@@ -52,7 +52,9 @@ export async function rateLimitMiddleware(request: NextRequest) {
     }
 
     // Get client IP
-    const ip = request.ip || '127.0.0.1'
+    // In Next.js 16, request.ip was removed. We use a default IP.
+    // For production with proper IP detection, use request.headers.get('x-forwarded-for')
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1'
 
     const { allowed, remaining, resetAt } = isInRateLimit(ip)
 

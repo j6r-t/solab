@@ -51,11 +51,10 @@ interface OrderFormState {
     setClientSearch: (search: string) => void
     setProductSearch: (search: string) => void
     setShowNewRx: (show: boolean) => void
+    reset: () => void
 }
 
 const createInitialState = (defaultValues?: any): Partial<OrderFormState> => {
-    const today = new Date().toISOString().split('T')[0]
-
     return {
         orderType: defaultValues?.orderType || 'standard',
         selectedClientId: defaultValues?.clientId || '',
@@ -73,7 +72,19 @@ const createInitialState = (defaultValues?: any): Partial<OrderFormState> => {
 }
 
 export const useOrderFormStore = create<OrderFormState>((set, get) => ({
-    ...createInitialState(),
+    // Initial state from createInitialState
+    orderType: 'standard',
+    selectedClientId: '',
+    selectedPrescriptionId: '',
+    expectedCompletionDate: '',
+    items: [],
+    repairs: [],
+    paymentType: 'full',
+    paymentRows: [{ key: 'pay_1', amount: '', method: 'cash', number: '', bank: '', dueDate: '' }],
+    clientSearch: '',
+    productSearch: '',
+    selectedServiceIds: [],
+    showNewRx: false,
 
     // Calculated values
     totalItemsPrice: 0,
@@ -161,5 +172,21 @@ export const useOrderFormStore = create<OrderFormState>((set, get) => ({
     setShowNewRx: (show) => set({ showNewRx: show }),
 
     // Reset form
-    reset: () => set({ ...createInitialState() })
+    reset: () => set({
+        orderType: 'standard',
+        selectedClientId: '',
+        selectedPrescriptionId: '',
+        expectedCompletionDate: '',
+        items: [],
+        repairs: [],
+        paymentType: 'full',
+        paymentRows: [{ key: 'pay_1', amount: '', method: 'cash', number: '', bank: '', dueDate: '' }],
+        clientSearch: '',
+        productSearch: '',
+        selectedServiceIds: [],
+        showNewRx: false,
+        totalItemsPrice: 0,
+        totalRepairsPrice: 0,
+        grandTotal: 0,
+    }),
 }))

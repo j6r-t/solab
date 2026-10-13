@@ -140,27 +140,27 @@ export async function listProducts(params?: StockQuery) {
     const where: Prisma.ProductWhereInput = {}
 
     // Build search conditions (OR logic)
-    const searchConditions = buildSearchConditions(params)
+    const searchConditions = buildSearchConditions(params || {})
     if (searchConditions.length > 0) {
         where.OR = searchConditions
     }
 
     // Build exact match conditions
-    const exactMatchConditions = buildExactMatchConditions(params)
+    const exactMatchConditions = buildExactMatchConditions(params || {})
     Object.assign(where, exactMatchConditions)
 
     // Build range conditions
-    const rangeConditions = buildRangeConditions(params)
+    const rangeConditions = buildRangeConditions(params || {})
     Object.assign(where, rangeConditions)
 
     // Build thickness condition
-    const thicknessCondition = buildThicknessCondition(params)
+    const thicknessCondition = buildThicknessCondition(params || {})
     if (thicknessCondition) {
         where.thickness = thicknessCondition.thickness
     }
 
     // Build stock status condition
-    const stockStatusCondition = buildStockStatusCondition(params)
+    const stockStatusCondition = buildStockStatusCondition(params || {})
     if (stockStatusCondition) {
         Object.assign(where, stockStatusCondition)
     }

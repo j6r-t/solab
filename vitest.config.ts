@@ -7,14 +7,14 @@ export default defineConfig({
         globals: true,
         root: './src',
         setupFiles: ['./vitest.setup.ts'],
-        resolve: {
-            alias: {
-                '@': path.resolve(__dirname, './src'),
-            },
-        },
         coverage: {
             provider: 'v8',
             reportOnFailure: true,
+        },
+    },
+    resolve: {
+        alias: {
+            '@': path.resolve(__dirname, './src'),
         },
     },
 })
