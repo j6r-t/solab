@@ -148,10 +148,10 @@ export function StockFilters(props: StockFiltersProps) {
                     </div>
                 </div>
             ) : (
-                <div className="flex flex-col sm:flex-row gap-3">
-                    <Input value={props.brandFilter} onChange={(e) => props.onBrandFilterChange(e.target.value)} placeholder={t('stock.brand')} className="flex-1 h-9 text-sm" />
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <Input value={props.brandFilter} onChange={(e) => props.onBrandFilterChange(e.target.value)} placeholder={t('stock.brand')} className="sm:w-44 h-9 text-sm" />
                     <Select value={props.fournisseurFilter} onValueChange={props.onFournisseurFilterChange}>
-                        <SelectTrigger className="w-full sm:w-44 h-9"><SelectValue placeholder={t('stock.fournisseur')} /></SelectTrigger>
+                        <SelectTrigger className="sm:w-44 h-9"><SelectValue placeholder={t('stock.fournisseur')} /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="">{t('common.all')}</SelectItem>
                             {props.fournisseurs.map((f) => (<SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>))}
@@ -164,12 +164,13 @@ export function StockFilters(props: StockFiltersProps) {
 }
 
 function RangeInput({ label, from, onFromChange, to, onToChange }: { label: string; from: string; onFromChange: (v: string) => void; to: string; onToChange: (v: string) => void }) {
+    const { t } = useTranslation()
     return (
         <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground shrink-0 w-7">{label}</span>
-            <Input value={from} onChange={(e) => onFromChange(e.target.value)} placeholder="All" className="w-20 h-9 text-sm" />
+            <Input value={from} onChange={(e) => onFromChange(e.target.value)} placeholder={t('common.all')} className="w-20 h-9 text-sm" />
             <span className="text-xs text-muted-foreground">—</span>
-            <Input value={to} onChange={(e) => onToChange(e.target.value)} placeholder="All" className="w-20 h-9 text-sm" />
+            <Input value={to} onChange={(e) => onToChange(e.target.value)} placeholder={t('common.all')} className="w-20 h-9 text-sm" />
         </div>
     )
 }
