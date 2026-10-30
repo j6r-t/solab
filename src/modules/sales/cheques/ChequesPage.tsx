@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { CheckCircle, XCircle, Loader2, Wallet } from 'lucide-react'
 import {
@@ -41,10 +42,53 @@ export function ChequesPage() {
     const [statusFilter, setStatusFilter] = useState('')
     const [typeFilter, setTypeFilter] = useState('')
     const [confirmTarget, setConfirmTarget] = useState<{ cheque: Cheque; action: ChequeAction } | null>(null)
+    const [selected, setSelected] = useState<Set<string>>(new Set())
+    const [bulkConfirm, setBulkConfirm] = useState<'settle' | 'bounced' | null>(null)
 
     const { data: chequesData, isLoading: loading } = useCheques({ status: statusFilter || undefined, entityType: typeFilter || undefined })
     const cheques = chequesData ?? []
     const updateStatus = useUpdateChequeStatus()
+
+    const pendingCheques = cheques.filter((c) => c.status === 'pending')
+    const allPendingSelected = pendingCheques.length > 0 && pendingCheques.every((c) => selected.has(c.id))
+
+    const toggleSelected = (id: string) => {
+        setSelected((prev) => {
+            const next = new Set(prev)
+            if (next.has(id)) next.delete(id)
+            else next.add(id)
+            return next
+        })
+    }
+
+    const toggleAllPending = () => {
+        setSelected((prev) => {
+            if (allPendingSelected) {
+                const next = new Set(prev)
+                pendingCheques.forEach((c) => next.delete(c.id))
+                return next
+            }
+            const next = new Set(prev)
+            pendingCheques.forEach((c) => next.add(c.id))
+            return next
+        })
+    }
+
+    const settleAction = (cheque: Cheque): ChequeAction => (cheque.entityType === 'supplier_payment' ? 'paid' : 'cashed')
+
+    async function handleBulkConfirm() {
+        if (!bulkConfirm) return
+        const targets = pendingCheques.filter((c) => selected.has(c.id))
+        const results = await Promise.allSettled(
+            targets.map((c) => updateStatus.mutateAsync({ id: c.id, status: bulkConfirm === 'bounced' ? 'bounced' : settleAction(c) })),
+        )
+        const failed = results.filter((r) => r.status === 'rejected').length
+        const ok = targets.length - failed
+        if (failed === 0) toast.success(t('cheques.bulkDone', { n: ok }))
+        else toast.warning(t('cheques.bulkPartial', { ok, failed }))
+        setSelected(new Set())
+        setBulkConfirm(null)
+    }
 
     const statusLabel = (status: string) => {
         const labels: Record<string, string> = {
@@ -151,6 +195,45 @@ export function ChequesPage() {
                 </Select>
             </div>
 
+            {selected.size > 0 && (
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 rounded-lg border bg-muted/40 p-3">
+                    <p className="text-sm font-medium text-foreground">
+                        {t('cheques.selected', { n: selected.size })}
+                        {' · '}
+                        <span className="text-muted-foreground font-normal">
+                            {cheques.filter((c) => selected.has(c.id)).reduce((s, c) => s + parseFloat(c.amount), 0).toFixed(3)} TND
+                        </span>
+                    </p>
+                    <div className="flex gap-2 sm:ml-auto">
+                        <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700"
+                            disabled={updateStatus.isPending}
+                            onClick={() => setBulkConfirm('settle')}
+                        >
+                            <CheckCircle className="h-4 w-4 mr-1.5" />
+                            {(() => {
+                                const sel = cheques.filter((c) => selected.has(c.id) && c.status === 'pending')
+                                const allSupplier = sel.length > 0 && sel.every((c) => c.entityType === 'supplier_payment')
+                                const mixed = sel.some((c) => c.entityType !== 'supplier_payment') && allSupplier === false && sel.some((c) => c.entityType === 'supplier_payment')
+                                if (allSupplier) return t('cheques.markPaid')
+                                if (mixed) return t('cheques.bulkProcess')
+                                return t('cheques.markCashed')
+                            })()}
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={updateStatus.isPending}
+                            onClick={() => setBulkConfirm('bounced')}
+                        >
+                            <XCircle className="h-4 w-4 mr-1.5" />
+                            {t('cheques.bulkBounced')}
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {loading ? (
                 <div className="flex items-center justify-center py-16">
                     <Loader2 className="h-6 w-6 animate-spinner text-muted-foreground" />
@@ -166,6 +249,14 @@ export function ChequesPage() {
                     <table className="w-full min-w-[720px]">
                         <thead>
                             <tr className="bg-muted border-b sticky top-0 z-10">
+                                <th className="w-10 py-3 px-2 text-center">
+                                    <Checkbox
+                                        checked={pendingCheques.length > 0 && allPendingSelected}
+                                        onCheckedChange={toggleAllPending}
+                                        aria-label={t('cheques.selectAll')}
+                                        disabled={pendingCheques.length === 0}
+                                    />
+                                </th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('cheques.number')}</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('cheques.type')}</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('cheques.bank')}</th>
@@ -179,6 +270,15 @@ export function ChequesPage() {
                         <tbody className="divide-y">
                             {cheques.map((cheque) => (
                                 <tr key={cheque.id} className="row-hover">
+                                    <td className="py-3 px-2 text-center">
+                                        {cheque.status === 'pending' && (
+                                            <Checkbox
+                                                checked={selected.has(cheque.id)}
+                                                onCheckedChange={() => toggleSelected(cheque.id)}
+                                                aria-label={t('cheques.selectOne', { number: cheque.number })}
+                                            />
+                                        )}
+                                    </td>
                                     <td className="py-3 px-4 font-medium">{cheque.number}</td>
                                     <td className="py-3 px-4">{cheque.type === 'traite' ? t('cheques.traite') : t('cheques.standard')}</td>
                                     <td className="py-3 px-4">{cheque.bankName || '—'}</td>
@@ -243,6 +343,25 @@ export function ChequesPage() {
                     </table>
                 </div>
             )}
+
+            <ConfirmDialog
+                open={!!bulkConfirm}
+                onOpenChange={() => setBulkConfirm(null)}
+                title={bulkConfirm ? t(bulkConfirm === 'bounced' ? 'cheques.bulkBouncedTitle' : 'cheques.bulkConfirmTitle', { n: selected.size }) : ''}
+                description={(() => {
+                    if (!bulkConfirm) return ''
+                    const targets = pendingCheques.filter((c) => selected.has(c.id))
+                    const total = targets.reduce((s, c) => s + parseFloat(c.amount), 0).toFixed(3)
+                    const early = targets.filter(traiteNotYetDue).length
+                    const base = t(bulkConfirm === 'bounced' ? 'cheques.bulkBouncedDesc' : 'cheques.bulkConfirmDesc', { n: targets.length, total })
+                    if (bulkConfirm !== 'bounced' && early > 0) return base + ' ' + t('cheques.bulkEarlyTraites', { n: early })
+                    return base
+                })()}
+                confirmLabel={bulkConfirm === 'bounced' ? t('cheques.bulkBounced') : t('cheques.bulkProcess')}
+                cancelLabel={t('common.cancel')}
+                variant={bulkConfirm === 'bounced' ? 'destructive' : 'default'}
+                onConfirm={handleBulkConfirm}
+            />
 
             <ConfirmDialog
                 open={!!confirmTarget}
