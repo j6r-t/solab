@@ -203,7 +203,7 @@ export function FournisseursTab() {
                 </div>
             ) : (
                 <div className="border rounded-xl bg-card overflow-x-auto overflow-y-auto max-h-[340px]">
-                    <table className="w-full">
+                    <table className="w-full min-w-[720px]">
                         <thead>
                             <tr className="bg-muted border-b sticky top-0 z-10">
                                 <th className="w-10 py-3 px-2"></th>
