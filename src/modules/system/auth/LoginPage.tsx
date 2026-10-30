@@ -35,6 +35,16 @@ export function LoginPage() {
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
         setError('')
+        // Localized validation instead of native `required` tooltips, which
+        // come in the browser's language, not the app's.
+        if (!email.trim() || !password) {
+            setError(t('auth.missingFields'))
+            return
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+            setError(t('auth.invalidEmail'))
+            return
+        }
         setLoading(true)
 
         try {
@@ -48,7 +58,7 @@ export function LoginPage() {
                 router.push('/')
             }
         } catch {
-            setError('Connection error')
+            setError(t('auth.loginFailed'))
         } finally {
             setLoading(false)
         }
@@ -67,7 +77,7 @@ export function LoginPage() {
                     <CardDescription>{t('auth.login')}</CardDescription>
                 </CardHeader>
                 <CardContent className="px-4 pb-6 sm:px-6">
-                    <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-4">
+                    <form onSubmit={handleSubmit} noValidate className="space-y-5 sm:space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="email" className="text-sm sm:text-base">{t('auth.email')}</Label>
                             <Input
@@ -77,7 +87,6 @@ export function LoginPage() {
                                 onChange={(e) => { setEmail(e.target.value); setError('') }}
                                 placeholder="sofien@optic.tn"
                                 className="h-11 sm:h-10"
-                                required
                             />
                         </div>
 
@@ -90,7 +99,6 @@ export function LoginPage() {
                                 onChange={(e) => { setPassword(e.target.value); setError('') }}
                                 placeholder="••••••••"
                                 className="h-11 sm:h-10"
-                                required
                             />
                         </div>
 
