@@ -16,6 +16,7 @@ import {
     History,
     Wallet,
     FileText,
+    QrCode,
     type LucideIcon,
 } from 'lucide-react'
 import type { ViewName } from '@/stores/view-store'
@@ -100,6 +101,7 @@ export const navGroups: NavGroup[] = [
         flattenRoles: ['atelier'],
         items: [
             { icon: BarChart3, view: 'reports', labelKey: 'reports', roles: ['admin', 'shop', 'atelier'] },
+            { icon: QrCode, view: 'qrcode', labelKey: 'qrCode', roles: ['admin', 'shop'] },
             { icon: History, view: 'audit-logs', labelKey: 'auditLogs', roles: ['admin'] },
             { icon: Upload, view: 'import', labelKey: 'import', roles: ['admin', 'shop'] },
             { icon: Settings, view: 'settings', labelKey: 'settings', roles: ['admin', 'shop', 'atelier'] },
