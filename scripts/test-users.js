@@ -73,7 +73,7 @@ async function testUserManagement() {
     log(`Status: ${createResponse.status}`, createResponse.status === 201 ? 'green' : 'red')
     log('Response:', JSON.stringify(createData, null, 2))
     
-    const shopUserId = createData.data?.id
+    const _shopUserId = createData.data?.id
     
     // Test 3: Create an atelier user
     log('\nTest 3: Create atelier user', 'blue')

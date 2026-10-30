@@ -30,7 +30,7 @@ interface StockQuery {
 
 // Filter builder functions (same logic as stock.service.ts)
 function buildSearchConditions(params: StockQuery) {
-    const conditions: any[] = []
+    const conditions: Record<string, unknown>[] = []
 
     if (params.search) {
         conditions.push(
@@ -48,7 +48,7 @@ function buildSearchConditions(params: StockQuery) {
 }
 
 function buildExactMatchConditions(params: StockQuery) {
-    const conditions: any = {}
+    const conditions: Record<string, unknown> = {}
 
     if (params.category) {
         conditions.category = params.category
@@ -76,7 +76,7 @@ function buildExactMatchConditions(params: StockQuery) {
 }
 
 function buildRangeConditions(params: StockQuery) {
-    const conditions: any = {}
+    const conditions: Record<string, unknown> = {}
 
     const sphGte = params.sphFrom ? parseFloat(params.sphFrom) : NaN
     const sphLte = params.sphTo ? parseFloat(params.sphTo) : NaN
@@ -255,8 +255,8 @@ describe('stock.service - Filter Builders', () => {
             const condition = buildStockStatusCondition(params)
 
             expect(condition).toBeDefined()
-            expect((condition as any).quantity.gt).toBe(0)
-            expect((condition as any).quantity.lte).toBe(5)
+            expect((condition as Record<string, { gt: number }>).quantity.gt).toBe(0)
+            expect((condition as Record<string, { lte: number }>).quantity.lte).toBe(5)
         })
 
         it('should build inStock condition', () => {

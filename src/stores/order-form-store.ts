@@ -54,24 +54,7 @@ interface OrderFormState {
     reset: () => void
 }
 
-const createInitialState = (defaultValues?: any): Partial<OrderFormState> => {
-    return {
-        orderType: defaultValues?.orderType || 'standard',
-        selectedClientId: defaultValues?.clientId || '',
-        selectedPrescriptionId: defaultValues?.prescriptionId || '',
-        expectedCompletionDate: '',
-        items: defaultValues?.items || [],
-        repairs: defaultValues?.repairs || [],
-        paymentType: 'full',
-        paymentRows: [{ key: 'pay_1', amount: '', method: 'cash', number: '', bank: '', dueDate: '' }],
-        clientSearch: '',
-        productSearch: '',
-        selectedServiceIds: [],
-        showNewRx: false,
-    }
-}
-
-export const useOrderFormStore = create<OrderFormState>((set, get) => ({
+export const useOrderFormStore = create<OrderFormState>((set) => ({
     // Initial state from createInitialState
     orderType: 'standard',
     selectedClientId: '',

@@ -65,18 +65,16 @@ vi.mock('@/lib/errors', () => ({
 }))
 
 // Mock jose - need to use a class-based approach for SignJWT
-let signJwtInstance: any = null
-
 class MockSignJWT {
-    private payload: any
-    private protectedHeader: any = {}
+    private payload: Record<string, unknown>
+    private protectedHeader: Record<string, unknown> = {}
     private expirationTime: string | number = '1h'
 
-    constructor(payload: any) {
+    constructor(payload: Record<string, unknown>) {
         this.payload = payload
     }
 
-    setProtectedHeader(header: any) {
+    setProtectedHeader(header: Record<string, unknown>) {
         this.protectedHeader = header
         return this
     }
@@ -86,14 +84,11 @@ class MockSignJWT {
         return this
     }
 
-    async sign(secret: any) {
+    async sign(_secret: unknown) {
         // Return a simple JWT-like string
         return `jwt-token-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`
     }
 }
-
-// Mock jwtVerify separately since it's used in verifyToken
-let mockJwtVerifyResult: any = null
 
 vi.mock('jose', () => ({
     SignJWT: MockSignJWT,
@@ -217,7 +212,7 @@ describe('auth.service', () => {
 
     describe('setupAdmin', () => {
         it('should throw error if admin already exists', async () => {
-            mockFindFirst.mockResolvedValue({ id: '1' } as any)
+            mockFindFirst.mockResolvedValue({ id: '1' })
             const { setupAdmin } = await import('./auth.service')
             await expect(setupAdmin()).rejects.toThrow('Admin user already exists')
         })
@@ -257,7 +252,7 @@ describe('auth.service', () => {
         })
 
         it('should throw ForbiddenError if current password incorrect', async () => {
-            mockFindUnique.mockResolvedValue({ id: '1', password: 'hashed' } as any)
+            mockFindUnique.mockResolvedValue({ id: '1', password: 'hashed' })
             mockCompare.mockResolvedValue(false)
             const { changePassword } = await import('./auth.service')
             await expect(changePassword('test@example.com', 'wrongpass', 'newpassword')).rejects.toThrow('Current password is incorrect')

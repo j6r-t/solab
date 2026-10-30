@@ -498,7 +498,7 @@ console.log('── Optician work orders & bills')
         },
     })
     await shopRx(wo2, { sphR: -3, cylR: -1.25, axR: 10, addR: 0, pdR: 33, sphL: -2.75, cylL: -1, axL: 5, addL: 0, pdL: 33 }, { thickness: '1.50', lensType: 'singleVision', material: 'cr39', coating: 'ar' })
-    const bill2 = await prisma.opticianShopBill.create({
+    const _bill2 = await prisma.opticianShopBill.create({
         data: {
             billNumber: 'FAC-VP-001', opticianShopId: shops[1].id, workOrderId: wo2.id,
             totalAmount: 170, paidAmount: 0, status: 'unpaid',
