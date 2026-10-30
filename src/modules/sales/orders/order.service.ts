@@ -243,7 +243,25 @@ async function completeOrder(id: string) {
 }
 
 export async function updateOrderStatus(id: string, status: string) {
+    // Undo paths: a mistaken ready/complete can revert from the toast.
+    // Cancellation restocks items and stays irreversible.
+    if (status === 'pending') {
+        const order = await orderRepo.findUnique({ where: { id } })
+        if (!order) throw new NotFoundError('Order not found')
+        if (order.status !== 'ready') throw new BadRequestError(`Cannot revert from '${order.status}' to 'pending'`)
+        return orderRepo.update({ where: { id }, data: { status: 'pending' } })
+    }
     if (status === 'ready') {
+        const order = await orderRepo.findUnique({ where: { id } })
+        if (!order) throw new NotFoundError('Order not found')
+        if (order.status === 'completed') {
+            // Undo pickup: work orders flipped to 'delivered' go back to 'completed'.
+            await db.atelierWorkOrder.updateMany({
+                where: { orderId: id, status: 'delivered' },
+                data: { status: 'completed' },
+            })
+            return orderRepo.update({ where: { id }, data: { status: 'ready' } })
+        }
         return orderRepo.update({ where: { id }, data: { status: 'ready' } })
     }
 

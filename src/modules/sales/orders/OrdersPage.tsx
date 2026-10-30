@@ -134,11 +134,29 @@ export function OrdersPage() {
         }
     }
 
+    const UNDO_STATUS: Record<string, string> = { ready: 'pending', completed: 'ready' }
+
     async function handleStatusUpdate(orderId: string, status: string) {
         setUpdatingOrders((prev) => new Set(prev).add(orderId))
         try {
             await updateOrder(orderId, { status })
-            toast.success(t('orders.statusUpdated'))
+            // Forward transitions get an undo action; cancellation does not
+            // (it restocks items and stays irreversible).
+            const undoStatus = UNDO_STATUS[status]
+            if (undoStatus) {
+                toast.success(t('orders.statusUpdated'), {
+                    action: {
+                        label: t('common.undo'),
+                        onClick: () => {
+                            updateOrder(orderId, { status: undoStatus })
+                                .then(() => reFetch())
+                                .catch(() => toast.error(t('orders.revertFailed')))
+                        },
+                    },
+                })
+            } else {
+                toast.success(t('orders.statusUpdated'))
+            }
             setSelectedOrder(null)
             setDetailOpen(false)
             await reFetch()

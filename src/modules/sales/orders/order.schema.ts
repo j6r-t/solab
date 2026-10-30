@@ -53,7 +53,9 @@ export const createOrderSchema = z.object({
 )
 
 export const updateOrderStatusSchema = z.object({
-    status: z.enum(['ready', 'completed', 'cancelled'], {
+    // 'pending' is only valid as an undo of 'ready'; 'ready' also serves as
+    // the undo of 'completed'. updateOrderStatus validates by current status.
+    status: z.enum(['ready', 'completed', 'cancelled', 'pending'], {
         message: 'Invalid status',
     }),
 })
