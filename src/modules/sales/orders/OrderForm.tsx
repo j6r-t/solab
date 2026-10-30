@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { Button } from '@/components/ui/button'
@@ -39,7 +39,7 @@ import { RepairsSection } from './RepairsSection'
 
 export type { OrderFormData } from './order-form.types'
 
-export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalSaving, forcedOrderType }: OrderFormProps) {
+export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalSaving, forcedOrderType, onDirtyChange }: OrderFormProps) {
     const { t } = useTranslation()
     const queryClient = useQueryClient()
     const user = useAuthStore((s) => s.user)
@@ -58,6 +58,23 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
     const [expectedCompletionDate, setExpectedCompletionDate] = useState('')
     const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([])
     const [showNewRx, setShowNewRx] = useState(false)
+
+    // Report dirtiness so the parent can warn before discarding entered data.
+    const pristineOrderType = forcedOrderType || defaultValues?.orderType || 'standard'
+    const isDirty =
+        !!selectedClientId ||
+        !!selectedPrescriptionId ||
+        !!expectedCompletionDate ||
+        items.length > 0 ||
+        repairs.length > 0 ||
+        selectedServiceIds.length > 0 ||
+        showNewRx ||
+        orderType !== pristineOrderType ||
+        paymentRows.some((r) => r.amount !== '' || r.number.trim() !== '' || r.bank.trim() !== '' || r.dueDate !== '')
+    useEffect(() => {
+        onDirtyChange?.(isDirty)
+        return () => onDirtyChange?.(false)
+    }, [isDirty, onDirtyChange])
 
     const { data: clientsData } = useClients({ search: clientSearch || undefined })
     const clients: Client[] = clientsData ?? []

@@ -43,6 +43,19 @@ export function OrdersPage() {
     const [deleteTarget, setDeleteTarget] = useState<Order | null>(null)
     const [createOpen, setCreateOpen] = useState(false)
     const [saving, setSaving] = useState(false)
+    const [formDirty, setFormDirty] = useState(false)
+    const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false)
+
+    // Esc, overlay click and Cancel all funnel through here: with entered
+    // data, ask before discarding instead of silently losing the order.
+    const confirmDiscardOrClose = () => {
+        if (formDirty) setDiscardConfirmOpen(true)
+        else setCreateOpen(false)
+    }
+    const handleCreateDialogChange = (open: boolean) => {
+        if (!open && createOpen) confirmDiscardOrClose()
+        else setCreateOpen(open)
+    }
     const [statusConfirmTarget, setStatusConfirmTarget] = useState<{ orderId: string; status: string } | null>(null)
     const [updatingOrders, setUpdatingOrders] = useState<Set<string>>(new Set())
     const [printConfirmTarget, setPrintConfirmTarget] = useState<Order | null>(null)
@@ -236,14 +249,27 @@ export function OrdersPage() {
                 onUpdated={(fresh) => { setSelectedOrder(fresh); reFetch() }}
             />
 
-            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <Dialog open={createOpen} onOpenChange={handleCreateDialogChange}>
                 <DialogContent className="w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>{t('orders.newOrder')}</DialogTitle>
                     </DialogHeader>
-                    <OrderForm onSubmit={handleCreate} onCancel={() => setCreateOpen(false)} saving={saving} />
+                    <OrderForm onSubmit={handleCreate} onCancel={confirmDiscardOrClose} saving={saving} onDirtyChange={setFormDirty} />
                 </DialogContent>
             </Dialog>
+
+            <ConfirmDialog
+                open={discardConfirmOpen}
+                onOpenChange={() => setDiscardConfirmOpen(false)}
+                title={t('orders.discardTitle')}
+                description={t('orders.discardDesc')}
+                confirmLabel={t('orders.discardConfirm')}
+                cancelLabel={t('common.cancel')}
+                onConfirm={() => {
+                    setDiscardConfirmOpen(false)
+                    setCreateOpen(false)
+                }}
+            />
 
             <ConfirmDialog
                 open={!!statusConfirmTarget}

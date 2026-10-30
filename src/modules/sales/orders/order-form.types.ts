@@ -98,6 +98,8 @@ export interface OrderFormProps {
     onCancel: () => void
     saving?: boolean
     forcedOrderType?: 'standard' | 'remounting' | 'direct_sale'
+    /** Called whenever the form's dirty state changes; false on unmount. */
+    onDirtyChange?: (dirty: boolean) => void
 }
 
 export type PaymentRowMethod = 'cash' | 'card' | 'cheque' | 'traite'
