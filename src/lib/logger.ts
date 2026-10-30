@@ -1,42 +1,21 @@
-type LogLevel = 'info' | 'warn' | 'error' | 'debug'
+import pino from 'pino'
 
-interface LogEntry {
-    timestamp: string
-    level: LogLevel
-    message: string
-    context?: Record<string, unknown>
+export type LogLevel = 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace'
+
+// Create a singleton logger instance
+const pinoLogger = pino({
+    level: process.env.LOG_LEVEL || 'info',
+    timestamp: true,
+    formatters: {
+        level: (label: string) => ({ level: label }),
+    },
+})
+
+// Wrap pino to keep the (message, context?) call convention the codebase uses;
+// pino's native signature is (context, message).
+export const logger = {
+    info: (message: string, context?: Record<string, unknown>) => pinoLogger.info(context ?? {}, message),
+    warn: (message: string, context?: Record<string, unknown>) => pinoLogger.warn(context ?? {}, message),
+    error: (message: string, context?: Record<string, unknown>) => pinoLogger.error(context ?? {}, message),
+    debug: (message: string, context?: Record<string, unknown>) => pinoLogger.debug(context ?? {}, message),
 }
-
-class Logger {
-    private format(level: LogLevel, message: string, context?: Record<string, unknown>): string {
-        const entry: LogEntry = {
-            timestamp: new Date().toISOString(),
-            level,
-            message,
-        }
-        if (context && Object.keys(context).length > 0) {
-            entry.context = context
-        }
-        return JSON.stringify(entry)
-    }
-
-    info(message: string, context?: Record<string, unknown>) {
-        console.log(this.format('info', message, context))
-    }
-
-    warn(message: string, context?: Record<string, unknown>) {
-        console.warn(this.format('warn', message, context))
-    }
-
-    error(message: string, context?: Record<string, unknown>) {
-        console.error(this.format('error', message, context))
-    }
-
-    debug(message: string, context?: Record<string, unknown>) {
-        if (process.env.NODE_ENV !== 'production') {
-            console.debug(this.format('debug', message, context))
-        }
-    }
-}
-
-export const logger = new Logger()
