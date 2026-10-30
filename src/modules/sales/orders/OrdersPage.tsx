@@ -186,6 +186,7 @@ export function OrdersPage() {
                     <table className="w-full">
                         <thead>
                             <tr className="bg-muted border-b sticky top-0 z-10">
+                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('orders.number')}</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('orders.client')}</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('orders.type')}</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('orders.status')}</th>
@@ -204,7 +205,11 @@ export function OrdersPage() {
                                         catch { setSelectedOrder(order) }
                                         setDetailOpen(true)
                                     }}>
-                                        <td className="py-3 px-4"><p className="font-semibold text-foreground">{order.client.name} {order.client.familyName}</p></td>
+                                        <td className="py-3 px-4 text-sm text-muted-foreground tabular-nums whitespace-nowrap">#{order.orderNumber}</td>
+                                        <td className="py-3 px-4">
+                                            <p className="font-semibold text-foreground">{order.client.name} {order.client.familyName}</p>
+                                            <p className="text-xs text-muted-foreground">{t('orders.createdOn', { date: formatDate(new Date(order.createdAt)) })}</p>
+                                        </td>
                                         <td className="py-3 px-4 text-sm text-muted-foreground">{typeLabel(order.orderType)}</td>
                                         <td className="py-3 px-4">
                                             <Badge variant={style.variant} className={`${style.bg} ${style.text} ${style.border} gap-1.5 text-xs font-medium`}>
