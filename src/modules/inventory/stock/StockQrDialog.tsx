@@ -160,7 +160,7 @@ ${svgContent}
 
                         <Button onClick={handlePrint} disabled={generating || !qrDataUrl}>
                             <Printer className="h-4 w-4 mr-2" />
-                            Print Label
+                            {t('stock.printLabel')}
                         </Button>
                     </div>
                 )}

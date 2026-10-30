@@ -35,7 +35,7 @@ export function OrderDetailDialog({ order, open, onOpenChange, onConfirmStatusUp
     if (!order) return null
 
     const typeLabel = (type: string) => {
-        const labels: Record<string, string> = { standard: 'Prescription Eyewear', remounting: 'Remounting', direct_sale: 'Direct Sale' }
+        const labels: Record<string, string> = { standard: t('orders.type_standard'), remounting: t('orders.type_remounting'), direct_sale: t('orders.type_direct_sale') }
         return labels[type] || type
     }
 

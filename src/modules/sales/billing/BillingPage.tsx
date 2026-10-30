@@ -43,7 +43,7 @@ export function BillingPage() {
     const records = data ?? []
 
     const typeLabel = (type: string) => {
-        const labels: Record<string, string> = { standard: 'Standard', remounting: 'Remounting', direct_sale: 'Direct Sale' }
+        const labels: Record<string, string> = { standard: t('orders.type_standard'), remounting: t('orders.type_remounting'), direct_sale: t('orders.type_direct_sale') }
         return labels[type] || type
     }
 
