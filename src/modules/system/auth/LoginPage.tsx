@@ -1,10 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { useAuthStore } from '@/stores/auth-store'
-import { useViewStore } from '@/stores/view-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,11 +20,17 @@ export function LoginPage() {
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
 
+    const pathname = usePathname()
+
     useEffect(() => {
-        if (isAuthenticated) {
+        // Only redirect when mounted as the standalone /login route; on the
+        // root page this component also renders during the SSR gate for
+        // already-authenticated users, and pushing '/' there would clobber
+        // the deep-linked ?view= URL.
+        if (isAuthenticated && pathname !== '/') {
             router.push('/')
         }
-    }, [isAuthenticated, router])
+    }, [isAuthenticated, pathname, router])
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
@@ -35,8 +40,13 @@ export function LoginPage() {
         try {
             const data = await login(email, password)
             setAuth(data.token, data.user)
-            useViewStore.getState().reset()
-            router.push('/')
+            // Deep-linked ?view= survives login: the view store already adopted
+            // the URL, and the root page's role gate redirects forbidden views.
+            // Only navigate for the standalone /login route — pushing '/'
+            // from the root page would clobber the deep-linked query.
+            if (pathname !== '/') {
+                router.push('/')
+            }
         } catch {
             setError('Connection error')
         } finally {

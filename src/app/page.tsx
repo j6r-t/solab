@@ -3,7 +3,7 @@
 import { useEffect, useSyncExternalStore } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '@/stores/auth-store'
-import { useViewStore } from '@/stores/view-store'
+import { useViewStore, viewFromSearch } from '@/stores/view-store'
 import { VIEW_ROLES } from '@/components/layouts/nav-config'
 import { AppShell } from '@/components/layouts/AppShell'
 import { LoginPage } from '@/modules/system/auth/LoginPage'
@@ -69,6 +69,17 @@ export default function Home() {
       useViewStore.getState().reset()
     }
   }, [mounted, isAuthenticated, role, currentView])
+
+  // Adopt browser Back/Forward: popstate carries the previous URL, whose
+  // ?view= params become the active view.
+  useEffect(() => {
+    const onPopState = () => {
+      const { view, params } = viewFromSearch(window.location.search)
+      useViewStore.getState().syncFromUrl(view, params)
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
 
   if (!mounted || !isAuthenticated) {
     // Render the login inline at `/` — no navigation, so visitors never depend
