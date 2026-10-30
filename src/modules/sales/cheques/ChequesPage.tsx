@@ -84,8 +84,16 @@ export function ChequesPage() {
         )
         const failed = results.filter((r) => r.status === 'rejected').length
         const ok = targets.length - failed
-        if (failed === 0) toast.success(t('cheques.bulkDone', { n: ok }))
-        else toast.warning(t('cheques.bulkPartial', { ok, failed }))
+        if (failed === 0) {
+            toast.success(t('cheques.bulkDone', { n: ok }), {
+                action: {
+                    label: t('common.undo'),
+                    onClick: () => revertToPending(results.map((r, i) => (r.status === 'fulfilled' ? targets[i].id : '')).filter(Boolean)),
+                },
+            })
+        } else {
+            toast.warning(t('cheques.bulkPartial', { ok, failed }))
+        }
         setSelected(new Set())
         setBulkConfirm(null)
     }
@@ -103,11 +111,21 @@ export function ChequesPage() {
         return labels[status] || status
     }
 
+    const revertToPending = (ids: string[]) => {
+        Promise.allSettled(ids.map((id) => updateStatus.mutateAsync({ id, status: 'pending' }))).then((results) => {
+            const failed = results.filter((r) => r.status === 'rejected').length
+            if (failed > 0) toast.error(t('cheques.revertFailed', { n: failed }))
+        })
+    }
+
     async function handleConfirm() {
         if (!confirmTarget) return
         try {
             await updateStatus.mutateAsync({ id: confirmTarget.cheque.id, status: confirmTarget.action })
-            toast.success(t('cheques.statusUpdated'))
+            // A settled/bounced cheque can slip back to pending from the toast.
+            toast.success(t('cheques.statusUpdated'), {
+                action: { label: t('common.undo'), onClick: () => revertToPending([confirmTarget.cheque.id]) },
+            })
         } catch (error) {
             toast.error(error instanceof Error ? error.message : 'Failed to update cheque')
         } finally {

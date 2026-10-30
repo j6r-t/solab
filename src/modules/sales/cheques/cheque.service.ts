@@ -153,7 +153,13 @@ export async function updateChequeStatus(id: string, status: string, opts?: { ro
     }
 
     const allowed = ALLOWED_TARGETS[cheque.entityType] || []
-    if (cheque.status !== 'pending' || !allowed.includes(status)) {
+    // Undo support: a settled/bounced cheque may return to pending so a
+    // mistaken action can be reverted from the toast.
+    if (status === 'pending') {
+        if (!allowed.includes(cheque.status)) {
+            throw new BadRequestError(`Cannot revert from '${cheque.status}' to 'pending'`)
+        }
+    } else if (cheque.status !== 'pending' || !allowed.includes(status)) {
         throw new BadRequestError(`Invalid transition from '${cheque.status}' to '${status}'`)
     }
 
