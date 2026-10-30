@@ -43,4 +43,7 @@ next-env.d.ts
 # local dev database (recreate with: npx prisma db push && npm run db:seed)
 prisma/db/
 
+# local UX critique snapshots (impeccable skill)
+.impeccable/
+
 /src/generated/prisma
