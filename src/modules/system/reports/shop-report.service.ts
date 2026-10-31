@@ -588,12 +588,15 @@ export async function getShopReports(period: string, now: Date) {
         prevCost += itemsCost(o.items)
     }
     const prevAvgOrderValue = prevOrdersCount > 0 ? prevRevenue / prevOrdersCount : 0
+    // An empty period (no orders) has no meaningful percentages: "▼ 100%"
+    // on a quiet month reads as breakage, not as information.
+    const periodEmpty = totalOrders === 0
     const deltas = {
-        revenue: changePct(totalRevenue, prevRevenue),
-        orders: changePct(totalOrders, prevOrdersCount),
-        avgOrderValue: changePct(avgOrderValue, prevAvgOrderValue),
+        revenue: periodEmpty ? null : changePct(totalRevenue, prevRevenue),
+        orders: periodEmpty ? null : changePct(totalOrders, prevOrdersCount),
+        avgOrderValue: periodEmpty ? null : changePct(avgOrderValue, prevAvgOrderValue),
         newClients: changePct(newClients, prevNewClients),
-        profit: changePct(totalProfit, prevRevenue - prevCost),
+        profit: periodEmpty ? null : changePct(totalProfit, prevRevenue - prevCost),
     }
 
     const [nonCompletedOrders, recentOrders, topProductsData, cancelAgg] = await Promise.all([
@@ -713,6 +716,7 @@ export async function getShopReports(period: string, now: Date) {
         topProductsByCategory: topProductsData,
         monthlyRevenue,
         deltas,
+        periodEmpty,
         salesHeatmap: { byWeekday, byHour },
         revenueSplit: {
             newClientsRevenue: newClientsRevenue.toString(),

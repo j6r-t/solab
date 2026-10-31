@@ -51,7 +51,7 @@ export function StatRow({ label, value, valueClass, muted }: { label: string; va
     )
 }
 
-export function KpiCard({ label, value, icon: Icon, color, delta, deltaGoodUp = true, subtitle, vsLabel }: {
+export function KpiCard({ label, value, icon: Icon, color, delta, deltaGoodUp = true, subtitle, vsLabel, emptyPeriod }: {
     label: string
     value: string
     icon: IconType
@@ -60,7 +60,10 @@ export function KpiCard({ label, value, icon: Icon, color, delta, deltaGoodUp = 
     deltaGoodUp?: boolean
     subtitle?: string
     vsLabel?: string
+    /** True when the period has no records: show "no data" instead of percentages. */
+    emptyPeriod?: boolean
 }) {
+    const { t } = useTranslation()
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -70,8 +73,12 @@ export function KpiCard({ label, value, icon: Icon, color, delta, deltaGoodUp = 
             <CardContent>
                 <p className="text-2xl font-bold">{value}</p>
                 <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                    <DeltaBadge changePct={delta} goodWhenUp={deltaGoodUp} />
-                    {delta !== null && delta !== undefined && vsLabel && (
+                    {emptyPeriod ? (
+                        <span className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">{t('reports.noDataPeriod')}</span>
+                    ) : (
+                        <DeltaBadge changePct={delta} goodWhenUp={deltaGoodUp} />
+                    )}
+                    {!emptyPeriod && delta !== null && delta !== undefined && vsLabel && (
                         <span className="text-xs text-muted-foreground">{vsLabel}</span>
                     )}
                 </div>

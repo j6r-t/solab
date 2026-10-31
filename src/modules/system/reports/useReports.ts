@@ -223,6 +223,7 @@ export interface ShopReportData {
     monthlyRevenue: MonthlyRevenue[]
     recentOrders: RecentOrder[]
     deltas: ShopDeltas
+    periodEmpty: boolean
     salesHeatmap: { byWeekday: number[]; byHour: number[] }
     pareto: { topDecileSharePct: number; activeClients: number }
     revenueSplit: { newClientsRevenue: string; returningClientsRevenue: string }
@@ -257,6 +258,7 @@ export interface AtelierReportData {
     monthlyWorkOrders: MonthlyWorkOrders[]
     recentWorkOrders: RecentWorkOrder[]
     deltas: AtelierDeltas
+    periodEmpty: boolean
     avgTicket: number
     agingBuckets: AgingBucket[]
     weeklyThroughput: WeeklyThroughputItem[]

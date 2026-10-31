@@ -517,12 +517,14 @@ export async function getAtelierReports(period: string, now: Date) {
         if (wo.status === 'completed') prevCompleted++
     }
     const prevAvgTicket = prevCompleted > 0 ? round1(prevRevenue / prevCompleted) : 0
+    // Same as shop reports: an empty period has no meaningful percentages.
+    const periodEmpty = completedWorkOrders === 0
     const deltas = {
-        revenue: changePct(totalRevenue, prevRevenue),
-        completed: changePct(completedWorkOrders, prevCompleted),
-        avgTurnaround: changePct(decisionStats.avgTurnaroundDays, prevAvgTurnaroundDays),
-        breakage: changePct(decisionStats.breakageRate, prevBreakageRate),
-        avgTicket: changePct(avgTicket, prevAvgTicket),
+        revenue: periodEmpty ? null : changePct(totalRevenue, prevRevenue),
+        completed: periodEmpty ? null : changePct(completedWorkOrders, prevCompleted),
+        avgTurnaround: periodEmpty ? null : changePct(decisionStats.avgTurnaroundDays, prevAvgTurnaroundDays),
+        breakage: periodEmpty ? null : changePct(decisionStats.breakageRate, prevBreakageRate),
+        avgTicket: periodEmpty ? null : changePct(avgTicket, prevAvgTicket),
     }
 
     return {
@@ -545,6 +547,7 @@ export async function getAtelierReports(period: string, now: Date) {
         })),
         ...decisionPublic,
         deltas,
+        periodEmpty,
         avgTicket,
         weeklyThroughput,
         partnerScorecard,

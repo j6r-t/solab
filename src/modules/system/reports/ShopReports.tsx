@@ -29,10 +29,10 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
 
     const kpis = data
         ? [
-            { label: withSuffix(t('reports.kpiRevenue')), value: formatCurrency(data.totalRevenue), icon: DollarSign, color: 'text-green-600', delta: data.deltas.revenue, deltaGoodUp: true, subtitle: undefined as string | undefined },
-            { label: withSuffix(t('reports.kpiProfit')), value: formatCurrency(data.totalProfit), icon: PiggyBank, color: 'text-emerald-600', delta: data.deltas.profit, deltaGoodUp: true, subtitle: `${t('reports.margin')} : ${marginPct} %` },
-            { label: withSuffix(t('reports.ordersCount')), value: data.totalOrders.toString(), icon: ShoppingCart, color: 'text-orange-600', delta: data.deltas.orders, deltaGoodUp: true, subtitle: undefined },
-            { label: withSuffix(t('reports.avgOrderValue')), value: formatCurrency(data.avgOrderValue), icon: TrendingUp, color: 'text-blue-600', delta: data.deltas.avgOrderValue, deltaGoodUp: true, subtitle: undefined },
+            { label: withSuffix(t('reports.kpiRevenue')), value: formatCurrency(data.totalRevenue), icon: DollarSign, color: 'text-green-600', delta: data.deltas.revenue, deltaGoodUp: true, emptyPeriod: data.periodEmpty, subtitle: undefined as string | undefined },
+            { label: withSuffix(t('reports.kpiProfit')), value: formatCurrency(data.totalProfit), icon: PiggyBank, color: 'text-emerald-600', delta: data.deltas.profit, deltaGoodUp: true, emptyPeriod: data.periodEmpty, subtitle: `${t('reports.margin')} : ${marginPct} %` },
+            { label: withSuffix(t('reports.ordersCount')), value: data.totalOrders.toString(), icon: ShoppingCart, color: 'text-orange-600', delta: data.deltas.orders, deltaGoodUp: true, emptyPeriod: data.periodEmpty, subtitle: undefined },
+            { label: withSuffix(t('reports.avgOrderValue')), value: formatCurrency(data.avgOrderValue), icon: TrendingUp, color: 'text-blue-600', delta: data.deltas.avgOrderValue, deltaGoodUp: true, emptyPeriod: data.periodEmpty, subtitle: undefined },
             { label: withSuffix(t('reports.newClients')), value: data.newClients.toString(), icon: UserPlus, color: 'text-indigo-600', delta: data.deltas.newClients, deltaGoodUp: true, subtitle: undefined },
         ]
         : []

@@ -21,10 +21,10 @@ export function AtelierReports({ data, period, setPeriod }: { data: AtelierRepor
 
     const kpis = data
         ? [
-            { label: withSuffix(t('reports.kpiRevenue')), value: formatCurrency(data.totalRevenue), icon: DollarSign, color: 'text-green-600', delta: data.deltas.revenue, deltaGoodUp: true, subtitle: undefined as string | undefined },
-            { label: withSuffix(t('reports.kpiCompleted')), value: data.completedWorkOrders.toString(), icon: Award, color: 'text-emerald-600', delta: data.deltas.completed, deltaGoodUp: true, subtitle: undefined },
-            { label: withSuffix(t('reports.avgTurnaroundDays')), value: `${data.avgTurnaroundDays ?? 0} ${t('orders.days')}`, icon: Timer, color: 'text-blue-600', delta: data.deltas.avgTurnaround, deltaGoodUp: false, subtitle: undefined },
-            { label: withSuffix(t('reports.breakageRate')), value: `${data.breakageRate ?? 0} %`, icon: Flame, color: 'text-red-600', delta: data.deltas.breakage, deltaGoodUp: false, subtitle: undefined },
+            { label: withSuffix(t('reports.kpiRevenue')), value: formatCurrency(data.totalRevenue), icon: DollarSign, color: 'text-green-600', delta: data.deltas.revenue, deltaGoodUp: true, emptyPeriod: data.periodEmpty, subtitle: undefined as string | undefined },
+            { label: withSuffix(t('reports.kpiCompleted')), value: data.completedWorkOrders.toString(), icon: Award, color: 'text-emerald-600', delta: data.deltas.completed, deltaGoodUp: true, emptyPeriod: data.periodEmpty, subtitle: undefined },
+            { label: withSuffix(t('reports.avgTurnaroundDays')), value: `${data.avgTurnaroundDays ?? 0} ${t('orders.days')}`, icon: Timer, color: 'text-blue-600', delta: data.deltas.avgTurnaround, deltaGoodUp: false, emptyPeriod: data.periodEmpty, subtitle: undefined },
+            { label: withSuffix(t('reports.breakageRate')), value: `${data.breakageRate ?? 0} %`, icon: Flame, color: 'text-red-600', delta: data.deltas.breakage, deltaGoodUp: false, emptyPeriod: data.periodEmpty, subtitle: undefined },
             {
                 label: withSuffix(t('reports.backlog')),
                 value: ((data.workload?.pending ?? 0) + (data.workload?.inProgress ?? 0)).toString(),
@@ -34,7 +34,7 @@ export function AtelierReports({ data, period, setPeriod }: { data: AtelierRepor
                 deltaGoodUp: true,
                 subtitle: `${t('reports.workloadAvgAge')} : ${data.workload?.avgAgeDays ?? 0} ${t('orders.days')}`,
             },
-            { label: withSuffix(t('reports.avgOrderValue')), value: formatCurrency(data.avgTicket), icon: TrendingUp, color: 'text-indigo-600', delta: data.deltas.avgTicket, deltaGoodUp: true, subtitle: undefined },
+            { label: withSuffix(t('reports.avgOrderValue')), value: formatCurrency(data.avgTicket), icon: TrendingUp, color: 'text-indigo-600', delta: data.deltas.avgTicket, deltaGoodUp: true, emptyPeriod: data.periodEmpty, subtitle: undefined },
         ]
         : []
 
