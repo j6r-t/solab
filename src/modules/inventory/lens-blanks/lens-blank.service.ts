@@ -15,38 +15,40 @@ export async function listLensBlanks(params?: { search?: string; brand?: string;
     if (params?.brand) where.brand = params.brand
     if (params?.lowStock === 'true') where.quantity = { lte: LOW_STOCK_MAX_QTY }
 
-    // When Rx filter is present, lens specs are soft (AND only if provided)
-    // When no Rx filter, lens specs are strict (for inventory browsing)
-    const hasRxFilter = params?.sphRight != null || params?.cylRight != null || params?.sphLeft != null || params?.cylLeft != null
+    // Per-eye Rx match: exact sph/cyl equality per eye, OR-combined across eyes.
+    const rxConditions: Prisma.LensBlankWhereInput[] = []
+    const sphR = params?.sphRight != null ? parseFloat(params.sphRight) : null
+    const cylR = params?.cylRight != null ? parseFloat(params.cylRight) : null
+    const sphL = params?.sphLeft != null ? parseFloat(params.sphLeft) : null
+    const cylL = params?.cylLeft != null ? parseFloat(params.cylLeft) : null
 
-    if (hasRxFilter) {
-        // Rx match: only match on sph/cyl (lens specs are informational, shown in SearchSelect)
-        const conditions: Prisma.LensBlankWhereInput[] = []
-        const sphR = params?.sphRight != null ? parseFloat(params.sphRight) : null
-        const cylR = params?.cylRight != null ? parseFloat(params.cylRight) : null
-        const sphL = params?.sphLeft != null ? parseFloat(params.sphLeft) : null
-        const cylL = params?.cylLeft != null ? parseFloat(params.cylLeft) : null
+    if (sphR != null && cylR != null) {
+        rxConditions.push({ AND: [{ sph: sphR }, { cyl: cylR }] })
+    } else if (sphR != null) {
+        rxConditions.push({ sph: sphR })
+    }
+    if (sphL != null && cylL != null) {
+        rxConditions.push({ AND: [{ sph: sphL }, { cyl: cylL }] })
+    } else if (sphL != null) {
+        rxConditions.push({ sph: sphL })
+    }
 
-        if (sphR != null && cylR != null) {
-            conditions.push({ AND: [{ sph: sphR }, { cyl: cylR }] })
-        } else if (sphR != null) {
-            conditions.push({ sph: sphR })
-        }
-        if (sphL != null && cylL != null) {
-            conditions.push({ AND: [{ sph: sphL }, { cyl: cylL }] })
-        } else if (sphL != null) {
-            conditions.push({ sph: sphL })
-        }
+    // Attribute filters (type/material/coating/thickness) AND over the eye matches:
+    // (eye1 matches OR eye2 matches) AND lensType AND material AND coating AND thickness.
+    const attributeConditions: Prisma.LensBlankWhereInput[] = []
+    if (params?.lensType) attributeConditions.push({ lensType: params.lensType as LensType })
+    if (params?.material) attributeConditions.push({ material: params.material as LensMaterial })
+    if (params?.coating) attributeConditions.push({ coating: params.coating as LensCoating })
+    if (params?.thickness) attributeConditions.push({ thickness: params.thickness })
 
-        if (conditions.length > 0) {
-            where.OR = [...(where.OR || []), ...conditions]
-        }
+    if (rxConditions.length > 0) {
+        // Rx mode (order form): attributes filter the Rx-matching blanks instead of being ignored.
+        where.AND = [{ OR: rxConditions }, ...attributeConditions]
     } else {
-        // No Rx filter: strict lens specs for inventory browsing
-        if (params?.lensType) where.lensType = params.lensType as LensType
-        if (params?.material) where.material = params.material as LensMaterial
-        if (params?.coating) where.coating = params.coating as LensCoating
-        if (params?.thickness) where.thickness = params.thickness
+        // No Rx filter: strict lens specs for inventory browsing.
+        for (const cond of attributeConditions) {
+            Object.assign(where, cond)
+        }
     }
 
     return lensBlankRepo.findMany({

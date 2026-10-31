@@ -153,8 +153,7 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
     }
 
     function addLensBlankAsItem(blank: LensBlankOption) {
-        const isShop = user?.role === 'shop'
-        const price = isShop ? Number(blank.costPrice) || 0 : Number(blank.sellingPrice) || 0
+        const price = Number(blank.sellingPrice) || 0
         const displayName = `${blank.brand} ${blank.lensType} ${blank.material} ${blank.thickness}`
         const existingIndex = items.findIndex((item) => item.lensBlankId === blank.id)
         if (existingIndex >= 0) {
@@ -167,7 +166,14 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
 
     function handlePrescriptionCreated(created: Prescription) {
         setSelectedPrescriptionId(created.id)
-        queryClient.setQueryData<PrescriptionOption[]>(['prescriptions', { clientId: selectedClientId }], (old) => (old ? [...old, created] : [created]))
+        // Insert in server order (dateWritten desc, nulls last, createdAt desc)
+        // so the dropdown is correct until the refetch lands.
+        queryClient.setQueryData<PrescriptionOption[]>(['prescriptions', { clientId: selectedClientId }], (old) => {
+            if (!old) return [created]
+            const rxDate = (p: PrescriptionOption) => (p.dateWritten ? new Date(p.dateWritten).getTime() : Number.NEGATIVE_INFINITY)
+            const list = [...old, created]
+            return list.sort((a, b) => (rxDate(b) - rxDate(a)) || (new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()))
+        })
         queryClient.invalidateQueries({ queryKey: ['prescriptions'] })
     }
 
@@ -262,7 +268,8 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
     })()
 
     const selectedRx = prescriptions.find((p) => p.id === selectedPrescriptionId)
-    const showLensBlankPicker = user?.role !== 'shop' && (orderType === 'standard' || orderType === 'remounting') && selectedPrescriptionId && selectedRx
+    // Visible to admin AND shop — the picker adds at sellingPrice for every role.
+    const showLensBlankPicker = (orderType === 'standard' || orderType === 'remounting') && selectedPrescriptionId && selectedRx
 
     const totalItemsPrice = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0)
     const totalRepairsPrice = repairs.reduce((s, r) => s + r.price, 0)

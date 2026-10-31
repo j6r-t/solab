@@ -14,7 +14,11 @@ interface LensBlankPickerProps {
     prescriptions: PrescriptionOption[]
     selectedPrescriptionId: string
     onAddBlank: (blank: LensBlankOption) => void
-    t: (key: string) => string
+    t: (key: string, vars?: Record<string, string | number>) => string
+}
+
+function distinctValues(values: (string | null | undefined)[]): string[] {
+    return [...new Set(values.filter((v): v is string => !!v))].sort((a, b) => a.localeCompare(b))
 }
 
 export function LensBlankPicker({ prescriptions, selectedPrescriptionId, onAddBlank, t }: LensBlankPickerProps) {
@@ -57,6 +61,24 @@ export function LensBlankPicker({ prescriptions, selectedPrescriptionId, onAddBl
     })
     const lensBlanks = data ?? []
 
+    // Filter dropdown options come from ALL blanks in inventory (not just current results),
+    // so mom can always pick any type/material/coating/thickness the shop carries.
+    const { data: allData } = useQuery({
+        queryKey: ['lens-blanks', 'picker-options'],
+        queryFn: async () => {
+            const r = await fetch('/api/lens-blanks?limit=200')
+            const json: PaginatedResponse<LensBlankOption> | LensBlankOption[] = await r.json()
+            return Array.isArray(json) ? json : (json?.data ?? [])
+        },
+        enabled: !!debouncedId && prescriptions.length > 0 && !!debouncedRx,
+        staleTime: 60_000,
+    })
+    const allBlanks = allData ?? []
+    const thicknessOptions = distinctValues(allBlanks.map((b) => b.thickness))
+    const lensTypeOptions = distinctValues(allBlanks.map((b) => b.lensType))
+    const materialOptions = distinctValues(allBlanks.map((b) => b.material))
+    const coatingOptions = distinctValues(allBlanks.map((b) => b.coating))
+
     if (!selectedRx) return null
 
     return (
@@ -69,42 +91,47 @@ export function LensBlankPicker({ prescriptions, selectedPrescriptionId, onAddBl
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">{t('stock.thickness')}</Label>
-                        <select value={lbFilterThickness} onChange={(e) => setLbFilterThickness(e.target.value)} className="w-full h-8 rounded-md border bg-background px-2 text-xs">
+                        <select value={lbFilterThickness} onChange={(e) => setLbFilterThickness(e.target.value)} className="w-full h-9 rounded-md border bg-background px-2 text-sm">
                             <option value="">{t('common.all')}</option>
-                            {[...new Set(lensBlanks.map((b) => b.thickness).filter((v): v is string => !!v))].map((th) => (
+                            {thicknessOptions.map((th) => (
                                 <option key={th} value={th}>{th}</option>
                             ))}
                         </select>
                     </div>
                     <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">{t('stock.lensType')}</Label>
-                        <select value={lbFilterLensType} onChange={(e) => setLbFilterLensType(e.target.value)} className="w-full h-8 rounded-md border bg-background px-2 text-xs">
+                        <select value={lbFilterLensType} onChange={(e) => setLbFilterLensType(e.target.value)} className="w-full h-9 rounded-md border bg-background px-2 text-sm">
                             <option value="">{t('common.all')}</option>
-                            {[...new Set(lensBlanks.map((b) => b.lensType).filter((v): v is string => !!v))].map((lt) => (
+                            {lensTypeOptions.map((lt) => (
                                 <option key={lt} value={lt}>{t(`stock.${lt}`)}</option>
                             ))}
                         </select>
                     </div>
                     <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">{t('stock.material')}</Label>
-                        <select value={lbFilterMaterial} onChange={(e) => setLbFilterMaterial(e.target.value)} className="w-full h-8 rounded-md border bg-background px-2 text-xs">
+                        <select value={lbFilterMaterial} onChange={(e) => setLbFilterMaterial(e.target.value)} className="w-full h-9 rounded-md border bg-background px-2 text-sm">
                             <option value="">{t('common.all')}</option>
-                            {[...new Set(lensBlanks.map((b) => b.material).filter((v): v is string => !!v))].map((m) => (
+                            {materialOptions.map((m) => (
                                 <option key={m} value={m}>{t(`stock.${m}`)}</option>
                             ))}
                         </select>
                     </div>
                     <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">{t('stock.coating')}</Label>
-                        <select value={lbFilterCoating} onChange={(e) => setLbFilterCoating(e.target.value)} className="w-full h-8 rounded-md border bg-background px-2 text-xs">
+                        <select value={lbFilterCoating} onChange={(e) => setLbFilterCoating(e.target.value)} className="w-full h-9 rounded-md border bg-background px-2 text-sm">
                             <option value="">{t('common.all')}</option>
-                            {[...new Set(lensBlanks.map((b) => b.coating).filter((v): v is string => !!v))].map((c) => (
+                            {coatingOptions.map((c) => (
                                 <option key={c} value={c}>{t(`stock.${c}`)}</option>
                             ))}
                         </select>
                     </div>
                 </div>
-                <div className="text-xs text-muted-foreground">{prescriptionLabel(selectedRx)}</div>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                    <span className="text-muted-foreground">{prescriptionLabel(selectedRx)}</span>
+                    {!lensBlankLoading && (
+                        <span className="font-medium">{t('orders.matchingCount', { n: lensBlanks.length })}</span>
+                    )}
+                </div>
                 {lensBlankLoading ? (
                     <div className="flex items-center justify-center py-4 text-muted-foreground text-sm">
                         <Loader2 className="h-4 w-4 animate-spin mr-2" /> {t('common.loading')}
@@ -114,22 +141,28 @@ export function LensBlankPicker({ prescriptions, selectedPrescriptionId, onAddBl
                 ) : (
                     <div className="space-y-1.5 max-h-48 overflow-y-auto">
                         {lensBlanks.map((blank) => {
-                            const inStock = (blank.quantity ?? 0) > 0
+                            const qty = blank.quantity ?? 0
+                            const inStock = qty > 0
                             return (
                                 <div key={blank.id} className={`flex items-center gap-2 p-2.5 rounded-lg border ${inStock ? 'bg-background' : 'bg-muted/30 opacity-60'}`}>
                                     <Package className="h-4 w-4 shrink-0 text-muted-foreground" />
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
                                             <span className="text-sm font-medium truncate">{blank.brand}</span>
                                             <Badge variant="outline" className="text-[10px] px-1.5 py-0">{t(`stock.${blank.lensType}`)}</Badge>
                                             <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{t(`stock.${blank.material}`)}</Badge>
                                             {blank.coating !== 'none' && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{t(`stock.${blank.coating}`)}</Badge>}
+                                            {inStock ? (
+                                                <Badge className="text-[10px] px-1.5 py-0" aria-label={t('common.inStockSuffix', { n: qty })}>×{qty}</Badge>
+                                            ) : (
+                                                <Badge variant="destructive" className="text-[10px] px-1.5 py-0">{t('stock.outOfStock')}</Badge>
+                                            )}
                                         </div>
                                         <div className="text-xs text-muted-foreground mt-0.5">
-                                            {blank.thickness} · SPH {blank.sph} · CYL {blank.cyl} · {Number(blank.sellingPrice).toFixed(3)} TND · {blank.quantity ?? 0} {t('common.inStockSuffix')}
+                                            {blank.thickness} · SPH {blank.sph} · CYL {blank.cyl} · {Number(blank.sellingPrice).toFixed(3)} TND · {t('common.inStockSuffix', { n: qty })}
                                         </div>
                                     </div>
-                                    <Button type="button" variant="ghost" size="sm" onClick={() => onAddBlank(blank)} disabled={!inStock} className="h-7 px-2 shrink-0">
+                                    <Button type="button" variant="ghost" size="sm" onClick={() => onAddBlank(blank)} disabled={!inStock} className="h-8 px-2 shrink-0">
                                         <Check className="h-3 w-3 mr-1" /> {t('common.add')}
                                     </Button>
                                 </div>

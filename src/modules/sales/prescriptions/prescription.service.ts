@@ -11,7 +11,11 @@ export async function listPrescriptions(params?: { clientId?: string; doctorId?:
             client: { select: { name: true, familyName: true, phone: true } },
             doctor: { select: { id: true, name: true } },
         },
-        orderBy: { createdAt: 'desc' },
+        // Most recent clinical date first; createdAt breaks ties, null dates sink to the end.
+        orderBy: [
+            { dateWritten: { sort: 'desc', nulls: 'last' } },
+            { createdAt: 'desc' },
+        ],
     })
 }
 
