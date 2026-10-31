@@ -264,7 +264,7 @@ export function ChequesPage() {
                     <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">{t('cheques.noChequesDesc')}</p>
                 </div>
             ) : (
-                <div className="border rounded-xl bg-card overflow-x-auto overflow-y-auto max-h-[340px]">
+                <div className="hidden md:block border rounded-xl bg-card overflow-x-auto">
                     <table className="w-full min-w-[720px]">
                         <thead>
                             <tr className="bg-muted border-b sticky top-0 z-10">
@@ -361,6 +361,88 @@ export function ChequesPage() {
                             ))}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {/* Mobile (below md): cards instead of the horizontally scrolling table */}
+            {!loading && cheques.length > 0 && (
+                <div className="md:hidden space-y-3">
+                    {cheques.map((cheque) => {
+                        const pending = cheque.status === 'pending'
+                        const typeLabel = cheque.type === 'traite' ? t('cheques.traite') : t('cheques.standard')
+                        const settleLabel = cheque.entityType === 'supplier_payment' ? t('cheques.markPaid') : t('cheques.markCashed')
+                        const party = cheque.order
+                            ? `#${cheque.order.orderNumber} — ${cheque.order.client.name} ${cheque.order.client.familyName}`
+                            : cheque.invoice
+                                ? `${cheque.invoice.invoiceNumber} — ${cheque.invoice.fournisseur.name}`
+                                : ''
+                        return (
+                            <div key={cheque.id} className="rounded-lg border bg-card p-3">
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="flex items-start gap-2 min-w-0">
+                                        {pending && (
+                                            <div className="pt-0.5">
+                                                <Checkbox
+                                                    checked={selected.has(cheque.id)}
+                                                    onCheckedChange={() => toggleSelected(cheque.id)}
+                                                    aria-label={t('cheques.selectOne', { number: cheque.number })}
+                                                />
+                                            </div>
+                                        )}
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-semibold truncate">
+                                                {typeLabel} <span className="tabular-nums">{cheque.number}</span>
+                                            </p>
+                                            <p className="text-xs text-muted-foreground truncate mt-0.5">
+                                                {cheque.bankName || '—'}{party && ` · ${party}`}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1 shrink-0">
+                                        <p className="text-sm font-semibold tabular-nums whitespace-nowrap">{formatCurrency(cheque.amount)}</p>
+                                        <Badge variant="outline" className={`${statusStyles[cheque.status] || ''} text-xs`}>
+                                            {statusLabel(cheque.status)}
+                                        </Badge>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between gap-2 mt-2.5">
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('cheques.dueDate')} : <span className="text-foreground font-medium tabular-nums">{formatDate(cheque.dueDate)}</span>
+                                    </p>
+                                    {traiteNotYetDue(cheque) && (
+                                        <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-xs shrink-0">
+                                            {t('cheques.notDue')}
+                                        </Badge>
+                                    )}
+                                </div>
+                                {pending && (
+                                    <div className="flex justify-end gap-2 mt-3">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                            disabled={updateStatus.isPending}
+                                            onClick={() => setConfirmTarget({ cheque, action: cheque.entityType === 'supplier_payment' ? 'paid' : 'cashed' })}
+                                            title={settleLabel}
+                                            aria-label={settleLabel}
+                                        >
+                                            <CheckCircle className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="destructive"
+                                            size="icon"
+                                            disabled={updateStatus.isPending}
+                                            onClick={() => setConfirmTarget({ cheque, action: 'bounced' })}
+                                            title={t('cheques.markBounced')}
+                                            aria-label={t('cheques.markBounced')}
+                                        >
+                                            <XCircle className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })}
                 </div>
             )}
 

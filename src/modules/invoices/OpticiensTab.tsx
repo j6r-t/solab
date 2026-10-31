@@ -304,7 +304,7 @@ export function OpticiensTab() {
                     <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">{t('invoices.opticiens.noBillsDesc')}</p>
                 </div>
             ) : (
-                <div className="border rounded-xl bg-card overflow-x-auto overflow-y-auto max-h-[340px]">
+                <div className="hidden md:block border rounded-xl bg-card overflow-x-auto">
                     <table className="w-full min-w-[720px]">
                         <thead>
                             <tr className="bg-muted border-b sticky top-0 z-10">
@@ -406,6 +406,98 @@ export function OpticiensTab() {
                             })}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {/* Mobile (below md): cards instead of the horizontally scrolling table.
+                Checkbox uses the same toggleBill handler, so the one-shop-per-selection
+                grouping invariant carries over unchanged. */}
+            {!loading && rows.length > 0 && (
+                <div className="md:hidden space-y-3">
+                    {rows.map((row) => {
+                        const { total, paid, remaining } = rowTotals(row)
+                        const isBillRow = row.kind === 'bill'
+                        const bill = isBillRow ? row.bill : null
+                        const invoice = row.kind === 'consolidated' ? row.invoice : null
+                        const selectable = isBillRow && isBillSelectable(bill!)
+                        const checked = isBillRow && selectedIds.includes(bill!.id)
+                        const status = rowStatus(row)
+                        return (
+                            <div key={row.key} className="rounded-lg border bg-card p-3">
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="flex items-start gap-2 min-w-0">
+                                        {isBillRow && selectable && (
+                                            <div className="pt-0.5">
+                                                <Checkbox
+                                                    checked={checked}
+                                                    onCheckedChange={(v) => toggleBill(bill!.id, v === true)}
+                                                    aria-label={t('invoices.opticiens.selectForGroup')}
+                                                />
+                                            </div>
+                                        )}
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-semibold truncate">
+                                                <span className="tabular-nums">{rowNumber(row)}</span>
+                                                {row.kind === 'consolidated' && (
+                                                    <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 text-xs ml-2 align-middle">
+                                                        {t('invoices.opticiens.groupInvoice')}
+                                                    </Badge>
+                                                )}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground truncate mt-0.5">
+                                                {rowShop(row)} · {formatDate(rowDate(row))}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Badge variant="outline" className={`${BILL_STATUS_BADGE[status] || ''} text-xs shrink-0`}>
+                                        {status === 'paid' ? t('orders.fullyPaid') : status === 'partiallyPaid' ? t('orders.partiallyPaid') : t('orders.unpaid')}
+                                    </Badge>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 mt-3">
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">{t('invoices.columns.total')}</p>
+                                        <p className="text-sm font-semibold tabular-nums">{formatCurrency(total)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">{t('invoices.columns.paid')}</p>
+                                        <p className="text-sm tabular-nums">{formatCurrency(paid)}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xs text-muted-foreground">{t('invoices.columns.remaining')}</p>
+                                        <p className={`text-sm tabular-nums ${remaining > EPSILON ? 'text-destructive font-medium' : ''}`}>{formatCurrency(remaining)}</p>
+                                    </div>
+                                </div>
+                                <div className="flex justify-end gap-1 mt-2">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => (isBillRow ? setPreviewBill(bill!) : setPreviewGroup(invoice!))}
+                                        title={t('invoices.opticiens.preview')}
+                                    >
+                                        <Eye className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                        disabled={remaining <= EPSILON}
+                                        onClick={() => (isBillRow ? openBillPayment(bill!) : openGroupPayment(invoice!))}
+                                        title={t('payments.recordPayment')}
+                                    >
+                                        <Wallet className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => (isBillRow ? downloadOpticianBill(bill!) : downloadGroupedInvoice(invoice!))}
+                                        title={t('invoices.opticiens.print')}
+                                    >
+                                        <Printer className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        )
+                    })}
                 </div>
             )}
 

@@ -28,6 +28,12 @@ const statusStyles: Record<string, { variant: 'default' | 'secondary' | 'destruc
     cancelled: { variant: 'destructive', icon: XCircle, bg: '', text: '', border: '' },
 }
 
+const paymentVariants: Record<string, 'default' | 'secondary' | 'destructive'> = {
+    fullyPaid: 'default',
+    partiallyPaid: 'secondary',
+    unpaid: 'destructive',
+}
+
 function getReadyDate(order: Order): string | null {
     if (!order.turnaroundDays) return null
     const created = new Date(order.createdAt)
@@ -164,6 +170,13 @@ export function OrdersPage() {
     const showEmptyState = !loading && orders.length === 0 && !debouncedSearch
     const showNoResults = !loading && orders.length === 0 && debouncedSearch
 
+    // Shared by the desktop row and the mobile card: same detail dialog either way.
+    async function openOrder(order: Order) {
+        try { const detail = await fetchOrderById(order.id); setSelectedOrder(detail) }
+        catch { setSelectedOrder(order) }
+        setDetailOpen(true)
+    }
+
     return (
         <div className="space-y-6 max-w-[900px]">
             <div>
@@ -201,7 +214,7 @@ export function OrdersPage() {
                     <h2 className="text-lg font-medium text-foreground mb-2">{t('common.noResults')}</h2>
                 </div>
             ) : (
-                <div className="border rounded-xl bg-card overflow-x-auto overflow-y-auto max-h-[340px]">
+                <div className="hidden md:block border rounded-xl bg-card overflow-x-auto">
                     <table className="w-full min-w-[720px]">
                         <thead>
                             <tr className="bg-muted border-b sticky top-0 z-10">
@@ -219,11 +232,7 @@ export function OrdersPage() {
                                 const StatusIcon = style.icon
                                 const readyDate = getReadyDate(order)
                                 return (
-                                    <tr key={order.id} className="cursor-pointer row-hover" onClick={async () => {
-                                        try { const detail = await fetchOrderById(order.id); setSelectedOrder(detail) }
-                                        catch { setSelectedOrder(order) }
-                                        setDetailOpen(true)
-                                    }}>
+                                    <tr key={order.id} className="cursor-pointer row-hover" onClick={() => openOrder(order)}>
                                         <td className="py-3 px-4 text-sm text-muted-foreground tabular-nums whitespace-nowrap">#{order.orderNumber}</td>
                                         <td className="py-3 px-4">
                                             <p className="font-semibold text-foreground">{order.client.name} {order.client.familyName}</p>
@@ -243,6 +252,62 @@ export function OrdersPage() {
                             })}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {/* Mobile (below md): cards instead of the horizontally scrolling table */}
+            {orders.length > 0 && (
+                <div className="md:hidden space-y-3">
+                    {orders.map((order) => {
+                        const style = statusStyles[order.status] || statusStyles.pending
+                        const StatusIcon = style.icon
+                        const total = parseFloat(order.totalAmount)
+                        const paid = parseFloat(order.totalPaid)
+                        const balance = total - paid
+                        return (
+                            <div
+                                key={order.id}
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => openOrder(order)}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openOrder(order) } }}
+                                className="rounded-lg border bg-card p-3 cursor-pointer row-hover"
+                            >
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-semibold truncate">{order.client.name} {order.client.familyName}</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                                            <span className="tabular-nums">#{order.orderNumber}</span> · {typeLabel(order.orderType)}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">{t('orders.createdOn', { date: formatDate(new Date(order.createdAt)) })}</p>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1 shrink-0">
+                                        <Badge variant={style.variant} className={`${style.bg} ${style.text} ${style.border} gap-1.5 text-xs font-medium`}>
+                                            <StatusIcon className="h-3.5 w-3.5" />
+                                            {t(`orders.${order.status}`)}
+                                        </Badge>
+                                        <Badge variant={paymentVariants[order.paymentStatus] || 'secondary'} className="text-xs">
+                                            {t(`orders.${order.paymentStatus}`)}
+                                        </Badge>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 mt-3">
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">{t('orders.total')}</p>
+                                        <p className="text-sm font-semibold tabular-nums">{formatCurrency(total)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">{t('orders.paid')}</p>
+                                        <p className="text-sm tabular-nums">{formatCurrency(paid)}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xs text-muted-foreground">{t('orders.balance')}</p>
+                                        <p className={`text-sm tabular-nums ${balance > 0.001 ? 'text-destructive font-medium' : ''}`}>{formatCurrency(balance)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )
+                    })}
                 </div>
             )}
 
