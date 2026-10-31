@@ -13,7 +13,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         const onKey = (e: KeyboardEvent) => {
             const target = e.target as HTMLElement | null
             const typing = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
-            if ((e.key === '/' && !typing) || (e.key.toLowerCase() === 'k' && (e.ctrlKey || e.metaKey))) {
+            if ((e.key === '/' && !typing) || (e.key?.toLowerCase() === 'k' && (e.ctrlKey || e.metaKey))) {
                 const inputs = Array.from(document.querySelectorAll('input[type="text"], input[type="search"], input:not([type])'))
                 const search = inputs.find((i) => {
                     const el = i as HTMLInputElement
