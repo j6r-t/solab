@@ -156,6 +156,14 @@ export interface DoctorRankingItem {
     revenue: string
 }
 
+export interface PendingByBankItem {
+    bank: string | null
+    count: number
+    total: string
+    overdueCount: number
+    overdueTotal: string
+}
+
 export interface AtelierDeltas {
     revenue: number | null
     completed: number | null
@@ -233,6 +241,7 @@ export interface ShopReportData {
     marginByCategory: MarginByCategoryItem[]
     weeksOfCover: WeeksOfCoverItem[]
     supplierBalances: SupplierBalance[]
+    pendingByBank: PendingByBankItem[]
     collections: { avgDaysToCash: number; bounceRate: number; cashedCount: number; bouncedCount: number }
     cancellations: { count: number; revenueLost: string }
     topClients?: TopClient[]

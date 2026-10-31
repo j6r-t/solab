@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
     BarChart3, TrendingUp, Users, UserPlus, Wallet, PiggyBank, ShoppingCart, Award,
     Layers, Trophy, CreditCard, Receipt, Boxes, Percent, CalendarDays,
-    AlertTriangle, DollarSign, Clock, Stethoscope, Glasses, Truck, PackageX, Gauge,
+    AlertTriangle, DollarSign, Clock, Stethoscope, Glasses, Truck, PackageX, Gauge, Landmark,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils/currency'
 import type { ShopReportData } from './useReports'
@@ -60,6 +60,13 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
         '500to1000': t('reports.bucket500to1000'),
         gt1000: t('reports.bucketGt1000'),
     }
+
+    const pendingByBankTotals = data
+        ? {
+            count: data.pendingByBank.reduce((s, b) => s + b.count, 0),
+            total: data.pendingByBank.reduce((s, b) => s + Number(b.total), 0),
+        }
+        : null
 
     return (
         <div className="space-y-6 max-w-6xl">
@@ -172,6 +179,55 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
                             </CardContent>
                         </Card>
                     </div>
+
+                    {data.pendingByBank.length > 0 && pendingByBankTotals && (
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                <CardTitle className="text-base">{t('reports.pendingByBank')}</CardTitle>
+                                <Landmark className="h-4 w-4 text-amber-600" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="overflow-x-auto overflow-y-auto max-h-[340px]">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b bg-muted text-muted-foreground sticky top-0 z-10">
+                                                <th className="text-left py-2 pr-4">{t('cheques.bank')}</th>
+                                                <th className="text-right py-2 px-4">{t('reports.pendingByBankCount')}</th>
+                                                <th className="text-right py-2 pl-4">{t('orders.total')}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {data.pendingByBank.map((b) => (
+                                                <tr key={b.bank ?? '__no_bank__'} className="border-b last:border-0">
+                                                    <td className="py-2 pr-4">
+                                                        {b.bank ? (
+                                                            <span className="font-medium">{b.bank}</span>
+                                                        ) : (
+                                                            <span className="font-medium italic text-muted-foreground">{t('reports.noBank')}</span>
+                                                        )}
+                                                        {b.overdueCount > 0 && (
+                                                            <span className="block text-xs text-red-600">
+                                                                {t('reports.pendingByBankOverdue', { count: b.overdueCount })}
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td className="text-right py-2 px-4 tabular-nums">{b.count}</td>
+                                                    <td className="text-right py-2 pl-4 tabular-nums">{formatCurrency(b.total)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr className="border-t font-semibold">
+                                                <td className="py-2 pr-4">{t('orders.total')}</td>
+                                                <td className="text-right py-2 px-4 tabular-nums">{pendingByBankTotals.count}</td>
+                                                <td className="text-right py-2 pl-4 tabular-nums">{formatCurrency(pendingByBankTotals.total.toString())}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <Card className="lg:col-span-2">

@@ -95,6 +95,8 @@ export async function getShopDecisionStats(
         periodPayments,
         pendingChequesAgg,
         overdueChequesAgg,
+        pendingByBankGroups,
+        overdueByBankGroups,
         earliestOrder,
         collectionCheques,
         supplierInvoices,
@@ -114,6 +116,18 @@ export async function getShopDecisionStats(
         }),
         db.cheque.aggregate({ where: pendingInstrumentWhere, _sum: { amount: true } }),
         db.cheque.aggregate({ where: { ...pendingInstrumentWhere, dueDate: { lt: now } }, _sum: { amount: true } }),
+        db.cheque.groupBy({
+            by: ['bankName'],
+            where: pendingInstrumentWhere,
+            _count: { _all: true },
+            _sum: { amount: true },
+        }),
+        db.cheque.groupBy({
+            by: ['bankName'],
+            where: { ...pendingInstrumentWhere, dueDate: { lt: now } },
+            _count: { _all: true },
+            _sum: { amount: true },
+        }),
         current
             ? Promise.resolve([] as { createdAt: Date }[])
             : db.order.findMany({ orderBy: { createdAt: 'asc' }, take: 1, select: { createdAt: true } }),
@@ -245,6 +259,22 @@ export async function getShopDecisionStats(
         bouncedCount,
     }
 
+    // pendingByBank: where to go collect unsettled client instruments,
+    // grouped by bank (null/empty bank -> null, translated client-side).
+    const overdueByBank = new Map(overdueByBankGroups.map((g) => [g.bankName, g]))
+    const pendingByBank = pendingByBankGroups
+        .map((g) => {
+            const overdue = overdueByBank.get(g.bankName)
+            return {
+                bank: g.bankName && g.bankName.trim() ? g.bankName.trim() : null,
+                count: g._count?._all ?? 0,
+                total: Number(g._sum?.amount ?? 0).toString(),
+                overdueCount: overdue?._count?._all ?? 0,
+                overdueTotal: Number(overdue?._sum?.amount ?? 0).toString(),
+            }
+        })
+        .sort((a, b) => Number(b.total) - Number(a.total))
+
     const supplierAgg = new Map<string, { purchases: number; outstanding: number }>()
     for (const inv of supplierInvoices) {
         const s = supplierAgg.get(inv.fournisseurId) || { purchases: 0, outstanding: 0 }
@@ -290,6 +320,7 @@ export async function getShopDecisionStats(
             pendingInstruments: Number(pendingChequesAgg._sum.amount ?? 0).toString(),
             overdueInstruments: Number(overdueChequesAgg._sum.amount ?? 0).toString(),
         },
+        pendingByBank,
         stockHealth: {
             outOfStock: products.filter((p) => p.quantity <= 0).length,
             lowStock: products.filter((p) => p.quantity > 0 && p.quantity <= LOW_STOCK_MAX_QTY).length,
