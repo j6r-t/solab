@@ -197,7 +197,7 @@ export function PaymentDialog({ open, onOpenChange, target, onDone }: PaymentDia
                                     className="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-sm"
                                 >
                                     <option value="cash">{t('payments.cash')}</option>
-                                    {(isBillLike || isOrder) && <option value="card">{t('payments.card')}</option>}
+                                    {/* card removed from all UI entry points: not a real payment method in this business; server + historical data still accept it */}
                                     {!isOrder && <option value="cheque">{t('payments.cheque')}</option>}
                                     {!isOrder && <option value="traite">{t('payments.traite')}</option>}
                                 </select>

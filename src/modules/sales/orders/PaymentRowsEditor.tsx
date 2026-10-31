@@ -101,7 +101,8 @@ export function PaymentRowsEditor({ rows, onChange, paymentType, onPaymentTypeCh
                                     <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="cash">{t('payments.cash')}</SelectItem>
-                                        <SelectItem value="card">{t('payments.card')}</SelectItem>
+                                        {/* card is legacy: only shown so historical card rows still render; not selectable otherwise */}
+                                        {row.method === 'card' && <SelectItem value="card">{t('payments.card')}</SelectItem>}
                                         <SelectItem value="cheque">{t('payments.cheque')}</SelectItem>
                                         <SelectItem value="traite">{t('payments.traite')}</SelectItem>
                                     </SelectContent>
