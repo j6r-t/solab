@@ -97,6 +97,12 @@ export interface OrderDetailRepairDto {
     repairService: { id: string; name: string } | null
 }
 
+export interface OrderDetailWorkOrderSummaryDto {
+    status: string
+    source: string
+    completedAt: Date | null
+}
+
 export interface OrderDetailPrescriptionDto {
     id: string
     sphRight: string
@@ -127,6 +133,7 @@ export interface OrderDetailDto {
     items: OrderDetailItemDto[]
     payments: OrderDetailPaymentDto[]
     repairs: OrderDetailRepairDto[]
+    workOrders: OrderDetailWorkOrderSummaryDto[]
     prescription: OrderDetailPrescriptionDto | null
     turnaroundDays: number | null
 }

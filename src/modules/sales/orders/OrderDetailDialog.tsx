@@ -45,6 +45,24 @@ export function OrderDetailDialog({ order, open, onOpenChange, onConfirmStatusUp
         ? { kind: 'order', id: order.id, total: parseFloat(order.totalAmount), paid: parseFloat(order.totalPaid), remaining: Math.max(0, balance) }
         : null
 
+    // Atelier progress: aggregate over linked internal work orders.
+    // Cancelled steps don't count; only show something when at least one active step exists.
+    const atelierStatus = (() => {
+        const steps = (order.workOrders ?? []).filter((w) => w.status !== 'cancelled')
+        if (steps.length === 0) return null
+        const done = steps.filter((w) => w.status === 'completed' || w.status === 'delivered').length
+        if (done === steps.length) {
+            if (order.status === 'ready') return { label: t('orders.readyForPickup'), variant: 'default' as const }
+            if (order.status === 'completed') return { label: t('orders.completed'), variant: 'default' as const }
+            return { label: t('orders.atelierDoneAwaiting'), variant: 'secondary' as const }
+        }
+        if (steps.some((w) => w.status === 'in_progress')) {
+            if (done > 0) return { label: t('orders.atelierStepsDone', { done, total: steps.length }), variant: 'secondary' as const }
+            return { label: t('workOrders.status.in_progress'), variant: 'secondary' as const }
+        }
+        return { label: t('workOrders.status.pending'), variant: 'outline' as const }
+    })()
+
     async function handlePaymentDone() {
         if (!order) return
         toast.success(t('orders.paymentRecorded'))
@@ -97,6 +115,13 @@ export function OrderDetailDialog({ order, open, onOpenChange, onConfirmStatusUp
                         <div><span className="text-muted-foreground">{t('orders.status')}:</span><span className="ml-1"><Badge variant="outline">{t(`orders.${order.status}`)}</Badge></span></div>
                         <div><span className="text-muted-foreground">{t('orders.payment')}:</span><span className="ml-1"><Badge variant={paymentColors[order.paymentStatus]}>{t(`orders.${order.paymentStatus}`)}</Badge></span></div>
                     </div>
+
+                    {atelierStatus && (
+                        <div className="flex flex-wrap items-center gap-2 text-sm">
+                            <span className="text-muted-foreground">{t('orders.atelierLabel')}:</span>
+                            <Badge variant={atelierStatus.variant}>{atelierStatus.label}</Badge>
+                        </div>
+                    )}
 
                     {order.prescription && (
                         <div>

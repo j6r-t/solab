@@ -29,6 +29,12 @@ interface Repair {
     expectedCompletionDate: string
 }
 
+interface WorkOrderSummary {
+    status: string
+    source: string
+    completedAt: string | null
+}
+
 interface Prescription {
     id: string
     doctor: { name: string } | null
@@ -56,12 +62,13 @@ interface Order {
     items: OrderItem[]
     payments: Payment[]
     repairs: Repair[]
+    workOrders: WorkOrderSummary[]
     prescription: Prescription | null
     turnaroundDays: number | null
     createdAt: string
 }
 
-export type { Order, OrderItem, Payment, Repair, Prescription }
+export type { Order, OrderItem, Payment, Repair, Prescription, WorkOrderSummary }
 
 export const fetchOrders = (params?: { search?: string; status?: string; clientId?: string }) =>
     api.get<Order[]>('/api/orders', params as Record<string, string | undefined>)

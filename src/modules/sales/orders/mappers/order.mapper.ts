@@ -48,8 +48,10 @@ interface WorkOrderServiceInput {
 interface WorkOrderInput {
     id: string
     status: string
+    source?: string
     servicePrice: Numeric
     expectedCompletionDate?: Date | null
+    completedAt?: Date | null
     workOrderServices?: WorkOrderServiceInput[]
 }
 
@@ -170,6 +172,11 @@ export function toOrderDetail(order: OrderInput): OrderDetailDto {
             type: p.type,
             createdAt: p.createdAt,
             cheque: p.cheque ? { status: p.cheque.status || '' } : null,
+        })),
+        workOrders: (order.workOrders ?? []).map((r) => ({
+            status: r.status,
+            source: r.source || '',
+            completedAt: r.completedAt ?? null,
         })),
         repairs: (order.workOrders ?? []).flatMap((r) => {
             const services = r.workOrderServices ?? []
