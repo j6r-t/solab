@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { useDebounce } from '@/lib/hooks/useDebounce'
@@ -62,6 +62,15 @@ function rowDate(row: InvoiceRow): string {
     return row.kind === 'bill' ? row.bill.createdAt : row.invoice.createdAt
 }
 
+function billRemaining(bill: OpticianShopBill): number {
+    return parseFloat(bill.totalAmount) - parseFloat(bill.paidAmount)
+}
+
+// A bill that can take part in a grouping: not grouped yet and not fully paid.
+function isUnpaidOpen(bill: OpticianShopBill): boolean {
+    return !bill.groupedIntoId && billRemaining(bill) > EPSILON
+}
+
 export function OpticiensTab() {
     const { t } = useTranslation()
     const queryClient = useQueryClient()
@@ -73,6 +82,10 @@ export function OpticiensTab() {
     const [paymentTarget, setPaymentTarget] = useState<PaymentTarget | null>(null)
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [groupDialogOpen, setGroupDialogOpen] = useState(false)
+    // Shop card click intent: waits for the bill list to be refetched with the
+    // shop filter before selecting that shop's unpaid bills.
+    const [selectShopIntent, setSelectShopIntent] = useState<string | null>(null)
+    const selectAllRef = useRef<HTMLInputElement>(null)
 
     const debouncedSearch = useDebounce(search, 300)
     const filters = useMemo(
@@ -107,15 +120,51 @@ export function OpticiensTab() {
     )
 
     function isBillSelectable(bill: OpticianShopBill): boolean {
-        if (bill.groupedIntoId) return false
-        if (parseFloat(bill.totalAmount) - parseFloat(bill.paidAmount) <= EPSILON) return false
+        if (!isUnpaidOpen(bill)) return false
         if (selectedShopId && bill.opticianShopId !== selectedShopId) return false
         return true
     }
 
+    const selectableBills = useMemo(() => bills.filter((b) => isBillSelectable(b)), [bills, selectedShopId])
+    const allSelected = selectableBills.length > 0 && selectableBills.every((b) => selectedIds.includes(b.id))
+    const someSelected = selectableBills.some((b) => selectedIds.includes(b.id))
+
     function toggleBill(id: string, checked: boolean) {
         setSelectedIds((prev) => (checked ? [...prev, id] : prev.filter((x) => x !== id)))
     }
+
+    function toggleSelectAll() {
+        if (allSelected) {
+            setSelectedIds([])
+            return
+        }
+        // Keep the grouping invariant (one shop per selection): stick to the
+        // already-selected shop if any, otherwise the first selectable bill's.
+        const shopId = selectedShopId ?? selectableBills[0]?.opticianShopId ?? null
+        setSelectedIds(
+            selectableBills.filter((b) => !shopId || b.opticianShopId === shopId).map((b) => b.id)
+        )
+    }
+
+    // Clicking a shop's summary card: filter the table to that shop, then —
+    // once the refetched bill list matches — select all its unpaid bills.
+    function handleShopCardClick(shopId: string) {
+        setShopFilter(shopId)
+        setSelectShopIntent(shopId)
+    }
+
+    useEffect(() => {
+        if (!selectShopIntent || shopFilter !== selectShopIntent || loading) return
+        setSelectedIds(
+            bills.filter((b) => b.opticianShopId === selectShopIntent && isUnpaidOpen(b)).map((b) => b.id)
+        )
+        setSelectShopIntent(null)
+    }, [selectShopIntent, shopFilter, loading, bills])
+
+    // Native "some selected" dash on the header checkbox
+    useEffect(() => {
+        if (selectAllRef.current) selectAllRef.current.indeterminate = someSelected && !allSelected
+    }, [someSelected, allSelected])
 
     function refresh() {
         queryClient.invalidateQueries({ queryKey: ['optician-shop-bills'] })
@@ -147,26 +196,43 @@ export function OpticiensTab() {
         <div className="space-y-5">
             {summary.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {summary.map((s) => (
-                        <div key={s.shopId} className="rounded-lg border bg-card p-3">
-                            <div className="flex items-center gap-2">
-                                <Store className="h-4 w-4 text-muted-foreground shrink-0" />
-                                <p className="text-sm font-medium truncate">{s.shopName}</p>
-                            </div>
-                            <div className="flex items-end justify-between mt-2">
-                                <div>
-                                    <p className="text-xs text-muted-foreground">{t('invoices.opticiens.invoiceCount')}</p>
-                                    <p className="text-sm font-semibold">{s.invoiceCount}</p>
+                    {summary.map((s) => {
+                        const openCount = bills.filter((b) => b.opticianShopId === s.shopId && isUnpaidOpen(b)).length
+                        const countVisible = !debouncedSearch && !statusFilter && (!shopFilter || shopFilter === s.shopId)
+                        return (
+                            <div
+                                key={s.shopId}
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => handleShopCardClick(s.shopId)}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleShopCardClick(s.shopId) } }}
+                                className="rounded-lg border bg-card p-3 cursor-pointer hover:border-green-500 transition-colors"
+                                title={t('invoices.opticiens.selectShopCta')}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Store className="h-4 w-4 text-muted-foreground shrink-0" />
+                                    <p className="text-sm font-medium truncate flex-1">{s.shopName}</p>
+                                    {countVisible && openCount > 0 && (
+                                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs shrink-0">
+                                            {t('invoices.opticiens.selectableCount', { n: openCount })}
+                                        </Badge>
+                                    )}
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-xs text-muted-foreground">{t('invoices.opticiens.outstanding')}</p>
-                                    <p className={`text-sm font-semibold ${s.totalOutstanding > EPSILON ? 'text-destructive' : 'text-green-600'}`}>
-                                        {s.totalOutstanding.toFixed(3)} TND
-                                    </p>
+                                <div className="flex items-end justify-between mt-2">
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">{t('invoices.opticiens.invoiceCount')}</p>
+                                        <p className="text-sm font-semibold">{s.invoiceCount}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xs text-muted-foreground">{t('invoices.opticiens.outstanding')}</p>
+                                        <p className={`text-sm font-semibold ${s.totalOutstanding > EPSILON ? 'text-destructive' : 'text-green-600'}`}>
+                                            {s.totalOutstanding.toFixed(3)} TND
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        )
+                    })}
                 </div>
             )}
 
@@ -202,10 +268,17 @@ export function OpticiensTab() {
             {selectedBills.length > 0 && (
                 <div className="flex flex-wrap items-center gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-2.5">
                     <Layers className="h-4 w-4 text-green-600 shrink-0" />
-                    <p className="text-sm font-medium flex-1">
-                        {t('invoices.opticiens.selectedCount', { n: selectedBills.length })}
-                        <span className="text-muted-foreground font-normal"> — {t('invoices.opticiens.remainingTotal')} : {selectedTotal.toFixed(3)} TND</span>
-                    </p>
+                    <div className="flex-1 min-w-[160px]">
+                        <p className="text-sm font-medium">
+                            {t('invoices.opticiens.selectedCount', { n: selectedBills.length })}
+                            {selectedBills.length >= 2 && (
+                                <span className="text-muted-foreground font-normal"> — {t('invoices.opticiens.remainingTotal')} : {selectedTotal.toFixed(3)} TND</span>
+                            )}
+                        </p>
+                        {selectedBills.length < 2 && (
+                            <p className="text-xs text-muted-foreground">{t('invoices.opticiens.groupMinHint')}</p>
+                        )}
+                    </div>
                     <Button
                         size="sm"
                         disabled={selectedBills.length < 2}
@@ -234,7 +307,15 @@ export function OpticiensTab() {
                     <table className="w-full min-w-[720px]">
                         <thead>
                             <tr className="bg-muted border-b sticky top-0 z-10">
-                                <th className="w-10 py-3 px-2"></th>
+                                <th className="w-10 py-3 px-2">
+                                    <Checkbox
+                                        ref={selectAllRef}
+                                        checked={allSelected}
+                                        onCheckedChange={() => toggleSelectAll()}
+                                        disabled={selectableBills.length === 0}
+                                        aria-label={t('invoices.opticiens.selectAll')}
+                                    />
+                                </th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('invoices.columns.number')}</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('invoices.columns.shop')}</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">{t('invoices.columns.date')}</th>
@@ -251,7 +332,6 @@ export function OpticiensTab() {
                                 const isBillRow = row.kind === 'bill'
                                 const bill = isBillRow ? row.bill : null
                                 const invoice = row.kind === 'consolidated' ? row.invoice : null
-                                const isGrouped = isBillRow && !!bill!.groupedIntoId
                                 const selectable = isBillRow && isBillSelectable(bill!)
                                 const checked = isBillRow && selectedIds.includes(bill!.id)
                                 const status = rowStatus(row)
@@ -282,56 +362,44 @@ export function OpticiensTab() {
                                         <td className="py-3 px-4 text-right text-sm">{paid.toFixed(3)}</td>
                                         <td className={`py-3 px-4 text-right text-sm ${remaining > EPSILON ? 'text-destructive font-medium' : ''}`}>{remaining.toFixed(3)}</td>
                                         <td className="py-3 px-4 text-center">
-                                            {isGrouped ? (
-                                                <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 text-xs">
-                                                    {t('invoices.opticiens.grouped')}
-                                                </Badge>
-                                            ) : (
-                                                <Badge variant="outline" className={`${BILL_STATUS_BADGE[status] || ''} text-xs`}>
-                                                    {status === 'paid' ? t('orders.fullyPaid') : status === 'partiallyPaid' ? t('orders.partiallyPaid') : t('orders.unpaid')}
-                                                </Badge>
-                                            )}
+                                            <Badge variant="outline" className={`${BILL_STATUS_BADGE[status] || ''} text-xs`}>
+                                                {status === 'paid' ? t('orders.fullyPaid') : status === 'partiallyPaid' ? t('orders.partiallyPaid') : t('orders.unpaid')}
+                                            </Badge>
                                         </td>
-                                        {isGrouped ? (
-                                            <td className="py-3 px-4 text-center" colSpan={3}></td>
-                                        ) : (
-                                            <>
-                                                <td className="py-3 px-4 text-center">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8"
-                                                        onClick={() => (isBillRow ? setPreviewBill(bill!) : setPreviewGroup(invoice!))}
-                                                        title={t('invoices.opticiens.preview')}
-                                                    >
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
-                                                </td>
-                                                <td className="py-3 px-4 text-center">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
-                                                        disabled={remaining <= EPSILON}
-                                                        onClick={() => (isBillRow ? openBillPayment(bill!) : openGroupPayment(invoice!))}
-                                                        title={t('payments.recordPayment')}
-                                                    >
-                                                        <Wallet className="h-4 w-4" />
-                                                    </Button>
-                                                </td>
-                                                <td className="py-3 px-4 text-center">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8"
-                                                        onClick={() => (isBillRow ? downloadOpticianBill(bill!) : downloadGroupedInvoice(invoice!))}
-                                                        title={t('invoices.opticiens.print')}
-                                                    >
-                                                        <Printer className="h-4 w-4" />
-                                                    </Button>
-                                                </td>
-                                            </>
-                                        )}
+                                        <td className="py-3 px-4 text-center">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8"
+                                                onClick={() => (isBillRow ? setPreviewBill(bill!) : setPreviewGroup(invoice!))}
+                                                title={t('invoices.opticiens.preview')}
+                                            >
+                                                <Eye className="h-4 w-4" />
+                                            </Button>
+                                        </td>
+                                        <td className="py-3 px-4 text-center">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                                disabled={remaining <= EPSILON}
+                                                onClick={() => (isBillRow ? openBillPayment(bill!) : openGroupPayment(invoice!))}
+                                                title={t('payments.recordPayment')}
+                                            >
+                                                <Wallet className="h-4 w-4" />
+                                            </Button>
+                                        </td>
+                                        <td className="py-3 px-4 text-center">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8"
+                                                onClick={() => (isBillRow ? downloadOpticianBill(bill!) : downloadGroupedInvoice(invoice!))}
+                                                title={t('invoices.opticiens.print')}
+                                            >
+                                                <Printer className="h-4 w-4" />
+                                            </Button>
+                                        </td>
                                     </tr>
                                 )
                             })}

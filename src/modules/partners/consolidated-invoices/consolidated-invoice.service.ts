@@ -3,6 +3,7 @@ import { BillStatus, ChequeType, PaymentMethod, Prisma } from '@prisma/client'
 import { NotFoundError, BadRequestError } from '@/lib/errors'
 import { assertWithinTotal, effectivePaymentTotal, pendingInstrumentTotal } from '@/lib/utils/payments'
 import { auditService } from '@/modules/system/audit'
+import { syncBillPaidState } from '@/modules/partners/optician-shop-bills/optician-shop-bill.service'
 
 const CONSOLIDATED_INCLUDE = {
     opticianShop: { select: { id: true, name: true } },
@@ -37,6 +38,26 @@ function billEffectiveRemaining(bill: {
         'client'
     )
     return round3(Math.max(0, Number(bill.totalAmount) - effective))
+}
+
+// Split a consolidated payment across the source bills, pro-rata on each
+// item's outstanding (the amount the bill contributed to the invoice total
+// at group time). Every share is floored to 3 decimals and the last item
+// absorbs the rounding remainder, so the shares always sum exactly to
+// `amount`; since each share is proportional to a part of that amount, a
+// partial consolidated payment can never overpay an individual bill.
+export function allocateConsolidatedPayment(amount: number, itemAmounts: number[]): number[] {
+    const shares = itemAmounts.map(() => 0)
+    const count = itemAmounts.length
+    if (count === 0 || amount <= 0) return shares
+    const total = round3(itemAmounts.reduce((sum, a) => sum + a, 0))
+    if (total <= 0) return shares
+    for (let i = 0; i < count - 1; i++) {
+        shares[i] = Math.floor((amount * itemAmounts[i]) / total * 1000) / 1000
+    }
+    const assigned = round3(shares.slice(0, -1).reduce((sum, a) => sum + a, 0))
+    shares[count - 1] = round3(amount - assigned)
+    return shares
 }
 
 export async function groupOpticianShopBills(data: { opticianShopId: string; billIds: string[] }) {
@@ -177,6 +198,8 @@ export async function recordConsolidatedPayment(id: string, data: {
 
     const storedMethod: PaymentMethod = isInstrument ? 'cheque' : (data.method as PaymentMethod)
 
+    const txMeta: { mirroredBillIds: string[] } = { mirroredBillIds: [] }
+
     await db.$transaction(async (tx) => {
         // Inline instrument creation for cheque/traite (mirrors the bill side)
         let instrumentId: string | null = null
@@ -203,6 +226,28 @@ export async function recordConsolidatedPayment(id: string, data: {
                 notes: data.notes || null,
             },
         })
+
+        // Mirror the payment onto the source bills: syncBillPaidState derives
+        // a bill's stored paid state (and its work order) from the bill's own
+        // payments, so each bill needs its share of the consolidated payment
+        // as an OpticianShopPayment row. Instruments share the same cheque
+        // record, so cheque status changes keep both sides in sync.
+        const shares = allocateConsolidatedPayment(data.amount, invoice.items.map((item) => Number(item.amount)))
+        const mirroredBillIds: string[] = []
+        for (let i = 0; i < invoice.items.length; i++) {
+            if (shares[i] <= 0) continue
+            await tx.opticianShopPayment.create({
+                data: {
+                    billId: invoice.items[i].sourceBillId,
+                    amount: shares[i],
+                    method: storedMethod,
+                    chequeId: instrumentId,
+                    notes: data.notes || null,
+                },
+            })
+            mirroredBillIds.push(invoice.items[i].sourceBillId)
+        }
+        txMeta.mirroredBillIds = mirroredBillIds
     })
 
     const updated = await db.consolidatedInvoice.findUnique({ where: { id }, include: CONSOLIDATED_INCLUDE })
@@ -220,6 +265,15 @@ export async function recordConsolidatedPayment(id: string, data: {
         include: CONSOLIDATED_INCLUDE,
     })
 
+    // Re-derive each source bill's stored paid state (and its linked work
+    // order) from its payments — which now include the mirrored share of the
+    // consolidated payment. Full invoice payment ⇒ each bill exactly reaches
+    // its total; a partial payment leaves sane partial states, never
+    // over/under-payments, because shares are pro-rata on the grouped remainders.
+    for (const item of invoice.items) {
+        await syncBillPaidState(item.sourceBillId)
+    }
+
     await auditService.log({
         action: 'CONSOLIDATED_PAYMENT_RECORDED',
         entityType: 'CONSOLIDATED_INVOICE',
@@ -231,6 +285,7 @@ export async function recordConsolidatedPayment(id: string, data: {
             instrument: isInstrument,
             effectivePaid: paidAmount,
             status,
+            mirroredBillIds: txMeta.mirroredBillIds,
         },
     })
 
