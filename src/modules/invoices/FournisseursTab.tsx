@@ -24,6 +24,7 @@ import { GroupSupplierInvoicesDialog } from './GroupSupplierInvoicesDialog'
 import { downloadGroupedSupplierInvoice } from './grouped-supplier-invoice.print'
 import { useSupplierConsolidatedInvoices } from './useSupplierConsolidatedInvoices'
 import { formatDate } from '@/lib/utils/dates'
+import { formatCurrency } from '@/lib/utils/currency'
 
 const STATUS_BADGE: Record<string, string> = {
     fullyPaid: 'bg-green-100 text-green-700 border-green-200',
@@ -176,7 +177,7 @@ export function FournisseursTab() {
                     <Layers className="h-4 w-4 text-green-600 shrink-0" />
                     <p className="text-sm font-medium flex-1">
                         {t('invoices.fournisseurs.selectedCount', { n: selectedInvoices.length })}
-                        <span className="text-muted-foreground font-normal"> — {t('invoices.fournisseurs.remainingTotal')} : {selectedTotal.toFixed(3)} TND</span>
+                        <span className="text-muted-foreground font-normal"> — {t('invoices.fournisseurs.remainingTotal')} : {formatCurrency(selectedTotal)}</span>
                     </p>
                     <Button
                         size="sm"
@@ -249,9 +250,9 @@ export function FournisseursTab() {
                                         </td>
                                         <td className="py-3 px-4">{rowSupplier(row)}</td>
                                         <td className="py-3 px-4 text-sm">{formatDate(rowDate(row))}</td>
-                                        <td className="py-3 px-4 text-right text-sm">{total.toFixed(3)}</td>
-                                        <td className="py-3 px-4 text-right text-sm">{paid.toFixed(3)}</td>
-                                        <td className={`py-3 px-4 text-right text-sm ${remaining > EPSILON ? 'text-destructive font-medium' : ''}`}>{remaining.toFixed(3)}</td>
+                                        <td className="py-3 px-4 text-right text-sm">{formatCurrency(total)}</td>
+                                        <td className="py-3 px-4 text-right text-sm">{formatCurrency(paid)}</td>
+                                        <td className={`py-3 px-4 text-right text-sm ${remaining > EPSILON ? 'text-destructive font-medium' : ''}`}>{formatCurrency(remaining)}</td>
                                         <td className="py-3 px-4 text-center">
                                             <Badge variant="outline" className={`${STATUS_BADGE[status] || ''} text-xs`}>
                                                 {statusLabel(status)}

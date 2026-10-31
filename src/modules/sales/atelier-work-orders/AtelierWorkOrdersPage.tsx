@@ -19,6 +19,7 @@ import { WorkOrderDetailDialog } from './WorkOrderDetailDialog'
 import { NewWorkOrderDialog } from './NewWorkOrderDialog'
 import { useRepairs } from '../repairs/useRepairs'
 import { formatDate } from '@/lib/utils/dates'
+import { formatCurrency } from '@/lib/utils/currency'
 
 interface WorkOrder {
     id: string
@@ -241,7 +242,7 @@ export function AtelierWorkOrdersPage() {
                                                 {t(`workOrders.status.${wo.status}`)}
                                             </Badge>
                                         </td>
-                                        <td className="py-3 px-4 text-right text-sm">{parseFloat(wo.servicePrice).toFixed(3)}</td>
+                                        <td className="py-3 px-4 text-right text-sm">{formatCurrency(wo.servicePrice)}</td>
                                     </tr>
                                 )
                             })}

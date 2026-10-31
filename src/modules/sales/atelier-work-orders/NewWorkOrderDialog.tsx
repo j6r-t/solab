@@ -20,6 +20,7 @@ import { useTranslation } from '@/lib/hooks/useTranslation'
 import { fetchOpticianShops, type OpticianShopItem } from '@/modules/partners/optician-shops/optician-shops.api'
 import { fetchRepairServices } from '@/modules/system/settings/settings.api'
 import type { PaginatedResponse } from '@/lib/api/pagination'
+import { formatCurrency } from '@/lib/utils/currency'
 
 interface RepairService {
     id: string
@@ -247,7 +248,7 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
         .map((lb) => ({
             value: lb.id,
             label: `${lb.brand} ${lb.lensType} ${lb.thickness}`,
-            secondary: `SPH ${lb.sph} · CYL ${lb.cyl} · ${Number(lb.sellingPrice).toFixed(3)} TND · ${lb.quantity} ${t('common.inStockSuffix')}`,
+            secondary: `SPH ${lb.sph} · CYL ${lb.cyl} · ${formatCurrency(lb.sellingPrice)} · ${lb.quantity} ${t('common.inStockSuffix')}`,
         }))
 
     async function handleSubmit() {
@@ -365,14 +366,14 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
                                             onClick={() => toggleService(service.id)}>
                                             <Checkbox checked={checked} onCheckedChange={() => toggleService(service.id)} />
                                             <span className="flex-1 text-sm font-medium">{service.name}</span>
-                                            <span className="text-sm text-muted-foreground">{parseFloat(service.defaultPrice).toFixed(3)} TND</span>
+                                            <span className="text-sm text-muted-foreground">{formatCurrency(service.defaultPrice)}</span>
                                         </div>
                                     )
                                 })}
                             </div>
                             {selectedServiceIds.length > 0 && (
                                 <div className="text-sm text-muted-foreground">
-                                    {t('workOrders.totalServices')} <strong>{totalServicePrice.toFixed(3)} TND</strong>
+                                    {t('workOrders.totalServices')} <strong>{formatCurrency(totalServicePrice)}</strong>
                                 </div>
                             )}
                         </div>
@@ -571,7 +572,7 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
                                 )}
                                 {blankOptions.length > 0 && totalLensBlankPrice > 0 && (
                                     <div className="text-sm text-muted-foreground">
-                                        {t('workOrders.totalLenses')} <strong>{totalLensBlankPrice.toFixed(3)} TND</strong>
+                                        {t('workOrders.totalLenses')} <strong>{formatCurrency(totalLensBlankPrice)}</strong>
                                     </div>
                                 )}
                                 {!lensBlankLoading && blankOptions.length === 0 && (
@@ -585,18 +586,18 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
                             {selectedServices.length > 0 && (
                                 <div className="flex justify-between px-3 py-2 text-sm">
                                     <span>{t('workOrders.servicesCount', { count: selectedServices.length })}</span>
-                                    <span className="font-medium">{totalServicePrice.toFixed(3)} TND</span>
+                                    <span className="font-medium">{formatCurrency(totalServicePrice)}</span>
                                 </div>
                             )}
                             {lensSource === 'stock' && totalLensBlankPrice > 0 && (
                                 <div className="flex justify-between px-3 py-2 text-sm">
                                     <span>{t('workOrders.lensesCount', { count: 2 })}</span>
-                                    <span className="font-medium">{totalLensBlankPrice.toFixed(3)} TND</span>
+                                    <span className="font-medium">{formatCurrency(totalLensBlankPrice)}</span>
                                 </div>
                             )}
                             <div className="flex justify-between px-3 py-2.5 text-sm font-semibold">
                                 <span>{t('orders.total')}</span>
-                                <span>{grandTotal.toFixed(3)} TND</span>
+                                <span>{formatCurrency(grandTotal)}</span>
                             </div>
                         </div>
 

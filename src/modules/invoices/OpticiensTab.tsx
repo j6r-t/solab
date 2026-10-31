@@ -27,6 +27,7 @@ import { GroupBillsDialog } from './GroupBillsDialog'
 import { downloadOpticianBill } from './optician-bill.print'
 import { downloadGroupedInvoice } from './grouped-invoice.print'
 import { formatDate } from '@/lib/utils/dates'
+import { formatCurrency } from '@/lib/utils/currency'
 
 const BILL_STATUS_BADGE: Record<string, string> = {
     paid: 'bg-green-100 text-green-700 border-green-200',
@@ -226,7 +227,7 @@ export function OpticiensTab() {
                                     <div className="text-right">
                                         <p className="text-xs text-muted-foreground">{t('invoices.opticiens.outstanding')}</p>
                                         <p className={`text-sm font-semibold ${s.totalOutstanding > EPSILON ? 'text-destructive' : 'text-green-600'}`}>
-                                            {s.totalOutstanding.toFixed(3)} TND
+                                            {formatCurrency(s.totalOutstanding)}
                                         </p>
                                     </div>
                                 </div>
@@ -272,7 +273,7 @@ export function OpticiensTab() {
                         <p className="text-sm font-medium">
                             {t('invoices.opticiens.selectedCount', { n: selectedBills.length })}
                             {selectedBills.length >= 2 && (
-                                <span className="text-muted-foreground font-normal"> — {t('invoices.opticiens.remainingTotal')} : {selectedTotal.toFixed(3)} TND</span>
+                                <span className="text-muted-foreground font-normal"> — {t('invoices.opticiens.remainingTotal')} : {formatCurrency(selectedTotal)}</span>
                             )}
                         </p>
                         {selectedBills.length < 2 && (
@@ -358,9 +359,9 @@ export function OpticiensTab() {
                                         </td>
                                         <td className="py-3 px-4">{rowShop(row)}</td>
                                         <td className="py-3 px-4 text-sm">{formatDate(rowDate(row))}</td>
-                                        <td className="py-3 px-4 text-right text-sm">{total.toFixed(3)}</td>
-                                        <td className="py-3 px-4 text-right text-sm">{paid.toFixed(3)}</td>
-                                        <td className={`py-3 px-4 text-right text-sm ${remaining > EPSILON ? 'text-destructive font-medium' : ''}`}>{remaining.toFixed(3)}</td>
+                                        <td className="py-3 px-4 text-right text-sm">{formatCurrency(total)}</td>
+                                        <td className="py-3 px-4 text-right text-sm">{formatCurrency(paid)}</td>
+                                        <td className={`py-3 px-4 text-right text-sm ${remaining > EPSILON ? 'text-destructive font-medium' : ''}`}>{formatCurrency(remaining)}</td>
                                         <td className="py-3 px-4 text-center">
                                             <Badge variant="outline" className={`${BILL_STATUS_BADGE[status] || ''} text-xs`}>
                                                 {status === 'paid' ? t('orders.fullyPaid') : status === 'partiallyPaid' ? t('orders.partiallyPaid') : t('orders.unpaid')}

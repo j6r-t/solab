@@ -130,7 +130,7 @@ export function downloadGroupedInvoice(invoice: PrintGroupedInvoice) {
         <div class="totals">
             <div class="row"><span class="label">TOTAL:</span><span class="value">${formatCurrency(invoice.totalAmount)}</span></div>
             <div class="row"><span class="label">PAYÉ:</span><span class="value">${formatCurrency(invoice.paidAmount)}</span></div>
-            <div class="row grand-total"><span class="label">RESTE À PAYER:</span><span class="value">${formatCurrency(balance.toFixed(3))}</span></div>
+            <div class="row grand-total"><span class="label">RESTE À PAYER:</span><span class="value">${formatCurrency(balance)}</span></div>
         </div>
 
         ${paymentRows ? `

@@ -24,6 +24,7 @@ import { usePurchaseInvoices, type PurchaseInvoice } from './usePurchaseInvoices
 import { printProductLabels } from './print-labels'
 import { formatDate } from '@/lib/utils/dates'
 import { toast } from 'sonner'
+import { formatCurrency } from '@/lib/utils/currency'
 
 export function PurchaseInvoicesPage() {
     const { t } = useTranslation()
@@ -100,15 +101,15 @@ export function PurchaseInvoicesPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="rounded-lg border bg-card p-4">
                     <p className="text-xs text-muted-foreground">{t('purchaseInvoice.totalAmount')}</p>
-                    <p className="text-xl font-semibold mt-1">{totalAmount.toFixed(3)} TND</p>
+                    <p className="text-xl font-semibold mt-1">{formatCurrency(totalAmount)}</p>
                 </div>
                 <div className="rounded-lg border bg-card p-4">
                     <p className="text-xs text-muted-foreground">{t('purchaseInvoice.totalPaid')}</p>
-                    <p className="text-xl font-semibold mt-1 text-green-600">{totalPaid.toFixed(3)} TND</p>
+                    <p className="text-xl font-semibold mt-1 text-green-600">{formatCurrency(totalPaid)}</p>
                 </div>
                 <div className="rounded-lg border bg-card p-4">
                     <p className="text-xs text-muted-foreground">{t('purchaseInvoice.totalBalance')}</p>
-                    <p className="text-xl font-semibold mt-1 text-destructive">{totalBalance.toFixed(3)} TND</p>
+                    <p className="text-xl font-semibold mt-1 text-destructive">{formatCurrency(totalBalance)}</p>
                 </div>
             </div>
 
@@ -164,8 +165,8 @@ export function PurchaseInvoicesPage() {
                                         <td className="py-3 px-4 font-medium">{inv.invoiceNumber}</td>
                                         <td className="py-3 px-4">{inv.fournisseur.name}</td>
                                         <td className="py-3 px-4 text-sm">{formatDate(inv.date)}</td>
-                                        <td className="py-3 px-4 text-right">{parseFloat(inv.totalAmount).toFixed(3)}</td>
-                                        <td className="py-3 px-4 text-right">{parseFloat(inv.paidAmount).toFixed(3)}</td>
+                                        <td className="py-3 px-4 text-right">{formatCurrency(inv.totalAmount)}</td>
+                                        <td className="py-3 px-4 text-right">{formatCurrency(inv.paidAmount)}</td>
                                         <td className="py-3 px-4 text-center">
                                             <Badge variant="outline" className={`${statusColor} text-xs`}>
                                                 {inv.paymentStatus === 'fullyPaid' ? t('purchaseInvoice.fullyPaid') : inv.paymentStatus === 'partiallyPaid' ? t('purchaseInvoice.partiallyPaid') : t('purchaseInvoice.unpaid')}

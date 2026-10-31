@@ -58,7 +58,7 @@ export function BillingReportDialog({ open, onOpenChange, reportPeriod, reportDa
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="px-3 pb-3">
-                                    <p className="text-lg font-bold text-primary">{formatCurrency(reportTotals.revenue.toFixed(3))}</p>
+                                    <p className="text-lg font-bold text-primary">{formatCurrency(reportTotals.revenue)}</p>
                                 </CardContent>
                             </Card>
                             <Card>
@@ -66,7 +66,7 @@ export function BillingReportDialog({ open, onOpenChange, reportPeriod, reportDa
                                     <CardTitle className="text-xs text-muted-foreground">{t('orders.paid')}</CardTitle>
                                 </CardHeader>
                                 <CardContent className="px-3 pb-3">
-                                    <p className="text-lg font-bold">{formatCurrency(reportTotals.paid.toFixed(3))}</p>
+                                    <p className="text-lg font-bold">{formatCurrency(reportTotals.paid)}</p>
                                 </CardContent>
                             </Card>
                             <Card>

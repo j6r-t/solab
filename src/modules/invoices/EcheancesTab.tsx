@@ -10,6 +10,7 @@ import { CheckCircle, XCircle, CalendarClock, Loader2 } from 'lucide-react'
 import { fetchCheques, updateChequeStatus, type Cheque } from '@/modules/sales/cheques/cheques.api'
 import { formatDate } from '@/lib/utils/dates'
 import { toast } from 'sonner'
+import { formatCurrency } from '@/lib/utils/currency'
 
 const PENDING_FAMILY = ['pending', 'deposited', 'overdue']
 
@@ -225,7 +226,7 @@ export function EcheancesTab() {
                                         </td>
                                         <td className="py-3 px-4 font-medium">{cheque.number}</td>
                                         <td className="py-3 px-4 text-sm">{cheque.bankName || '—'}</td>
-                                        <td className="py-3 px-4 text-right text-sm">{parseFloat(cheque.amount).toFixed(3)}</td>
+                                        <td className="py-3 px-4 text-right text-sm">{formatCurrency(cheque.amount)}</td>
                                         <td className={`py-3 px-4 text-sm ${overdue ? 'text-destructive font-medium' : ''}`}>
                                             {formatDate(cheque.dueDate)}
                                         </td>

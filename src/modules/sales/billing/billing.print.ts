@@ -16,7 +16,7 @@ export function printFacture(selected: BillingRecord) {
         ? lines.reduce((s, l) => s + l.quantity * l.unitPrice, 0)
         : parseFloat(totalAmount)
     const lineRows = lines.map((l) =>
-        `<tr><td>${l.designation}</td><td class="center">${l.quantity}</td><td class="right">${formatCurrency(l.unitPrice.toFixed(3))}</td><td class="right">${formatCurrency((l.quantity * l.unitPrice).toFixed(3))}</td></tr>`
+        `<tr><td>${l.designation}</td><td class="center">${l.quantity}</td><td class="right">${formatCurrency(l.unitPrice)}</td><td class="right">${formatCurrency(l.quantity * l.unitPrice)}</td></tr>`
     ).join('')
 
     const origin = window.location.origin
@@ -77,7 +77,7 @@ export function printFacture(selected: BillingRecord) {
         </table>
 
         <div class="totals">
-            <div class="grand-total-row"><span>Total g&eacute;n&eacute;ral:</span><span>${formatCurrency(grandTotal.toFixed(3))}</span></div>
+            <div class="grand-total-row"><span>Total g&eacute;n&eacute;ral:</span><span>${formatCurrency(grandTotal)}</span></div>
             ${parseFloat(selected.discount) > 0 ? `<div class="grand-total-row"><span>Remise:</span><span>&minus; ${formatCurrency(selected.discount)}</span></div>
             <div class="grand-total-row"><span>Net &agrave; payer:</span><span>${formatCurrency(totalAmount)}</span></div>` : ''}
         </div>
@@ -120,11 +120,11 @@ export function printRecu(selected: BillingRecord) {
             '<div class="field-row"><span class="label">Date d\'achat:</span><span class="dots"></span><span class="value">' + purchaseDate + '</span></div>' +
             '<div class="field-row des-field"><span class="label">Designation:</span></div>'
         const desField = '<div class="des-value">' + (designation || '&mdash;') + '</div>'
-        const finRows = '<div class="field-row"><span class="label">Prix:</span><span class="dots"></span><span class="value">' + formatCurrency((parseFloat(totalAmount) + parseFloat(selected.discount || '0')).toFixed(3)) + '</span></div>' +
+        const finRows = '<div class="field-row"><span class="label">Prix:</span><span class="dots"></span><span class="value">' + formatCurrency(parseFloat(totalAmount) + parseFloat(selected.discount || '0')) + '</span></div>' +
             (parseFloat(selected.discount || '0') > 0 ? '<div class="field-row"><span class="label">Remise:</span><span class="dots"></span><span class="value">&minus; ' + formatCurrency(selected.discount) + '</span></div>' : '') +
-            '<div class="field-row"><span class="label">Acompte:</span><span class="dots"></span><span class="value">' + (paidTotal > 0 ? formatCurrency(paidTotal.toFixed(3)) : '&mdash;') + '</span></div>' +
-            (pendingTotal > 0 ? '<div class="field-row"><span class="label">En attente (ch&egrave;que/traite):</span><span class="dots"></span><span class="value">' + formatCurrency(pendingTotal.toFixed(3)) + '</span></div>' : '') +
-            '<div class="field-row"><span class="label">Reste:</span><span class="dots"></span><span class="value">' + formatCurrency(reste.toFixed(3)) + '</span></div>' +
+            '<div class="field-row"><span class="label">Acompte:</span><span class="dots"></span><span class="value">' + (paidTotal > 0 ? formatCurrency(paidTotal) : '&mdash;') + '</span></div>' +
+            (pendingTotal > 0 ? '<div class="field-row"><span class="label">En attente (ch&egrave;que/traite):</span><span class="dots"></span><span class="value">' + formatCurrency(pendingTotal) + '</span></div>' : '') +
+            '<div class="field-row"><span class="label">Reste:</span><span class="dots"></span><span class="value">' + formatCurrency(reste) + '</span></div>' +
             '<div class="field-row"><span class="label">Date promise:</span><span class="dots"></span><span class="value">' + (promiseDate || '&mdash;') + '</span></div>'
         const rxTable = '<table class="rx-table">' +
             '<thead><tr><th style="width:12%">OD/OG</th><th style="width:14%">Sph</th><th style="width:14%">Cyl</th><th style="width:14%">Axe</th><th style="width:14%">Add</th><th style="width:16%">Ep</th><th style="width:16%">H</th></tr></thead>' +
@@ -221,8 +221,8 @@ export function printReport(
             <div><div class="shop-name">Sofien Optic</div></div>
         </div>
         <div class="summary">
-            <div class="summary-card revenue"><div>Revenue</div><div class="value">${formatCurrency(totals.revenue.toFixed(3))}</div></div>
-            <div class="summary-card paid"><div>Collected</div><div class="value">${formatCurrency(totals.paid.toFixed(3))}</div></div>
+            <div class="summary-card revenue"><div>Revenue</div><div class="value">${formatCurrency(totals.revenue)}</div></div>
+            <div class="summary-card paid"><div>Collected</div><div class="value">${formatCurrency(totals.paid)}</div></div>
             <div class="summary-card count"><div>Orders</div><div class="value">${totals.count}</div></div>
         </div>
         <table><thead><tr><th>#</th><th>Client</th><th>Type</th><th>Total</th><th>Paid</th></tr></thead><tbody>${orderRows}</tbody></table>

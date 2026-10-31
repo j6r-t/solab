@@ -198,7 +198,7 @@ export function OrderDetailDialog({ order, open, onOpenChange, onConfirmStatusUp
                                     {t('orders.recordPayment')}
                                 </Button>
                             )}
-                            <span>{t('orders.balance')}: {formatCurrency(balance.toFixed(3))}</span>
+                            <span>{t('orders.balance')}: {formatCurrency(balance)}</span>
                         </span>
                     </div>
 

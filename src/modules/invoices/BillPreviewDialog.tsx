@@ -132,7 +132,7 @@ export function BillPreviewDialog({ bill, open, onOpenChange, onUpdated, consoli
                             </div>
                             <div className="space-y-2.5">
                                 <FieldRow label={t('invoices.columns.number')} value={number} />
-                                <FieldRow label={t('payments.remaining')} value={`${remaining.toFixed(3)} TND`} />
+                                <FieldRow label={t('payments.remaining')} value={formatCurrency(remaining)} />
                             </div>
                         </div>
 
@@ -176,7 +176,7 @@ export function BillPreviewDialog({ bill, open, onOpenChange, onUpdated, consoli
                                                 </td>
                                                 <td className="p-2.5 text-center">{item.quantity}</td>
                                                 <td className="p-2.5 text-right">{formatCurrency(item.unitPrice)}</td>
-                                                <td className="p-2.5 text-right">{formatCurrency((parseFloat(item.unitPrice) * item.quantity).toFixed(3))}</td>
+                                                <td className="p-2.5 text-right">{formatCurrency(parseFloat(item.unitPrice) * item.quantity)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -187,15 +187,15 @@ export function BillPreviewDialog({ bill, open, onOpenChange, onUpdated, consoli
                         <div className="flex flex-col items-end gap-1.5 text-sm">
                             <div className="flex gap-6">
                                 <span className="font-medium">{t('payments.total')}:</span>
-                                <span className="w-24 text-right">{total.toFixed(3)} TND</span>
+                                <span className="w-24 text-right">{formatCurrency(total)}</span>
                             </div>
                             <div className="flex gap-6">
                                 <span className="font-medium">{t('payments.paid')}:</span>
-                                <span className="w-24 text-right">{paid.toFixed(3)} TND</span>
+                                <span className="w-24 text-right">{formatCurrency(paid)}</span>
                             </div>
                             <div className="flex gap-6 text-base font-bold text-green-600 border-t-2 border-green-600 pt-1">
                                 <span>{t('payments.remaining')}:</span>
-                                <span className="w-24 text-right">{remaining.toFixed(3)} TND</span>
+                                <span className="w-24 text-right">{formatCurrency(remaining)}</span>
                             </div>
                         </div>
 

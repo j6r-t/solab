@@ -7,6 +7,7 @@ import { FileStack, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { groupOpticianShopBills } from '@/modules/partners/consolidated-invoices/consolidated-invoices.api'
+import { formatCurrency } from '@/lib/utils/currency'
 
 export interface GroupBillCandidate {
     id: string
@@ -66,12 +67,12 @@ export function GroupBillsDialog({ open, onOpenChange, opticianShopId, shopName,
                         {bills.map((bill) => (
                             <div key={bill.id} className="flex items-center justify-between px-3 py-2 text-sm">
                                 <span className="font-medium">{bill.billNumber}</span>
-                                <span className="text-muted-foreground">{bill.remaining.toFixed(3)} TND</span>
+                                <span className="text-muted-foreground">{formatCurrency(bill.remaining)}</span>
                             </div>
                         ))}
                         <div className="flex items-center justify-between px-3 py-2 text-sm font-semibold bg-muted/40">
                             <span>{t('invoices.opticiens.groupTotal')}</span>
-                            <span className="text-green-600">{total.toFixed(3)} TND</span>
+                            <span className="text-green-600">{formatCurrency(total)}</span>
                         </div>
                     </div>
                 </div>

@@ -241,7 +241,7 @@ export function PurchaseInvoicePreviewDialog({ invoice, onClose, consolidated }:
                                                 <td className="p-2.5">{name}</td>
                                                 <td className="p-2.5 text-center">{item.quantity}</td>
                                                 <td className="p-2.5 text-right">{formatCurrency(item.unitPrice)}</td>
-                                                <td className="p-2.5 text-right">{formatCurrency((parseFloat(item.unitPrice) * item.quantity).toFixed(3))}</td>
+                                                <td className="p-2.5 text-right">{formatCurrency(parseFloat(item.unitPrice) * item.quantity)}</td>
                                             </tr>
                                         )
                                     })}
@@ -261,7 +261,7 @@ export function PurchaseInvoicePreviewDialog({ invoice, onClose, consolidated }:
                             </div>
                             <div className="flex gap-6 text-base font-bold text-green-600 border-t-2 border-green-600 pt-1">
                                 <span>{t('payments.balance')}</span>
-                                <span className="w-24 text-right">{formatCurrency(balance.toFixed(3))}</span>
+                                <span className="w-24 text-right">{formatCurrency(balance)}</span>
                             </div>
                         </div>
 

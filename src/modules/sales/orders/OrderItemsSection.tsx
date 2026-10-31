@@ -6,6 +6,7 @@ import { SearchSelect, type SearchSelectOption } from '@/components/ui/search-se
 import { Button } from '@/components/ui/button'
 import { Package, QrCode, Trash2 } from 'lucide-react'
 import type { OrderItemInput, Product } from './order-form.types'
+import { formatCurrency } from '@/lib/utils/currency'
 
 interface OrderItemsSectionProps {
     products: Product[]
@@ -24,7 +25,7 @@ export function OrderItemsSection({ products, items, user, onAddProduct, onUpdat
         .map((p) => ({
             value: p.id,
             label: `${p.name} (${p.brand})`,
-            secondary: `${Number(p.price).toFixed(3)} TND · ${p.quantity ?? 0} ${t('common.inStockSuffix')}`,
+            secondary: `${formatCurrency(p.price)} · ${p.quantity ?? 0} ${t('common.inStockSuffix')}`,
         }))
 
     return (
@@ -67,7 +68,7 @@ export function OrderItemsSection({ products, items, user, onAddProduct, onUpdat
                                     className="w-14 h-7 text-xs"
                                 />
                                 {isShop ? (
-                                    <span className="text-sm font-medium whitespace-nowrap w-22 text-right">{item.unitPrice.toFixed(3)} TND</span>
+                                    <span className="text-sm font-medium whitespace-nowrap w-22 text-right">{formatCurrency(item.unitPrice)}</span>
                                 ) : (
                                     <div className="flex items-center gap-1">
                                         <Input

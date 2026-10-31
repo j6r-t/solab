@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select'
 import { Plus, Trash2 } from 'lucide-react'
 import { newPaymentRow, type PaymentRow, type PaymentRowMethod } from './order-form.types'
+import { formatCurrency } from '@/lib/utils/currency'
 
 interface PaymentRowsEditorProps {
     rows: PaymentRow[]
@@ -147,9 +148,9 @@ export function PaymentRowsEditor({ rows, onChange, paymentType, onPaymentTypeCh
                 ))}
                 {orderType !== 'direct_sale' && (
                     <div className="flex flex-wrap justify-end gap-4 text-sm pt-1">
-                        <span>{t('payments.totalPaid')} <strong>{paymentsTotal.toFixed(3)} TND</strong></span>
+                        <span>{t('payments.totalPaid')} <strong>{formatCurrency(paymentsTotal)}</strong></span>
                         <span className={paymentsTotal > grandTotal + 0.0001 ? 'text-destructive' : paymentsTotal === grandTotal ? 'text-green-600' : ''}>
-                            {t('payments.balance')} <strong>{Math.max(grandTotal - paymentsTotal, 0).toFixed(3)} TND</strong>
+                            {t('payments.balance')} <strong>{formatCurrency(Math.max(grandTotal - paymentsTotal, 0))}</strong>
                         </span>
                     </div>
                 )}

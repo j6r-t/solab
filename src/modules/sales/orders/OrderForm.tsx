@@ -36,6 +36,7 @@ import { NewPrescriptionDialog } from './NewPrescriptionDialog'
 import { PaymentRowsEditor } from './PaymentRowsEditor'
 import { OrderItemsSection } from './OrderItemsSection'
 import { RepairsSection } from './RepairsSection'
+import { formatCurrency } from '@/lib/utils/currency'
 
 export type { OrderFormData } from './order-form.types'
 
@@ -418,13 +419,13 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                 {items.length > 0 && (
                     <div className="flex justify-between px-3 py-2 text-sm">
                         <span>{t('orders.items')}</span>
-                        <span className="font-medium">{totalItemsPrice.toFixed(3)} TND</span>
+                        <span className="font-medium">{formatCurrency(totalItemsPrice)}</span>
                     </div>
                 )}
                 {repairs.length > 0 && (
                     <div className="flex justify-between px-3 py-2 text-sm">
                         <span>{t('nav.repairs')}</span>
-                        <span className="font-medium">{totalRepairsPrice.toFixed(3)} TND</span>
+                        <span className="font-medium">{formatCurrency(totalRepairsPrice)}</span>
                     </div>
                 )}
                 <div className="flex justify-between items-center gap-2 px-3 py-2 text-sm">
@@ -458,12 +459,12 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                 {discountAmount > 0 && (
                     <div className="flex justify-between px-3 py-2 text-sm text-destructive">
                         <span>{t('orders.discountApplied')}</span>
-                        <span className="font-medium">− {discountAmount.toFixed(3)} TND</span>
+                        <span className="font-medium">− {formatCurrency(discountAmount)}</span>
                     </div>
                 )}
                 <div className="flex justify-between px-3 py-2.5 text-sm font-semibold text-base">
                     <span>{t('orders.total')}</span>
-                    <span>{grandTotal.toFixed(3)} TND</span>
+                    <span>{formatCurrency(grandTotal)}</span>
                 </div>
             </div>
 

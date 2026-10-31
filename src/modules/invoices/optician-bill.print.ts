@@ -60,7 +60,7 @@ export function downloadOpticianBill(bill: PrintBill) {
             || (item.lensBlank ? `${item.lensBlank.brand} ${item.lensBlank.thickness}` : '')
             || item.itemType
             || '—'
-        return `<tr><td style="padding:8px 10px">${name}</td><td style="padding:8px 10px;text-align:center">${item.quantity}</td><td style="padding:8px 10px;text-align:right">${formatCurrency(item.unitPrice)}</td><td style="padding:8px 10px;text-align:right">${formatCurrency((parseFloat(item.unitPrice) * item.quantity).toFixed(3))}</td></tr>`
+        return `<tr><td style="padding:8px 10px">${name}</td><td style="padding:8px 10px;text-align:center">${item.quantity}</td><td style="padding:8px 10px;text-align:right">${formatCurrency(item.unitPrice)}</td><td style="padding:8px 10px;text-align:right">${formatCurrency(parseFloat(item.unitPrice) * item.quantity)}</td></tr>`
     }).join('')
 
     const paymentRows = bill.payments.map((p) =>
@@ -137,7 +137,7 @@ export function downloadOpticianBill(bill: PrintBill) {
         <div class="totals">
             <div class="row"><span class="label">TOTAL:</span><span class="value">${formatCurrency(bill.totalAmount)}</span></div>
             <div class="row"><span class="label">PAYÉ:</span><span class="value">${formatCurrency(bill.paidAmount)}</span></div>
-            <div class="row grand-total"><span class="label">RESTE À PAYER:</span><span class="value">${formatCurrency(balance.toFixed(3))}</span></div>
+            <div class="row grand-total"><span class="label">RESTE À PAYER:</span><span class="value">${formatCurrency(balance)}</span></div>
         </div>
 
         ${paymentRows ? `

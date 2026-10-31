@@ -38,7 +38,7 @@ export function downloadPurchaseInvoice(inv: DownloadInvoice) {
             || (item.product ? `${item.product.brand} ${item.product.name}` : '')
             || (item.lensBlank ? `${item.lensBlank.brand} ${item.lensBlank.thickness}` : '')
             || '—'
-        return `<tr><td style="padding:8px 10px">${name}</td><td style="padding:8px 10px;text-align:center">${item.quantity}</td><td style="padding:8px 10px;text-align:right">${formatCurrency(item.unitPrice)}</td><td style="padding:8px 10px;text-align:right">${formatCurrency((parseFloat(item.unitPrice) * item.quantity).toFixed(3))}</td></tr>`
+        return `<tr><td style="padding:8px 10px">${name}</td><td style="padding:8px 10px;text-align:center">${item.quantity}</td><td style="padding:8px 10px;text-align:right">${formatCurrency(item.unitPrice)}</td><td style="padding:8px 10px;text-align:right">${formatCurrency(parseFloat(item.unitPrice) * item.quantity)}</td></tr>`
     }).join('')
 
     const paymentRows = inv.payments.map((p) =>
@@ -112,7 +112,7 @@ export function downloadPurchaseInvoice(inv: DownloadInvoice) {
         <div class="totals">
             <div class="row"><span class="label">Subtotal:</span><span class="value">${formatCurrency(inv.totalAmount)}</span></div>
             <div class="row"><span class="label">Paid:</span><span class="value">${formatCurrency(inv.paidAmount)}</span></div>
-            <div class="row grand-total"><span class="label">Balance:</span><span class="value">${formatCurrency(balance.toFixed(3))}</span></div>
+            <div class="row grand-total"><span class="label">Balance:</span><span class="value">${formatCurrency(balance)}</span></div>
         </div>
 
         ${paymentRows ? `

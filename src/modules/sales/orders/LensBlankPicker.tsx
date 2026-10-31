@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Check, Eye, Loader2, Package } from 'lucide-react'
 import { prescriptionLabel, type LensBlankOption, type PrescriptionOption } from './order-form.types'
+import { formatCurrency } from '@/lib/utils/currency'
 
 interface LensBlankPickerProps {
     prescriptions: PrescriptionOption[]
@@ -159,7 +160,7 @@ export function LensBlankPicker({ prescriptions, selectedPrescriptionId, onAddBl
                                             )}
                                         </div>
                                         <div className="text-xs text-muted-foreground mt-0.5">
-                                            {blank.thickness} · SPH {blank.sph} · CYL {blank.cyl} · {Number(blank.sellingPrice).toFixed(3)} TND · {t('common.inStockSuffix', { n: qty })}
+                                            {blank.thickness} · SPH {blank.sph} · CYL {blank.cyl} · {formatCurrency(blank.sellingPrice)} · {t('common.inStockSuffix', { n: qty })}
                                         </div>
                                     </div>
                                     <Button type="button" variant="ghost" size="sm" onClick={() => onAddBlank(blank)} disabled={!inStock} className="h-8 px-2 shrink-0">

@@ -17,6 +17,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { useThemeStore } from '@/stores/theme-store'
 import { fetchRepairServices, createRepairService, updateRepairService, deleteRepairService, fetchNamedItems } from './settings.api'
 import { toast } from 'sonner'
+import { formatCurrency } from '@/lib/utils/currency'
 
 interface RepairService {
     id: string
@@ -446,7 +447,7 @@ export function SettingsPage() {
                                             <div className="flex items-center gap-3">
                                                 <Wrench className="h-4 w-4 text-muted-foreground shrink-0" />
                                                 <span className="text-sm font-medium">{service.name}</span>
-                                                <span className="text-sm text-muted-foreground">{parseFloat(service.defaultPrice).toFixed(3)} TND</span>
+                                                <span className="text-sm text-muted-foreground">{formatCurrency(service.defaultPrice)}</span>
                                             </div>
                                             <div className="flex gap-1">
                                                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditService(service)}><Pencil className="h-4 w-4" /></Button>

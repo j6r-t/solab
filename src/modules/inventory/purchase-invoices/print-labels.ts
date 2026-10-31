@@ -1,4 +1,5 @@
 import QRCodeLib from 'qrcode'
+import { formatCurrency } from '@/lib/utils/currency'
 
 export interface LabelProduct {
     name: string
@@ -21,7 +22,7 @@ export async function printProductLabels(products: LabelProduct[]): Promise<bool
                 <div class="info">
                     <div class="brand">${escapeHtml(p.brand)}</div>
                     <div class="name">${escapeHtml(p.name)}</div>
-                    <div class="price">${p.price.toFixed(3)} TND</div>
+                    <div class="price">${formatCurrency(p.price)}</div>
                     <div class="code">${escapeHtml(p.code)}</div>
                 </div>
             </div>`

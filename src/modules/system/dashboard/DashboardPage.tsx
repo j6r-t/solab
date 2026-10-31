@@ -24,7 +24,7 @@ import {
 import { useAuthStore } from '@/stores/auth-store'
 import { useViewStore } from '@/stores/view-store'
 import { cn } from '@/lib/utils/cn'
-import { formatCurrency } from '@/lib/utils/currency'
+import { formatCurrency, formatCurrencyShort } from '@/lib/utils/currency'
 import { formatDate } from '@/lib/utils/dates'
 import { toast } from 'sonner'
 import { useReports, type ShopReportData, type AtelierReportData } from '@/modules/system/reports/useReports'
@@ -75,14 +75,14 @@ export function DashboardPage() {
     const kpis = useMemo(() => {
         if (!data) return []
         const values: Record<KpiKey, string> = isAtelier ? {
-            totalRevenue: formatCurrency((data as AtelierReportData).totalRevenue || '0'),
+            totalRevenue: formatCurrencyShort((data as AtelierReportData).totalRevenue || '0'),
             totalClients: (data as AtelierReportData).totalOpticianShops?.toString() || '0',
             todaySales: (data as AtelierReportData).completedWorkOrders?.toString() || '0',
             lowStock: (data as AtelierReportData).lowStockLensBlanks?.toString() || '0',
             pendingRepairs: (data as AtelierReportData).pendingWorkOrders?.toString() || '0',
             stockTitle: (data as AtelierReportData).totalLensBlanks?.toString() || '0',
         } : {
-            totalRevenue: formatCurrency((data as ShopReportData).totalRevenue),
+            totalRevenue: formatCurrencyShort((data as ShopReportData).totalRevenue),
             totalClients: (data as ShopReportData).totalClients?.toString() || '0',
             todaySales: (data as ShopReportData).todayOrders?.toString() || '0',
             lowStock: (data as ShopReportData).lowStockCount?.toString() || '0',

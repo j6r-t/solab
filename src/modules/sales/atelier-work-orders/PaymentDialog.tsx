@@ -16,6 +16,7 @@ import { addPurchaseInvoicePayment } from '@/modules/inventory/purchase-invoices
 import { recordSupplierConsolidatedPayment } from '@/modules/inventory/supplier-consolidated-invoices/supplier-consolidated-invoices.api'
 import { recordWorkOrderPayment } from '../repairs/repairs.api'
 import { addOrderPayments } from '@/modules/sales/orders/orders.api'
+import { formatCurrency } from '@/lib/utils/currency'
 
 export interface PaymentTarget {
     kind: 'bill' | 'workorder' | 'consolidated' | 'purchaseInvoice' | 'supplierConsolidated' | 'order'
@@ -163,15 +164,15 @@ export function PaymentDialog({ open, onOpenChange, target, onDone }: PaymentDia
                     <div className="grid grid-cols-3 gap-2 text-sm">
                         <div>
                             <p className="text-muted-foreground text-xs">{t('payments.total')}</p>
-                            <p className="font-medium">{target.total.toFixed(3)} TND</p>
+                            <p className="font-medium">{formatCurrency(target.total)}</p>
                         </div>
                         <div>
                             <p className="text-muted-foreground text-xs">{t('payments.paid')}</p>
-                            <p className="font-medium">{target.paid.toFixed(3)} TND</p>
+                            <p className="font-medium">{formatCurrency(target.paid)}</p>
                         </div>
                         <div>
                             <p className="text-muted-foreground text-xs">{t('payments.remaining')}</p>
-                            <p className="font-medium text-destructive">{target.remaining.toFixed(3)} TND</p>
+                            <p className="font-medium text-destructive">{formatCurrency(target.remaining)}</p>
                         </div>
                     </div>
 

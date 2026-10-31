@@ -21,6 +21,7 @@ import { LensBlankForm } from './LensBlankForm'
 import { toast } from 'sonner'
 import { useLensBlanks } from './useLensBlanks'
 import { LOW_STOCK_MAX_QTY } from '@/lib/constants/kpi'
+import { formatCurrency } from '@/lib/utils/currency'
 
 interface LensBlank {
     id: string
@@ -161,7 +162,7 @@ export function LensBlanksPage() {
                 </div>
                 <div className="rounded-lg border bg-card p-3">
                     <p className="text-xs text-muted-foreground">{t('reports.stockValue')}</p>
-                    <p className="text-lg font-semibold mt-1">{totalValue.toFixed(3)} TND</p>
+                    <p className="text-lg font-semibold mt-1">{formatCurrency(totalValue)}</p>
                 </div>
             </div>
 
@@ -240,11 +241,11 @@ export function LensBlanksPage() {
                                     <td className="py-3 px-4 text-sm text-muted-foreground">{blank.thickness}</td>
                                     <td className="py-3 px-4 text-sm text-muted-foreground">{blank.sph}</td>
                                     <td className="py-3 px-4 text-sm text-muted-foreground">{blank.cyl}</td>
-                                    <td className="py-3 px-4 text-right text-sm">{parseFloat(blank.costPrice).toFixed(3)}</td>
+                                    <td className="py-3 px-4 text-right text-sm">{formatCurrency(blank.costPrice)}</td>
                                     <td className="py-3 px-4 text-right text-sm">
-                                        {parseFloat(blank.sellingPrice).toFixed(3)}
+                                        {formatCurrency(blank.sellingPrice)}
                                         {blank.priceAfterTax != null && (
-                                            <p className="text-xs text-muted-foreground">{t('stock.priceAfterTax')}: {parseFloat(blank.priceAfterTax).toFixed(3)}</p>
+                                            <p className="text-xs text-muted-foreground">{t('stock.priceAfterTax')}: {formatCurrency(blank.priceAfterTax)}</p>
                                         )}
                                     </td>
                                     <td className="py-3 px-4 text-center">

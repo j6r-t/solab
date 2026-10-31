@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Plus, Trash2, Wrench } from 'lucide-react'
 import type { OrderRepairInput, RepairService } from './order-form.types'
+import { formatCurrency } from '@/lib/utils/currency'
 
 interface RepairsSectionProps {
     repairServices: RepairService[]
@@ -43,7 +44,7 @@ export function RepairsSection({ repairServices, repairs, selectedServiceIds, us
                                     {user?.role === 'shop' ? (
                                         <span className="text-muted-foreground italic">{t('common.free')}</span>
                                     ) : (
-                                        <span className="text-muted-foreground">({parseFloat(service.defaultPrice).toFixed(3)} TND)</span>
+                                        <span className="text-muted-foreground">({formatCurrency(service.defaultPrice)})</span>
                                     )}
                                 </label>
                                 {checked && (

@@ -14,6 +14,7 @@ import { fetchOpticianShopBill, type OpticianShopBillPayment } from '@/modules/p
 import { declareBreakage } from '../repairs/repairs.api'
 import { PaymentDialog, type PaymentTarget } from './PaymentDialog'
 import { formatDate } from '@/lib/utils/dates'
+import { formatCurrency } from '@/lib/utils/currency'
 
 interface WorkOrder {
     id: string
@@ -298,7 +299,7 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                         </div>
                         <div>
                             <p className="text-muted-foreground text-xs">{t('workOrders.servicePrice')}</p>
-                            <p className="font-medium">{parseFloat(workOrder.servicePrice).toFixed(3)} TND</p>
+                            <p className="font-medium">{formatCurrency(workOrder.servicePrice)}</p>
                         </div>
                         <div>
                             <p className="text-muted-foreground text-xs">{t('workOrders.createdAt')}</p>
@@ -399,12 +400,12 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                     {workOrder.lensBlankLeft && (
                         <div className="space-y-1 text-sm">
                             <p className="text-muted-foreground text-xs">{t('workOrders.assignedBlanks')}</p>
-                            <p>{t('workOrders.breakage.left')}: {workOrder.lensBlankLeft.brand} {workOrder.lensBlankLeft.lensType} {workOrder.lensBlankLeft.thickness} — {Number(workOrder.lensBlankLeft.sellingPrice).toFixed(3)} TND</p>
+                            <p>{t('workOrders.breakage.left')}: {workOrder.lensBlankLeft.brand} {workOrder.lensBlankLeft.lensType} {workOrder.lensBlankLeft.thickness} — {formatCurrency(workOrder.lensBlankLeft.sellingPrice)}</p>
                             {workOrder.lensBlankRight && (
-                                <p>{t('workOrders.breakage.right')}: {workOrder.lensBlankRight.brand} {workOrder.lensBlankRight.lensType} {workOrder.lensBlankRight.thickness} — {Number(workOrder.lensBlankRight.sellingPrice).toFixed(3)} TND</p>
+                                <p>{t('workOrders.breakage.right')}: {workOrder.lensBlankRight.brand} {workOrder.lensBlankRight.lensType} {workOrder.lensBlankRight.thickness} — {formatCurrency(workOrder.lensBlankRight.sellingPrice)}</p>
                             )}
                             {workOrder.lensBlankPrice && (
-                                <p>{t('workOrders.blankPriceLabel')} {parseFloat(workOrder.lensBlankPrice).toFixed(3)} TND</p>
+                                <p>{t('workOrders.blankPriceLabel')} {formatCurrency(workOrder.lensBlankPrice)}</p>
                             )}
                         </div>
                     )}
@@ -504,15 +505,15 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                             <div className="space-y-1 text-sm">
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">{t('payments.total')}:</span>
-                                    <span className="font-medium">{billTotal.toFixed(3)} TND</span>
+                                    <span className="font-medium">{formatCurrency(billTotal)}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">{t('payments.paid')}:</span>
-                                    <span className="font-medium">{billPaid.toFixed(3)} TND</span>
+                                    <span className="font-medium">{formatCurrency(billPaid)}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">{t('payments.remaining')}:</span>
-                                    <span className={`font-medium ${billRemaining > EPSILON ? 'text-destructive' : ''}`}>{billRemaining.toFixed(3)} TND</span>
+                                    <span className={`font-medium ${billRemaining > EPSILON ? 'text-destructive' : ''}`}>{formatCurrency(billRemaining)}</span>
                                 </div>
                             </div>
 
@@ -542,7 +543,7 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                                                             {paymentMethodLabel(p)}
                                                             {p.cheque?.number && <span className="text-muted-foreground"> · {p.cheque.number}</span>}
                                                         </td>
-                                                        <td className="py-1 pr-2 text-right">{parseFloat(p.amount).toFixed(3)} TND</td>
+                                                        <td className="py-1 pr-2 text-right">{formatCurrency(p.amount)}</td>
                                                         <td className="py-1">
                                                             {badge ? (
                                                                 <Badge variant="outline" className={`px-1 py-0 text-[10px] ${badge.cls}`}>{badge.label}</Badge>
@@ -576,16 +577,16 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
                             <div className="space-y-1 text-sm">
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">{t('payments.total')}:</span>
-                                    <span className="font-medium">{totalDue.toFixed(3)} TND</span>
+                                    <span className="font-medium">{formatCurrency(totalDue)}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">{t('payments.paid')}:</span>
-                                    <span className="font-medium">{woPaid.toFixed(3)} TND</span>
+                                    <span className="font-medium">{formatCurrency(woPaid)}</span>
                                 </div>
                                 {woRemaining > EPSILON && (
                                     <div className="flex justify-between">
                                         <span className="text-muted-foreground">{t('payments.remaining')}:</span>
-                                        <span className="font-medium text-destructive">{woRemaining.toFixed(3)} TND</span>
+                                        <span className="font-medium text-destructive">{formatCurrency(woRemaining)}</span>
                                     </div>
                                 )}
                             </div>

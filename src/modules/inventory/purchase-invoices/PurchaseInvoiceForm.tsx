@@ -17,6 +17,7 @@ import { SearchSelect, type SearchSelectOption } from '@/components/ui/search-se
 import { useBanks } from '@/lib/hooks/useBanks'
 import { fetchFournisseurs } from '@/modules/partners/fournisseurs/fournisseurs.api'
 import { toast } from 'sonner'
+import { formatCurrency } from '@/lib/utils/currency'
 
 const CATEGORIES = ['lunette', 'lentille', 'accessory', 'nettoyant_lentilles', 'nettoyant_monture'] as const
 type Category = typeof CATEGORIES[number]
@@ -583,7 +584,7 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                     </div>
                 ))}
                 <div className="text-right text-sm font-medium pt-1">
-                    {t('orders.total')}: {totalAmount.toFixed(3)} TND
+                    {t('orders.total')}: {formatCurrency(totalAmount)}
                 </div>
             </div>
 
@@ -655,9 +656,9 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                 ))}
                 {formData.payments.length > 0 && (
                     <div className="flex justify-end gap-4 text-sm pt-1">
-                        <span>{t('payments.totalPaid')} <strong>{totalPaid.toFixed(3)} TND</strong></span>
+                        <span>{t('payments.totalPaid')} <strong>{formatCurrency(totalPaid)}</strong></span>
                         <span className={totalPaid > totalAmount ? 'text-destructive' : totalPaid === totalAmount ? 'text-green-600' : ''}>
-                            {t('payments.balance')} <strong>{(totalAmount - totalPaid).toFixed(3)} TND</strong>
+                            {t('payments.balance')} <strong>{formatCurrency(totalAmount - totalPaid)}</strong>
                         </span>
                     </div>
                 )}

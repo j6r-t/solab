@@ -7,6 +7,7 @@ import { FileStack, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { groupPurchaseInvoices } from '@/modules/inventory/supplier-consolidated-invoices/supplier-consolidated-invoices.api'
+import { formatCurrency } from '@/lib/utils/currency'
 
 export interface GroupSupplierInvoiceCandidate {
     id: string
@@ -66,12 +67,12 @@ export function GroupSupplierInvoicesDialog({ open, onOpenChange, fournisseurId,
                         {invoices.map((inv) => (
                             <div key={inv.id} className="flex items-center justify-between px-3 py-2 text-sm">
                                 <span className="font-medium">{inv.invoiceNumber}</span>
-                                <span className="text-muted-foreground">{inv.remaining.toFixed(3)} TND</span>
+                                <span className="text-muted-foreground">{formatCurrency(inv.remaining)}</span>
                             </div>
                         ))}
                         <div className="flex items-center justify-between px-3 py-2 text-sm font-semibold bg-muted/40">
                             <span>{t('invoices.fournisseurs.groupTotal')}</span>
-                            <span className="text-green-600">{total.toFixed(3)} TND</span>
+                            <span className="text-green-600">{formatCurrency(total)}</span>
                         </div>
                     </div>
                 </div>
