@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SearchSelect } from '@/components/ui/search-select'
-import { TUNISIAN_BANKS } from '@/lib/constants/banks'
+import { useBanks } from '@/lib/hooks/useBanks'
 import {
     Select,
     SelectContent,
@@ -27,6 +27,7 @@ interface PaymentRowsEditorProps {
 
 export function PaymentRowsEditor({ rows, onChange, paymentType, onPaymentTypeChange, orderType, grandTotal, t }: PaymentRowsEditorProps) {
     const paymentsTotal = rows.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0)
+    const { banks } = useBanks()
 
     function addPaymentRow() {
         onChange((prev) => [...prev, newPaymentRow()])
@@ -123,7 +124,7 @@ export function PaymentRowsEditor({ rows, onChange, paymentType, onPaymentTypeCh
                                 <div className="space-y-1">
                                     <Label className="text-xs text-muted-foreground">{t('payments.bankName')} *</Label>
                                     <SearchSelect
-                                        options={TUNISIAN_BANKS.map((b) => ({ value: b, label: b }))}
+                                        options={banks.map((b) => ({ value: b, label: b }))}
                                         value={row.bank}
                                         onChange={(val) => updatePaymentRow(row.key, 'bank', val)}
                                         placeholder="BIAT"

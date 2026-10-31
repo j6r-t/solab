@@ -543,6 +543,13 @@ model LensBrand {
   createdAt DateTime @default(now())
 }
 
+model Bank {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model StockAdjustment {
   id        String                @id @default(uuid())
   productId String

@@ -14,7 +14,7 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { SearchSelect, type SearchSelectOption } from '@/components/ui/search-select'
-import { TUNISIAN_BANKS } from '@/lib/constants/banks'
+import { useBanks } from '@/lib/hooks/useBanks'
 import { fetchFournisseurs } from '@/modules/partners/fournisseurs/fournisseurs.api'
 import { toast } from 'sonner'
 
@@ -110,6 +110,7 @@ function newPayKey() { return `pay_${++payKeyCounter}` }
 
 export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving, entity }: PurchaseInvoiceFormProps) {
     const { t } = useTranslation()
+    const { banks } = useBanks()
     const [formData, setFormData] = useState<FormData>({
         invoiceNumber: '',
         fournisseurId: '',
@@ -469,7 +470,7 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                                     <div className="space-y-1">
                                         <Label className="text-xs text-muted-foreground">{t('payments.bankName')} *</Label>
                                         <SearchSelect
-                                            options={TUNISIAN_BANKS.map((b) => ({ value: b, label: b }))}
+                                            options={banks.map((b) => ({ value: b, label: b }))}
                                             value={pay.bank}
                                             onChange={(val) => updatePayment(pay.key, 'bank', val)}
                                             placeholder="BIAT"

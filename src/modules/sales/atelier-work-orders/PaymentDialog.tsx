@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SearchSelect } from '@/components/ui/search-select'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { TUNISIAN_BANKS } from '@/lib/constants/banks'
+import { useBanks } from '@/lib/hooks/useBanks'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/useTranslation'
@@ -38,6 +38,7 @@ const EPSILON = 0.000001
 
 export function PaymentDialog({ open, onOpenChange, target, onDone }: PaymentDialogProps) {
     const { t } = useTranslation()
+    const { banks } = useBanks()
     const [amount, setAmount] = useState('')
     const [method, setMethod] = useState<MethodValue>('cash')
     const [chequeNumber, setChequeNumber] = useState('')
@@ -216,7 +217,7 @@ export function PaymentDialog({ open, onOpenChange, target, onDone }: PaymentDia
                                     <div className="space-y-1.5">
                                         <Label>{t('payments.bankName')}</Label>
                                         <SearchSelect
-                                            options={TUNISIAN_BANKS.map((b) => ({ value: b, label: b }))}
+                                            options={banks.map((b) => ({ value: b, label: b }))}
                                             value={chequeBankName}
                                             onChange={setChequeBankName}
                                             placeholder={t('payments.bankName')}

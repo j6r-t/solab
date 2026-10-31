@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Globe, User, Wrench, Plus, Pencil, Trash2, Eye, KeyRound, Loader2, Sun, Moon, Monitor } from 'lucide-react'
+import { Globe, User, Wrench, Plus, Pencil, Trash2, Eye, KeyRound, Loader2, Sun, Moon, Monitor, Landmark } from 'lucide-react'
 import { changePassword, updateProfile } from '@/modules/system/auth/auth.api'
 import { useAuthStore } from '@/stores/auth-store'
 import { useThemeStore } from '@/stores/theme-store'
@@ -29,11 +29,13 @@ interface NamedItem {
     name: string
 }
 
-function NamedItemCard({ title, icon: Icon, description, apiPath }: {
+function NamedItemCard({ title, icon: Icon, description, apiPath, deleteNote }: {
     title: string
     icon: typeof Eye
     description: string
     apiPath: string
+    /** Extra reassurance appended to the delete confirmation (e.g. banks: existing cheques keep their stored name). */
+    deleteNote?: string
 }) {
     const { t } = useTranslation()
     const { data: itemsData, refetch } = useQuery({
@@ -53,6 +55,11 @@ function NamedItemCard({ title, icon: Icon, description, apiPath }: {
 
     async function handleSave() {
         if (!itemName.trim()) return
+        const duplicate = items.some((item) => item.name.trim().toLowerCase() === itemName.trim().toLowerCase() && item.id !== editing?.id)
+        if (duplicate) {
+            toast.error(t('settings.duplicateItem'))
+            return
+        }
         setSaving(true)
         try {
             if (editing) {
@@ -136,7 +143,7 @@ function NamedItemCard({ title, icon: Icon, description, apiPath }: {
                 open={!!deleteTarget}
                 onOpenChange={() => setDeleteTarget(null)}
                 title={t('common.delete')}
-                description={`${t('settings.confirmDelete')} "${deleteTarget?.name}"?`}
+                description={`${t('settings.confirmDelete')} "${deleteTarget?.name}"?${deleteNote ? ` ${deleteNote}` : ''}`}
                 confirmLabel={t('common.delete')}
                 cancelLabel={t('common.cancel')}
                 onConfirm={handleDelete}
@@ -388,6 +395,15 @@ export function SettingsPage() {
                     </DialogContent>
                 </Dialog>
                 </>)}
+            {role === 'admin' && (
+                <NamedItemCard
+                    title={t('settings.banks')}
+                    icon={Landmark}
+                    description={t('settings.banksDesc')}
+                    apiPath="/api/banks"
+                    deleteNote={t('settings.banksDeleteNote')}
+                />
+            )}
             <ConfirmDialog
                 open={!!deleteTarget}
                 onOpenChange={() => setDeleteTarget(null)}
