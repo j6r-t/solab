@@ -42,6 +42,8 @@ interface LineItem {
     fields: ItemFields
     quantity: number
     unitPrice: number
+    sellingPrice: string
+    priceTouched: boolean
 }
 
 interface PaymentSplit {
@@ -68,7 +70,23 @@ interface PurchaseInvoiceFormProps {
         fournisseurId: string
         entity: 'shop' | 'atelier'
         date?: string
-        items: { description: string; category: string; quantity: number; unitPrice: number }[]
+        items: {
+            description: string
+            category: string
+            quantity: number
+            unitPrice: number
+            newProduct?: {
+                name: string
+                brand: string
+                model?: string
+                category: string
+                price: number
+                thickness?: string
+                sph?: number
+                cyl?: number
+                add?: number
+            }
+        }[]
         payments?: { amount: number; method: 'cash' | 'cheque' | 'traite'; chequeNumber?: string; chequeBank?: string; chequeDueDate?: string; chequeType?: string }[]
         notes?: string
     }) => Promise<void>
@@ -121,7 +139,18 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
     })
     const [fournisseurs, setFournisseurs] = useState<{ id: string; name: string }[]>([])
     const [internalSaving, setInternalSaving] = useState(false)
+    const [profitPct, setProfitPct] = useState(150)
     const loading = internalSaving || externalSaving || false
+
+    useEffect(() => {
+        fetch('/api/settings/profit-percentage')
+            .then((r) => r.json())
+            .then((data) => {
+                const pct = parseFloat(data?.value)
+                if (!isNaN(pct) && pct >= 0) setProfitPct(pct)
+            })
+            .catch(() => {})
+    }, [])
 
     useEffect(() => {
         fetchFournisseurs({ entity }).then((data) => {
@@ -145,7 +174,7 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
     function addItem() {
         setFormData((prev) => ({
             ...prev,
-            items: [...prev.items, { key: newItemKey(), category: '', fields: emptyFields(), quantity: 1, unitPrice: 0 }],
+            items: [...prev.items, { key: newItemKey(), category: '', fields: emptyFields(), quantity: 1, unitPrice: 0, sellingPrice: '', priceTouched: false }],
         }))
     }
 
@@ -171,10 +200,23 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
             items: prev.items.map((item) => {
                 if (item.key !== key) return item
                 if (field === 'category') {
-                    return { ...item, category: value as Category, fields: emptyFields() }
+                    return { ...item, category: value as Category, fields: emptyFields(), sellingPrice: '', priceTouched: false }
+                }
+                if (field === 'unitPrice' && !item.priceTouched) {
+                    // Auto-suggest the selling price from the default margin
+                    // until the user types their own price.
+                    const suggested = (Number(value) || 0) * (1 + profitPct / 100)
+                    return { ...item, unitPrice: Number(value), sellingPrice: Number(value) > 0 ? suggested.toFixed(3) : '' }
                 }
                 return { ...item, [field]: value }
             }),
+        }))
+    }
+
+    function updateSellingPrice(key: string, value: string) {
+        setFormData((prev) => ({
+            ...prev,
+            items: prev.items.map((item) => (item.key === key ? { ...item, sellingPrice: value, priceTouched: true } : item)),
         }))
     }
 
@@ -237,6 +279,20 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                     category: item.category,
                     quantity: item.quantity,
                     unitPrice: item.unitPrice,
+                    // Shop invoices create the real stock product from the
+                    // entered details — this is the moment stock enters.
+                    // Rows without a name stay plain invoice lines (no stock).
+                    newProduct: entity === 'shop' && item.fields.name.trim() ? {
+                        name: item.fields.name,
+                        brand: item.fields.brand || '—',
+                        model: item.fields.model || undefined,
+                        category: item.category,
+                        price: parseFloat(item.sellingPrice) || 0,
+                        thickness: item.fields.thickness || undefined,
+                        sph: item.fields.sph ? parseFloat(item.fields.sph) : undefined,
+                        cyl: item.fields.cyl ? parseFloat(item.fields.cyl) : undefined,
+                        add: item.fields.add ? parseFloat(item.fields.add) : undefined,
+                    } : undefined,
                 })),
                 payments: formData.payments.length > 0 ? formData.payments.map((p) => ({
                     amount: p.amount,
@@ -400,7 +456,7 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                             </div>
                         )}
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className={entity === 'shop' ? 'grid grid-cols-1 sm:grid-cols-3 gap-2' : 'grid grid-cols-1 sm:grid-cols-2 gap-2'}>
                             <div>
                                 <Label className="text-xs text-muted-foreground">{t('reports.qty')}</Label>
                                 <Input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(item.key, 'quantity', parseInt(e.target.value) || 1)} className="h-9" />
@@ -409,6 +465,22 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                                 <Label className="text-xs text-muted-foreground">{t('purchaseInvoice.unitCostPrice')}</Label>
                                 <Input type="number" step="0.001" min="0" value={item.unitPrice} onChange={(e) => updateItem(item.key, 'unitPrice', parseFloat(e.target.value) || 0)} className="h-9" />
                             </div>
+                            {entity === 'shop' && (
+                                <div>
+                                    <Label className="text-xs text-muted-foreground" title={t('purchaseInvoice.profitHint', { pct: profitPct })}>
+                                        {t('purchaseInvoice.sellingPrice')} *
+                                    </Label>
+                                    <Input
+                                        type="number"
+                                        step="0.001"
+                                        min="0"
+                                        value={item.sellingPrice}
+                                        onChange={(e) => updateSellingPrice(item.key, e.target.value)}
+                                        placeholder={(item.unitPrice * (1 + profitPct / 100)).toFixed(3)}
+                                        className="h-9"
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         {item.category && (

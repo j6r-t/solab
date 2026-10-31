@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Globe, User, Wrench, Plus, Pencil, Trash2, Eye, KeyRound, Loader2, Sun, Moon, Monitor, Landmark, Activity } from 'lucide-react'
+import { Globe, User, Wrench, Plus, Pencil, Trash2, Eye, KeyRound, Loader2, Sun, Moon, Monitor, Landmark, Activity, Percent } from 'lucide-react'
 import { changePassword, updateProfile } from '@/modules/system/auth/auth.api'
 import { useAuthStore } from '@/stores/auth-store'
 import { useThemeStore } from '@/stores/theme-store'
@@ -27,6 +27,76 @@ interface RepairService {
 interface NamedItem {
     id: string
     name: string
+}
+
+/** Admin card for the default sales margin used to suggest selling prices
+ * on purchase invoices (cost × (1 + margin)). Stored under profit_percentage. */
+function ProfitMarginCard({ t }: { t: (k: string, vars?: Record<string, string | number>) => string }) {
+    const [pct, setPct] = useState('')
+    const [saving, setSaving] = useState(false)
+    const [loaded, setLoaded] = useState(false)
+
+    useEffect(() => {
+        fetch('/api/settings/profit-percentage')
+            .then((r) => r.json())
+            .then((data) => {
+                if (data?.value != null) setPct(data.value)
+                setLoaded(true)
+            })
+            .catch(() => setLoaded(true))
+    }, [])
+
+    async function save() {
+        const n = parseFloat(pct)
+        if (isNaN(n) || n < 0) {
+            toast.error(t('settings.profitInvalid'))
+            return
+        }
+        setSaving(true)
+        try {
+            const res = await fetch('/api/settings/profit-percentage', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ value: String(n) }),
+            })
+            if (!res.ok) throw new Error()
+            toast.success(t('settings.profileUpdated'))
+        } catch {
+            toast.error(t('settings.saveFailed'))
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    return (
+        <Card>
+            <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                    <Percent className="h-4 w-4 text-muted-foreground" />
+                    {t('settings.profitPercentage')}
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">{t('settings.profitPercentageDesc')}</p>
+                <div className="flex items-center gap-2 max-w-[220px]">
+                    <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={pct}
+                        onChange={(e) => setPct(e.target.value)}
+                        placeholder="150"
+                        disabled={!loaded}
+                        className="h-9"
+                    />
+                    <span className="text-sm text-muted-foreground">%</span>
+                    <Button size="sm" onClick={save} disabled={saving || !loaded}>
+                        {saving ? t('common.saving') : t('common.save')}
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    )
 }
 
 function NamedItemCard({ title, icon: Icon, description, apiPath, deleteNote }: {
@@ -417,6 +487,7 @@ export function SettingsPage() {
                         apiPath="/api/banks"
                         deleteNote={t('settings.banksDeleteNote')}
                     />
+                    <ProfitMarginCard t={t} />
                     <Card>
                         <CardContent className="flex items-center gap-2 py-4">
                             <Activity className="h-4 w-4 text-muted-foreground" />

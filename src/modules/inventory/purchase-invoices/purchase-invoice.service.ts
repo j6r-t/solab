@@ -1,7 +1,8 @@
 import { purchaseInvoiceRepo } from '@/lib/database/repositories'
 import { db } from '@/lib/database/db'
+import { QR_CODE_PREFIX } from '@/lib/constants'
 import { BadRequestError, NotFoundError } from '@/lib/errors'
-import { ChequeType, InvoiceEntity, PaymentMethod, Prisma } from '@prisma/client'
+import { ChequeType, InvoiceEntity, PaymentMethod, Prisma, ProductCategory } from '@prisma/client'
 import { assertWithinTotal, effectivePaymentTotal, isCashMethod, pendingInstrumentTotal } from '@/lib/utils/payments'
 import { auditService } from '@/modules/system/audit'
 
@@ -116,7 +117,15 @@ export async function createPurchaseInvoice(data: {
     fournisseurId: string
     entity: 'shop' | 'atelier'
     date?: string
-    items: { description?: string; category?: string; quantity: number; unitPrice: number }[]
+    items: {
+        description?: string
+        category?: string
+        quantity: number
+        unitPrice: number
+        productId?: string
+        lensBlankId?: string
+        newProduct?: { name: string; brand: string; model?: string; category: string; price: number; priceAfterTax?: number | null; thickness?: string; sph?: number; cyl?: number; add?: number }
+    }[]
     payments?: SupplierPaymentInput[]
     notes?: string
 }) {
@@ -124,25 +133,97 @@ export async function createPurchaseInvoice(data: {
     const totalAmount = data.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
     const paidAmount = (data.payments || []).filter((p) => isCashMethod(p.method)).reduce((s, p) => s + p.amount, 0)
 
-    const invoice = await purchaseInvoiceRepo.create({
-        data: {
-            invoiceNumber: data.invoiceNumber,
-            fournisseurId: data.fournisseurId,
-            entity: data.entity,
-            date: data.date ? new Date(data.date) : new Date(),
-            totalAmount,
-            paidAmount,
-            notes: data.notes || null,
-            items: {
-                create: data.items.map((item) => ({
-                    description: item.description || null,
-                    category: item.category || null,
-                    quantity: item.quantity,
-                    unitPrice: item.unitPrice,
-                })),
+    // Stock enters here: linked products/blanks get their quantity incremented
+    // and `newProduct` rows are created (with QR code) — all in one transaction.
+    const createdProducts: { id: string; name: string; brand: string; price: number; code: string }[] = []
+    const restocked: { kind: 'product' | 'lensBlank'; id: string; quantity: number }[] = []
+
+    const invoice = await db.$transaction(async (tx) => {
+        const itemsCreate: {
+            description: string | null
+            category: string | null
+            quantity: number
+            unitPrice: number
+            productId?: string
+            lensBlankId?: string
+        }[] = []
+
+        for (const item of data.items) {
+            let productId: string | undefined = item.productId || undefined
+            let lensBlankId: string | undefined = item.lensBlankId || undefined
+
+            if (item.newProduct) {
+                const np = item.newProduct
+                if (data.entity !== 'shop') throw new BadRequestError('Inline product creation is only available for shop invoices')
+                const code = `${QR_CODE_PREFIX}-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+                const product = await tx.product.create({
+                    data: {
+                        name: np.name,
+                        price: np.price,
+                        priceAfterTax: np.priceAfterTax ?? null,
+                        costPrice: item.unitPrice,
+                        quantity: item.quantity,
+                        category: np.category as ProductCategory,
+                        brand: np.brand || '—',
+                        model: np.model || '—',
+                        thickness: np.thickness || null,
+                        sph: np.sph ?? null,
+                        cyl: np.cyl ?? null,
+                        add: np.add ?? null,
+                        fournisseurId: data.fournisseurId,
+                        qrcode: { create: { code } },
+                    },
+                })
+                productId = product.id
+                createdProducts.push({ id: product.id, name: product.name, brand: product.brand, price: Number(product.price), code })
+            } else if (productId) {
+                const product = await tx.product.findUnique({ where: { id: productId }, select: { id: true } })
+                if (!product) throw new NotFoundError(`Product ${productId} not found`)
+                await tx.product.update({ where: { id: productId }, data: { quantity: { increment: item.quantity }, costPrice: item.unitPrice } })
+                restocked.push({ kind: 'product', id: productId, quantity: item.quantity })
+            } else if (lensBlankId) {
+                const blank = await tx.lensBlank.findUnique({ where: { id: lensBlankId }, select: { id: true } })
+                if (!blank) throw new NotFoundError(`Lens blank ${lensBlankId} not found`)
+                await tx.lensBlank.update({ where: { id: lensBlankId }, data: { quantity: { increment: item.quantity } } })
+                restocked.push({ kind: 'lensBlank', id: lensBlankId, quantity: item.quantity })
+            }
+
+            itemsCreate.push({
+                description: item.description || null,
+                category: item.category || null,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                ...(productId ? { productId } : {}),
+                ...(lensBlankId ? { lensBlankId } : {}),
+            })
+        }
+
+        return tx.purchaseInvoice.create({
+            data: {
+                invoiceNumber: data.invoiceNumber,
+                fournisseurId: data.fournisseurId,
+                entity: data.entity,
+                date: data.date ? new Date(data.date) : new Date(),
+                totalAmount,
+                paidAmount,
+                notes: data.notes || null,
+                items: { create: itemsCreate },
             },
+            include: INVOICE_INCLUDE,
+        })
+    })
+
+    await auditService.log({
+        action: 'SUPPLIER_INVOICE_CREATED',
+        entityType: 'PURCHASE_INVOICE',
+        entityId: invoice.id,
+        metadata: {
+            invoiceNumber: invoice.invoiceNumber,
+            totalAmount,
+            entity: data.entity,
+            createdProducts: createdProducts.map((p) => p.name),
+            restocked,
         },
-        include: INVOICE_INCLUDE,
     })
 
     if (data.payments?.length) {
@@ -156,10 +237,10 @@ export async function createPurchaseInvoice(data: {
             include: INVOICE_INCLUDE,
         })
         if (!updated) throw new NotFoundError('Purchase invoice not found')
-        return updated
+        return { invoice: updated, createdProducts }
     }
 
-    return invoice
+    return { invoice, createdProducts }
 }
 
 function supplierAbbreviation(name: string): string {
@@ -239,5 +320,20 @@ export async function addPaymentToInvoice(id: string, data: SupplierPaymentInput
 }
 
 export async function deletePurchaseInvoice(id: string) {
-    await purchaseInvoiceRepo.delete({ where: { id } })
+    // Reverse the stock movement this invoice caused (mirrors createPurchaseInvoice).
+    await db.$transaction(async (tx) => {
+        const items = await tx.purchaseInvoiceItem.findMany({
+            where: { invoiceId: id },
+            select: { productId: true, lensBlankId: true, quantity: true },
+        })
+        for (const item of items) {
+            if (item.productId) {
+                await tx.product.update({ where: { id: item.productId }, data: { quantity: { decrement: item.quantity } } })
+            }
+            if (item.lensBlankId) {
+                await tx.lensBlank.update({ where: { id: item.lensBlankId }, data: { quantity: { decrement: item.quantity } } })
+            }
+        }
+        await tx.purchaseInvoice.delete({ where: { id } })
+    })
 }

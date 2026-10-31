@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
     try {
         requireRole(PURCHASE_INVOICE_ROLES)(request)
         const body = await parseBody(request, purchaseInvoiceSchema)
-        const invoice = await createPurchaseInvoice(body)
-        return created(toPurchaseInvoiceResponse(invoice))
+        const { invoice, createdProducts } = await createPurchaseInvoice(body)
+        return created({ ...toPurchaseInvoiceResponse(invoice), createdProducts })
     } catch (error) {
         return handleError(error)
     }

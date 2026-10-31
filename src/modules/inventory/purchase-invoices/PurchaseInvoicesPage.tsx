@@ -21,6 +21,7 @@ import { PurchaseInvoiceForm } from './PurchaseInvoiceForm'
 import { downloadPurchaseInvoice } from './purchase-invoice.print'
 import { PurchaseInvoicePreviewDialog } from './PurchaseInvoicePreviewDialog'
 import { usePurchaseInvoices, type PurchaseInvoice } from './usePurchaseInvoices'
+import { printProductLabels } from './print-labels'
 import { formatDate } from '@/lib/utils/dates'
 import { toast } from 'sonner'
 
@@ -50,7 +51,23 @@ export function PurchaseInvoicesPage() {
                 const err = await res.json()
                 throw new Error(err.error || t('purchaseInvoice.createFailed'))
             }
-            toast.success(t('purchaseInvoice.created'))
+            const saved = await res.json()
+            const createdProducts: { name: string; brand: string; price: number; code: string }[] | undefined = saved?.createdProducts
+            if (createdProducts?.length) {
+                toast.success(t('purchaseInvoice.createdWithStock', { n: createdProducts.length }), {
+                    action: {
+                        label: t('stock.printLabel'),
+                        onClick: () => {
+                            printProductLabels(createdProducts).then((ok) => {
+                                if (!ok) toast.error(t('stock.popupBlocked'))
+                            })
+                        },
+                    },
+                    duration: 15000,
+                })
+            } else {
+                toast.success(t('purchaseInvoice.created'))
+            }
             setDialogOpen(false)
             await reFetch()
         } catch (error) {

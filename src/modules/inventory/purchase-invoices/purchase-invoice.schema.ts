@@ -4,11 +4,29 @@ const paymentMethodSchema = z.enum(['cash', 'cheque', 'traite'], {
     message: 'Invalid payment method',
 })
 
+const newProductSchema = z.object({
+    name: z.string().min(1, 'Product name is required'),
+    brand: z.string().min(1, 'Brand is required'),
+    model: z.string().optional(),
+    category: z.string().min(1, 'Category is required'),
+    /** Selling price (suggested from cost × profit % on the client). */
+    price: z.number().nonnegative('Price must be non-negative'),
+    priceAfterTax: z.number().nonnegative().nullable().optional(),
+    thickness: z.string().optional(),
+    lensType: z.string().optional(),
+    sph: z.number().optional(),
+    cyl: z.number().optional(),
+    add: z.number().optional(),
+})
+
 const invoiceItemSchema = z.object({
     description: z.string().optional(),
     category: z.string().optional(),
     quantity: z.number().int().positive('Quantity must be a positive integer'),
     unitPrice: z.number().nonnegative('Unit price must be non-negative'),
+    productId: z.string().optional(),
+    lensBlankId: z.string().optional(),
+    newProduct: newProductSchema,
 })
 
 const invoicePaymentSchema = z.object({
