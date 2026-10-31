@@ -13,7 +13,7 @@ export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl
 
     // Completely skip auth for these public routes (no token verification needed)
-    const publicRoutes = ['/api/auth/login', '/api/auth/setup', '/api/auth/logout', '/login']
+    const publicRoutes = ['/api/auth/login', '/api/auth/setup', '/api/auth/logout', '/api/health', '/login']
     if (publicRoutes.some(route => pathname.startsWith(route))) {
         return NextResponse.next()
     }

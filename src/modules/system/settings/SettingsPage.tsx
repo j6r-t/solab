@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Globe, User, Wrench, Plus, Pencil, Trash2, Eye, KeyRound, Loader2, Sun, Moon, Monitor, Landmark } from 'lucide-react'
+import { Globe, User, Wrench, Plus, Pencil, Trash2, Eye, KeyRound, Loader2, Sun, Moon, Monitor, Landmark, Activity } from 'lucide-react'
 import { changePassword, updateProfile } from '@/modules/system/auth/auth.api'
 import { useAuthStore } from '@/stores/auth-store'
 import { useThemeStore } from '@/stores/theme-store'
@@ -173,6 +173,19 @@ export function SettingsPage() {
     const [pwConfirm, setPwConfirm] = useState('')
     const [pwSaving, setPwSaving] = useState(false)
     const [profileSaving, setProfileSaving] = useState(false)
+    // Admin-only system status line: hits the public /api/health endpoint once.
+    const { data: health } = useQuery({
+        queryKey: ['health'],
+        queryFn: async () => {
+            const res = await fetch('/api/health')
+            if (!res.ok) throw new Error('Health check failed')
+            return (await res.json()) as { status: string }
+        },
+        enabled: role === 'admin',
+        retry: false,
+        staleTime: 60_000,
+    })
+    const healthStatus = health?.status === 'ok' ? 'ok' : health ? 'down' : 'pending'
     async function handleSaveProfile() {
         setProfileSaving(true)
         try {
@@ -396,13 +409,29 @@ export function SettingsPage() {
                 </Dialog>
                 </>)}
             {role === 'admin' && (
-                <NamedItemCard
-                    title={t('settings.banks')}
-                    icon={Landmark}
-                    description={t('settings.banksDesc')}
-                    apiPath="/api/banks"
-                    deleteNote={t('settings.banksDeleteNote')}
-                />
+                <>
+                    <NamedItemCard
+                        title={t('settings.banks')}
+                        icon={Landmark}
+                        description={t('settings.banksDesc')}
+                        apiPath="/api/banks"
+                        deleteNote={t('settings.banksDeleteNote')}
+                    />
+                    <Card>
+                        <CardContent className="flex items-center gap-2 py-4">
+                            <Activity className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">{t('settings.systemStatus')}</span>
+                            <span
+                                className={`h-2.5 w-2.5 rounded-full shrink-0 ${
+                                    healthStatus === 'ok' ? 'bg-green-500' : healthStatus === 'down' ? 'bg-red-500' : 'bg-muted-foreground/40'
+                                }`}
+                            />
+                            <span className="text-sm font-medium">
+                                {healthStatus === 'ok' ? 'OK' : healthStatus === 'down' ? t('settings.statusProblem') : '...'}
+                            </span>
+                        </CardContent>
+                    </Card>
+                </>
             )}
             <ConfirmDialog
                 open={!!deleteTarget}
