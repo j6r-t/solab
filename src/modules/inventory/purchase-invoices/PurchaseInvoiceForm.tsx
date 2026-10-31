@@ -23,6 +23,10 @@ type Category = typeof CATEGORIES[number]
 
 const LENS_TYPES = ['color', 'optic'] as const
 
+const BLANK_LENS_TYPES = ['singleVision', 'progressive', 'bifocal', 'office', 'photochromic'] as const
+const BLANK_MATERIALS = ['cr39', 'polycarbonate', 'highIndex', 'trivex'] as const
+const BLANK_COATINGS = ['none', 'ar', 'scratchResistant', 'blueBlock', 'arScratch', 'arBlueBlock'] as const
+
 interface ItemFields {
     name: string
     brand: string
@@ -86,6 +90,16 @@ interface PurchaseInvoiceFormProps {
                 cyl?: number
                 add?: number
             }
+            newLensBlank?: {
+                brand: string
+                lensType: string
+                material: string
+                coating: string
+                thickness: string
+                sph?: number
+                cyl?: number
+                sellingPrice: number
+            }
         }[]
         payments?: { amount: number; method: 'cash' | 'cheque' | 'traite'; chequeNumber?: string; chequeBank?: string; chequeDueDate?: string; chequeType?: string }[]
         notes?: string
@@ -99,8 +113,7 @@ function emptyFields(): ItemFields {
     return { name: '', brand: '', model: '', lensType: '', material: '', coating: '', thickness: '', sph: '', cyl: '', add: '' }
 }
 
-function buildDescription(cat: Category, f: ItemFields): string {
-    const parts: string[] = []
+function buildDescription(cat: Category, f: ItemFields): string {    const parts: string[] = []
     if (f.brand && cat !== 'nettoyant_lentilles' && cat !== 'nettoyant_monture') parts.push(f.brand)
     if (f.name) parts.push(f.name)
     if (f.model) parts.push(f.model)
@@ -118,6 +131,11 @@ function buildDescription(cat: Category, f: ItemFields): string {
     if (cat === 'nettoyant_lentilles' || cat === 'nettoyant_monture') {
         if (f.thickness) parts.push(f.thickness)
     }
+    return parts.join(' / ') || '—'
+}
+
+function buildBlankDescription(f: ItemFields): string {
+    const parts = [f.brand, f.lensType, f.material, f.coating, f.thickness].filter(Boolean)
     return parts.join(' / ') || '—'
 }
 
@@ -256,14 +274,16 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
             toast.error(t('purchaseInvoice.errorItemRequired')); return
         }
         for (const item of formData.items) {
-            if (!item.category) {
-                toast.error(t('purchaseInvoice.errorCategoryRequired')); return
-            }
-            if (item.category === 'lunette' && (!item.fields.name.trim() || !item.fields.brand.trim())) {
-                toast.error(t('purchaseInvoice.errorFramesBrandName')); return
-            }
-            if (item.category === 'lentille' && !item.fields.name.trim()) {
-                toast.error(t('purchaseInvoice.errorLensesName')); return
+            if (entity === 'shop') {
+                if (!item.category) {
+                    toast.error(t('purchaseInvoice.errorCategoryRequired')); return
+                }
+                if (item.category === 'lunette' && (!item.fields.name.trim() || !item.fields.brand.trim())) {
+                    toast.error(t('purchaseInvoice.errorFramesBrandName')); return
+                }
+                if (item.category === 'lentille' && !item.fields.name.trim()) {
+                    toast.error(t('purchaseInvoice.errorLensesName')); return
+                }
             }
         }
 
@@ -275,7 +295,7 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                 entity,
                 date: formData.date || undefined,
                 items: formData.items.map((item) => ({
-                    description: buildDescription(item.category as Category, item.fields),
+                    description: entity === 'atelier' ? buildBlankDescription(item.fields) : buildDescription(item.category as Category, item.fields),
                     category: item.category,
                     quantity: item.quantity,
                     unitPrice: item.unitPrice,
@@ -292,6 +312,18 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                         sph: item.fields.sph ? parseFloat(item.fields.sph) : undefined,
                         cyl: item.fields.cyl ? parseFloat(item.fields.cyl) : undefined,
                         add: item.fields.add ? parseFloat(item.fields.add) : undefined,
+                    } : undefined,
+                    // Atelier invoices create the lens blank reference —
+                    // blanks enter stock on save. Rows left empty stay plain lines.
+                    newLensBlank: entity === 'atelier' && item.fields.brand.trim() && item.fields.lensType && item.fields.material && item.fields.coating && item.fields.thickness.trim() ? {
+                        brand: item.fields.brand,
+                        lensType: item.fields.lensType,
+                        material: item.fields.material,
+                        coating: item.fields.coating,
+                        thickness: item.fields.thickness,
+                        sph: item.fields.sph ? parseFloat(item.fields.sph) : undefined,
+                        cyl: item.fields.cyl ? parseFloat(item.fields.cyl) : undefined,
+                        sellingPrice: parseFloat(item.sellingPrice) || 0,
                     } : undefined,
                 })),
                 payments: formData.payments.length > 0 ? formData.payments.map((p) => ({
@@ -360,6 +392,7 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                             </Button>
                         </div>
 
+                        {entity === 'shop' && (
                         <div>
                             <Label className="text-xs text-muted-foreground">{t('stock.category')} *</Label>
                             <Select value={item.category} onValueChange={(val) => updateItem(item.key, 'category', val)}>
@@ -371,6 +404,65 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                                 </SelectContent>
                             </Select>
                         </div>
+                        )}
+                        {entity === 'atelier' && (
+                            <>
+                                <p className="text-xs text-muted-foreground italic">{t('purchaseInvoice.blankHint')}</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                                    <div>
+                                        <Label className="text-xs text-muted-foreground">{t('stock.brand')} *</Label>
+                                        <Input value={item.fields.brand} onChange={(e) => updateItemField(item.key, 'brand', e.target.value)} placeholder="Essilor..." className="h-9" />
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs text-muted-foreground">{t('stock.lensType')} *</Label>
+                                        <Select value={item.fields.lensType} onValueChange={(val) => updateItemField(item.key, 'lensType', val)}>
+                                            <SelectTrigger className="h-9"><SelectValue placeholder="--" /></SelectTrigger>
+                                            <SelectContent>
+                                                {BLANK_LENS_TYPES.map((lt) => (
+                                                    <SelectItem key={lt} value={lt}>{t(`stock.${lt}`)}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs text-muted-foreground">{t('stock.material')} *</Label>
+                                        <Select value={item.fields.material} onValueChange={(val) => updateItemField(item.key, 'material', val)}>
+                                            <SelectTrigger className="h-9"><SelectValue placeholder="--" /></SelectTrigger>
+                                            <SelectContent>
+                                                {BLANK_MATERIALS.map((m) => (
+                                                    <SelectItem key={m} value={m}>{t(`stock.${m}`)}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs text-muted-foreground">{t('stock.coating')} *</Label>
+                                        <Select value={item.fields.coating} onValueChange={(val) => updateItemField(item.key, 'coating', val)}>
+                                            <SelectTrigger className="h-9"><SelectValue placeholder="--" /></SelectTrigger>
+                                            <SelectContent>
+                                                {BLANK_COATINGS.map((c) => (
+                                                    <SelectItem key={c} value={c}>{t(`stock.${c}`)}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs text-muted-foreground">{t('stock.thickness')} *</Label>
+                                        <Input value={item.fields.thickness} onChange={(e) => updateItemField(item.key, 'thickness', e.target.value)} placeholder="1.56" className="h-9" />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <Label className="text-xs text-muted-foreground">SPH</Label>
+                                            <Input value={item.fields.sph} onChange={(e) => updateItemField(item.key, 'sph', e.target.value)} placeholder="0" className="h-9" />
+                                        </div>
+                                        <div>
+                                            <Label className="text-xs text-muted-foreground">CYL</Label>
+                                            <Input value={item.fields.cyl} onChange={(e) => updateItemField(item.key, 'cyl', e.target.value)} placeholder="0" className="h-9" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
 
                         {item.category === 'lunette' && (
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -456,7 +548,7 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                             </div>
                         )}
 
-                        <div className={entity === 'shop' ? 'grid grid-cols-1 sm:grid-cols-3 gap-2' : 'grid grid-cols-1 sm:grid-cols-2 gap-2'}>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                             <div>
                                 <Label className="text-xs text-muted-foreground">{t('reports.qty')}</Label>
                                 <Input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(item.key, 'quantity', parseInt(e.target.value) || 1)} className="h-9" />
@@ -465,7 +557,7 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                                 <Label className="text-xs text-muted-foreground">{t('purchaseInvoice.unitCostPrice')}</Label>
                                 <Input type="number" step="0.001" min="0" value={item.unitPrice} onChange={(e) => updateItem(item.key, 'unitPrice', parseFloat(e.target.value) || 0)} className="h-9" />
                             </div>
-                            {entity === 'shop' && (
+                            {(entity === 'shop' || entity === 'atelier') && (
                                 <div>
                                     <Label className="text-xs text-muted-foreground" title={t('purchaseInvoice.profitHint', { pct: profitPct })}>
                                         {t('purchaseInvoice.sellingPrice')} *

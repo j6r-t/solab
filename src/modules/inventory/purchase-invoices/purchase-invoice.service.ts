@@ -2,7 +2,7 @@ import { purchaseInvoiceRepo } from '@/lib/database/repositories'
 import { db } from '@/lib/database/db'
 import { QR_CODE_PREFIX } from '@/lib/constants'
 import { BadRequestError, NotFoundError } from '@/lib/errors'
-import { ChequeType, InvoiceEntity, PaymentMethod, Prisma, ProductCategory } from '@prisma/client'
+import { ChequeType, InvoiceEntity, LensCoating, LensMaterial, LensType, PaymentMethod, Prisma, ProductCategory } from '@prisma/client'
 import { assertWithinTotal, effectivePaymentTotal, isCashMethod, pendingInstrumentTotal } from '@/lib/utils/payments'
 import { auditService } from '@/modules/system/audit'
 
@@ -125,6 +125,7 @@ export async function createPurchaseInvoice(data: {
         productId?: string
         lensBlankId?: string
         newProduct?: { name: string; brand: string; model?: string; category: string; price: number; priceAfterTax?: number | null; thickness?: string; sph?: number; cyl?: number; add?: number }
+        newLensBlank?: { brand: string; lensType: string; material: string; coating: string; thickness: string; sph?: number; cyl?: number; sellingPrice: number }
     }[]
     payments?: SupplierPaymentInput[]
     notes?: string
@@ -134,8 +135,9 @@ export async function createPurchaseInvoice(data: {
     const paidAmount = (data.payments || []).filter((p) => isCashMethod(p.method)).reduce((s, p) => s + p.amount, 0)
 
     // Stock enters here: linked products/blanks get their quantity incremented
-    // and `newProduct` rows are created (with QR code) — all in one transaction.
+    // and `newProduct`/`newLensBlank` rows are created — all in one transaction.
     const createdProducts: { id: string; name: string; brand: string; price: number; code: string }[] = []
+    const createdBlanks: { id: string; brand: string; lensType: string; quantity: number }[] = []
     const restocked: { kind: 'product' | 'lensBlank'; id: string; quantity: number }[] = []
 
     const invoice = await db.$transaction(async (tx) => {
@@ -176,6 +178,26 @@ export async function createPurchaseInvoice(data: {
                 })
                 productId = product.id
                 createdProducts.push({ id: product.id, name: product.name, brand: product.brand, price: Number(product.price), code })
+            } else if (item.newLensBlank) {
+                const nb = item.newLensBlank
+                if (data.entity !== 'atelier') throw new BadRequestError('Inline lens blank creation is only available for atelier invoices')
+                const blank = await tx.lensBlank.create({
+                    data: {
+                        brand: nb.brand,
+                        lensType: nb.lensType as LensType,
+                        material: nb.material as LensMaterial,
+                        coating: nb.coating as LensCoating,
+                        thickness: nb.thickness,
+                        sph: nb.sph ?? 0,
+                        cyl: nb.cyl ?? 0,
+                        costPrice: item.unitPrice,
+                        sellingPrice: nb.sellingPrice,
+                        quantity: item.quantity,
+                        fournisseurId: data.fournisseurId,
+                    },
+                })
+                lensBlankId = blank.id
+                createdBlanks.push({ id: blank.id, brand: blank.brand, lensType: String(blank.lensType), quantity: item.quantity })
             } else if (productId) {
                 const product = await tx.product.findUnique({ where: { id: productId }, select: { id: true } })
                 if (!product) throw new NotFoundError(`Product ${productId} not found`)
@@ -237,10 +259,10 @@ export async function createPurchaseInvoice(data: {
             include: INVOICE_INCLUDE,
         })
         if (!updated) throw new NotFoundError('Purchase invoice not found')
-        return { invoice: updated, createdProducts }
+        return { invoice: updated, createdProducts, createdBlanks }
     }
 
-    return { invoice, createdProducts }
+    return { invoice, createdProducts, createdBlanks }
 }
 
 function supplierAbbreviation(name: string): string {

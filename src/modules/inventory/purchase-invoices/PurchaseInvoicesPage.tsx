@@ -53,7 +53,10 @@ export function PurchaseInvoicesPage() {
             }
             const saved = await res.json()
             const createdProducts: { name: string; brand: string; price: number; code: string }[] | undefined = saved?.createdProducts
-            if (createdProducts?.length) {
+            const createdBlanks: { brand: string }[] | undefined = saved?.createdBlanks
+            if (createdBlanks?.length) {
+                toast.success(t('purchaseInvoice.blanksCreated', { n: createdBlanks.length }))
+            } else if (createdProducts?.length) {
                 toast.success(t('purchaseInvoice.createdWithStock', { n: createdProducts.length }), {
                     action: {
                         label: t('stock.printLabel'),

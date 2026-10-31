@@ -27,6 +27,16 @@ const invoiceItemSchema = z.object({
     productId: z.string().optional(),
     lensBlankId: z.string().optional(),
     newProduct: newProductSchema,
+    newLensBlank: z.object({
+        brand: z.string().min(1, 'Brand is required'),
+        lensType: z.string().min(1, 'Lens type is required'),
+        material: z.string().min(1, 'Material is required'),
+        coating: z.string().min(1, 'Coating is required'),
+        thickness: z.string().min(1, 'Thickness is required'),
+        sph: z.number().optional(),
+        cyl: z.number().optional(),
+        sellingPrice: z.number().nonnegative('Price must be non-negative'),
+    }),
 })
 
 const invoicePaymentSchema = z.object({
