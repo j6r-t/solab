@@ -19,12 +19,26 @@ export function AtelierReports({ data, period, setPeriod }: { data: AtelierRepor
     const noData = t('reports.noData')
     const withSuffix = (label: string) => `${label} — ${periodSuffix}`
 
+    // A stale or cached payload can omit fields added later; normalize every
+    // reduced/rendered field so a partial response degrades to empty states
+    // instead of crashing the whole view.
+    const deltas = data?.deltas ?? { revenue: null, completed: null, avgTurnaround: null, breakage: null, avgTicket: null }
+    const monthlyWorkOrders = data?.monthlyWorkOrders ?? []
+    const sourceSplit = data?.sourceSplit ?? []
+    const weeklyThroughput = data?.weeklyThroughput ?? []
+    const agingBuckets = data?.agingBuckets ?? []
+    const partnerScorecard = data?.partnerScorecard ?? []
+    const lensUsage = data?.lensUsage ?? []
+    const breakageByLens = data?.breakageByLens ?? []
+    const workOrdersByShop = data?.workOrdersByShop ?? []
+    const lensBlanksLowStockItems = data?.lensBlanksLowStock?.items ?? []
+
     const kpis = data
         ? [
-            { label: withSuffix(t('reports.kpiRevenue')), value: formatCurrency(data.totalRevenue), icon: DollarSign, color: 'text-green-600', delta: data.deltas.revenue, deltaGoodUp: true, emptyPeriod: data.periodEmpty, subtitle: undefined as string | undefined },
-            { label: withSuffix(t('reports.kpiCompleted')), value: data.completedWorkOrders.toString(), icon: Award, color: 'text-emerald-600', delta: data.deltas.completed, deltaGoodUp: true, emptyPeriod: data.periodEmpty, subtitle: undefined },
-            { label: withSuffix(t('reports.avgTurnaroundDays')), value: `${data.avgTurnaroundDays ?? 0} ${t('orders.days')}`, icon: Timer, color: 'text-blue-600', delta: data.deltas.avgTurnaround, deltaGoodUp: false, emptyPeriod: data.periodEmpty, subtitle: undefined },
-            { label: withSuffix(t('reports.breakageRate')), value: `${data.breakageRate ?? 0} %`, icon: Flame, color: 'text-red-600', delta: data.deltas.breakage, deltaGoodUp: false, emptyPeriod: data.periodEmpty, subtitle: undefined },
+            { label: withSuffix(t('reports.kpiRevenue')), value: formatCurrency(data.totalRevenue), icon: DollarSign, color: 'text-green-600', delta: deltas.revenue, deltaGoodUp: true, emptyPeriod: data.periodEmpty ?? false, subtitle: undefined as string | undefined },
+            { label: withSuffix(t('reports.kpiCompleted')), value: (data.completedWorkOrders ?? 0).toString(), icon: Award, color: 'text-emerald-600', delta: deltas.completed, deltaGoodUp: true, emptyPeriod: data.periodEmpty ?? false, subtitle: undefined },
+            { label: withSuffix(t('reports.avgTurnaroundDays')), value: `${data.avgTurnaroundDays ?? 0} ${t('orders.days')}`, icon: Timer, color: 'text-blue-600', delta: deltas.avgTurnaround, deltaGoodUp: false, emptyPeriod: data.periodEmpty ?? false, subtitle: undefined },
+            { label: withSuffix(t('reports.breakageRate')), value: `${data.breakageRate ?? 0} %`, icon: Flame, color: 'text-red-600', delta: deltas.breakage, deltaGoodUp: false, emptyPeriod: data.periodEmpty ?? false, subtitle: undefined },
             {
                 label: withSuffix(t('reports.backlog')),
                 value: ((data.workload?.pending ?? 0) + (data.workload?.inProgress ?? 0)).toString(),
@@ -34,20 +48,18 @@ export function AtelierReports({ data, period, setPeriod }: { data: AtelierRepor
                 deltaGoodUp: true,
                 subtitle: `${t('reports.workloadAvgAge')} : ${data.workload?.avgAgeDays ?? 0} ${t('orders.days')}`,
             },
-            { label: withSuffix(t('reports.avgOrderValue')), value: formatCurrency(data.avgTicket), icon: TrendingUp, color: 'text-indigo-600', delta: data.deltas.avgTicket, deltaGoodUp: true, emptyPeriod: data.periodEmpty, subtitle: undefined },
+            { label: withSuffix(t('reports.avgOrderValue')), value: formatCurrency(data.avgTicket), icon: TrendingUp, color: 'text-indigo-600', delta: deltas.avgTicket, deltaGoodUp: true, emptyPeriod: data.periodEmpty ?? false, subtitle: undefined },
         ]
         : []
 
-    const monthLabels = data ? data.monthlyWorkOrders.map((m) => monthLabel(m.month, locale)) : []
+    const monthLabels = monthlyWorkOrders.map((m) => monthLabel(m.month, locale))
 
-    const sourceItems = data
-        ? data.sourceSplit.map((s) => ({
-            label: s.source === 'internal' ? t('reports.sourceInternal') : t('reports.sourceOptician'),
-            value: s.count,
-            fill: s.source === 'internal' ? 'fill-indigo-500' : 'fill-purple-500',
-            dot: s.source === 'internal' ? 'bg-indigo-500' : 'bg-purple-500',
-        }))
-        : []
+    const sourceItems = sourceSplit.map((s) => ({
+        label: s.source === 'internal' ? t('reports.sourceInternal') : t('reports.sourceOptician'),
+        value: s.count,
+        fill: s.source === 'internal' ? 'fill-indigo-500' : 'fill-purple-500',
+        dot: s.source === 'internal' ? 'bg-indigo-500' : 'bg-purple-500',
+    }))
     const sourceTotal = sourceItems.reduce((s, i) => s + i.value, 0)
 
     const agingLabels: Record<string, string> = {
@@ -87,14 +99,14 @@ export function AtelierReports({ data, period, setPeriod }: { data: AtelierRepor
                                 <BarChart3 className="h-4 w-4 text-emerald-600" />
                             </CardHeader>
                             <CardContent>
-                                {data.monthlyWorkOrders.length === 0 ? (
+                                {monthlyWorkOrders.length === 0 ? (
                                     <EmptyState text={noData} />
                                 ) : (
                                     <LineChart
                                         labels={monthLabels}
                                         formatValue={(v) => formatCurrency(Math.round(v))}
                                         series={[
-                                            { label: t('reports.revenue'), strokeClass: 'stroke-emerald-500', dotClass: 'fill-emerald-500', bgClass: 'bg-emerald-500', points: data.monthlyWorkOrders.map((m) => m.revenue) },
+                                            { label: t('reports.revenue'), strokeClass: 'stroke-emerald-500', dotClass: 'fill-emerald-500', bgClass: 'bg-emerald-500', points: monthlyWorkOrders.map((m) => m.revenue) },
                                         ]}
                                     />
                                 )}
@@ -124,14 +136,14 @@ export function AtelierReports({ data, period, setPeriod }: { data: AtelierRepor
                                 <div>
                                     <p className="mb-2 text-xs text-muted-foreground">{t('reports.created')}</p>
                                     <MiniBars
-                                        items={data.weeklyThroughput.map((w) => ({ label: weekLabel(w.weekStart, locale), value: w.created }))}
+                                        items={weeklyThroughput.map((w) => ({ label: weekLabel(w.weekStart, locale), value: w.created }))}
                                         formatValue={(v) => String(v)}
                                     />
                                 </div>
                                 <div>
                                     <p className="mb-2 text-xs text-muted-foreground">{t('reports.kpiCompleted')}</p>
                                     <MiniBars
-                                        items={data.weeklyThroughput.map((w) => ({ label: weekLabel(w.weekStart, locale), value: w.completed }))}
+                                        items={weeklyThroughput.map((w) => ({ label: weekLabel(w.weekStart, locale), value: w.completed }))}
                                         formatValue={(v) => String(v)}
                                     />
                                 </div>
@@ -145,7 +157,7 @@ export function AtelierReports({ data, period, setPeriod }: { data: AtelierRepor
                             </CardHeader>
                             <CardContent>
                                 <BucketBars
-                                    items={data.agingBuckets.map((b) => ({ label: agingLabels[b.bucket] ?? b.bucket, count: b.count }))}
+                                    items={agingBuckets.map((b) => ({ label: agingLabels[b.bucket] ?? b.bucket, count: b.count }))}
                                 />
                             </CardContent>
                         </Card>
@@ -158,7 +170,7 @@ export function AtelierReports({ data, period, setPeriod }: { data: AtelierRepor
                                 <Building2 className="h-4 w-4 text-purple-600" />
                             </CardHeader>
                             <CardContent>
-                                {data.partnerScorecard.length === 0 ? (
+                                {partnerScorecard.length === 0 ? (
                                     <EmptyState text={noData} />
                                 ) : (
                                     <div className="overflow-x-auto overflow-y-auto max-h-[340px]">
@@ -174,7 +186,7 @@ export function AtelierReports({ data, period, setPeriod }: { data: AtelierRepor
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {data.partnerScorecard.map((p) => (
+                                                {partnerScorecard.map((p) => (
                                                     <tr key={p.shopId} className="border-b last:border-0">
                                                         <td className="py-2 pr-4 font-medium">{p.name}</td>
                                                         <td className="text-right py-2 px-3 tabular-nums">{p.orders}</td>
@@ -217,7 +229,7 @@ export function AtelierReports({ data, period, setPeriod }: { data: AtelierRepor
                                 <Layers className="h-4 w-4 text-cyan-600" />
                             </CardHeader>
                             <CardContent>
-                                {data.lensUsage.length === 0 ? (
+                                {lensUsage.length === 0 ? (
                                     <EmptyState text={noData} />
                                 ) : (
                                     <div className="overflow-x-auto overflow-y-auto max-h-[340px]">
@@ -230,7 +242,7 @@ export function AtelierReports({ data, period, setPeriod }: { data: AtelierRepor
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {data.lensUsage.map((l) => (
+                                                {lensUsage.map((l) => (
                                                     <tr key={l.blankId} className="border-b last:border-0">
                                                         <td className="py-2 pr-4 font-medium">{l.label}</td>
                                                         <td className="text-right py-2 px-4 tabular-nums">{l.usedQty}</td>
@@ -251,11 +263,11 @@ export function AtelierReports({ data, period, setPeriod }: { data: AtelierRepor
                                     <Flame className="h-4 w-4 text-red-600" />
                                 </CardHeader>
                                 <CardContent>
-                                    {data.breakageByLens.length === 0 ? (
+                                    {breakageByLens.length === 0 ? (
                                         <EmptyState text={noData} />
                                     ) : (
                                         <MiniBars
-                                            items={data.breakageByLens.map((b) => ({ label: b.label, value: b.brokenQty }))}
+                                            items={breakageByLens.map((b) => ({ label: b.label, value: b.brokenQty }))}
                                             formatValue={(v) => String(v)}
                                         />
                                     )}
@@ -272,9 +284,9 @@ export function AtelierReports({ data, period, setPeriod }: { data: AtelierRepor
                                         <p className="text-2xl font-bold">{data.lensBlanksLowStock?.count ?? 0}</p>
                                         <p className="text-xs text-muted-foreground">{t('reports.blanksLowDesc')}</p>
                                     </div>
-                                    {data.lensBlanksLowStock && data.lensBlanksLowStock.items.length > 0 && (
+                                    {lensBlanksLowStockItems.length > 0 && (
                                         <div className="mt-3 space-y-1.5">
-                                            {data.lensBlanksLowStock.items.map((b) => (
+                                            {lensBlanksLowStockItems.map((b) => (
                                                 <div key={b.id} className="flex justify-between text-sm">
                                                     <span className="mr-2 truncate">{b.label}</span>
                                                     <span className="shrink-0 font-semibold tabular-nums text-red-600">{b.quantity}</span>
@@ -294,11 +306,11 @@ export function AtelierReports({ data, period, setPeriod }: { data: AtelierRepor
                                 <BarChart3 className="h-4 w-4 text-orange-600" />
                             </CardHeader>
                             <CardContent>
-                                {data.workOrdersByShop.length === 0 ? (
+                                {workOrdersByShop.length === 0 ? (
                                     <EmptyState text={noData} />
                                 ) : (
                                     <MiniBars
-                                        items={data.workOrdersByShop.map((s) => ({ label: s.shopName, value: s.count }))}
+                                        items={workOrdersByShop.map((s) => ({ label: s.shopName, value: s.count }))}
                                         formatValue={(v) => String(v)}
                                     />
                                 )}
@@ -335,7 +347,7 @@ export function AtelierReports({ data, period, setPeriod }: { data: AtelierRepor
                                         <div key={shop.shopId}>
                                             <p className="text-sm font-semibold">{shop.shopName}</p>
                                             <div className="mt-1 space-y-1">
-                                                {shop.blanks.map((b, i) => (
+                                                {(shop.blanks ?? []).map((b, i) => (
                                                     <div key={`${b.label}-${i}`} className="flex justify-between gap-2 text-sm">
                                                         <span className="mr-2 truncate text-muted-foreground">{b.label}</span>
                                                         <span className="shrink-0 tabular-nums">{t('reports.qty')} {b.qty}</span>

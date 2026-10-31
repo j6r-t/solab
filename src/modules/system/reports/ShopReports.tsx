@@ -23,26 +23,47 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
         return t(key) !== key ? t(key) : c === 'uncategorized' ? t('reports.uncategorized') : c
     }
 
+    // A stale or cached payload can omit fields added later; normalize every
+    // reduced/rendered field so a partial response degrades to empty states
+    // instead of crashing the whole view.
+    const monthlyRevenue = data?.monthlyRevenue ?? []
+    const pendingByBank = data?.pendingByBank ?? []
+    const orderValueBuckets = data?.orderValueBuckets ?? []
+    const doctorRanking = data?.doctorRanking ?? []
+    const supplierBalances = data?.supplierBalances ?? []
+    const weeksOfCover = data?.weeksOfCover ?? []
+    const restockList = data?.restockList ?? []
+    const marginByCategory = data?.marginByCategory ?? []
+    const topProductsByCategory = data?.topProductsByCategory ?? {}
+    const salesHeatmap = data?.salesHeatmap ?? { byWeekday: [], byHour: [] }
+    const powerDemand = data?.powerDemand ?? { sphBands: [], cylBands: [] }
+    const deltas = data?.deltas ?? { revenue: null, orders: null, avgOrderValue: null, newClients: null, profit: null }
+    const ordersByStatus = data?.ordersByStatus ?? { pending: 0, completed: 0, cancelled: 0 }
+    const cancellations = data?.cancellations ?? { count: 0, revenueLost: '0' }
+    const collections = data?.collections ?? { avgDaysToCash: 0, bounceRate: 0, cashedCount: 0, bouncedCount: 0 }
+    const pareto = data?.pareto ?? { topDecileSharePct: 0, activeClients: 0 }
+    const revenueSplit = data?.revenueSplit ?? { newClientsRevenue: '0', returningClientsRevenue: '0' }
+
     const marginPct = data && Number(data.totalRevenue) > 0
         ? Math.round((Number(data.totalProfit) / Number(data.totalRevenue)) * 1000) / 10
         : 0
 
     const kpis = data
         ? [
-            { label: withSuffix(t('reports.kpiRevenue')), value: formatCurrency(data.totalRevenue), icon: DollarSign, color: 'text-green-600', delta: data.deltas.revenue, deltaGoodUp: true, emptyPeriod: data.periodEmpty, subtitle: undefined as string | undefined },
-            { label: withSuffix(t('reports.kpiProfit')), value: formatCurrency(data.totalProfit), icon: PiggyBank, color: 'text-emerald-600', delta: data.deltas.profit, deltaGoodUp: true, emptyPeriod: data.periodEmpty, subtitle: `${t('reports.margin')} : ${marginPct} %` },
-            { label: withSuffix(t('reports.ordersCount')), value: data.totalOrders.toString(), icon: ShoppingCart, color: 'text-orange-600', delta: data.deltas.orders, deltaGoodUp: true, emptyPeriod: data.periodEmpty, subtitle: undefined },
-            { label: withSuffix(t('reports.avgOrderValue')), value: formatCurrency(data.avgOrderValue), icon: TrendingUp, color: 'text-blue-600', delta: data.deltas.avgOrderValue, deltaGoodUp: true, emptyPeriod: data.periodEmpty, subtitle: undefined },
-            { label: withSuffix(t('reports.newClients')), value: data.newClients.toString(), icon: UserPlus, color: 'text-indigo-600', delta: data.deltas.newClients, deltaGoodUp: true, subtitle: undefined },
+            { label: withSuffix(t('reports.kpiRevenue')), value: formatCurrency(data.totalRevenue), icon: DollarSign, color: 'text-green-600', delta: deltas.revenue, deltaGoodUp: true, emptyPeriod: data.periodEmpty ?? false, subtitle: undefined as string | undefined },
+            { label: withSuffix(t('reports.kpiProfit')), value: formatCurrency(data.totalProfit), icon: PiggyBank, color: 'text-emerald-600', delta: deltas.profit, deltaGoodUp: true, emptyPeriod: data.periodEmpty ?? false, subtitle: `${t('reports.margin')} : ${marginPct} %` },
+            { label: withSuffix(t('reports.ordersCount')), value: (data.totalOrders ?? 0).toString(), icon: ShoppingCart, color: 'text-orange-600', delta: deltas.orders, deltaGoodUp: true, emptyPeriod: data.periodEmpty ?? false, subtitle: undefined },
+            { label: withSuffix(t('reports.avgOrderValue')), value: formatCurrency(data.avgOrderValue), icon: TrendingUp, color: 'text-blue-600', delta: deltas.avgOrderValue, deltaGoodUp: true, emptyPeriod: data.periodEmpty ?? false, subtitle: undefined },
+            { label: withSuffix(t('reports.newClients')), value: (data.newClients ?? 0).toString(), icon: UserPlus, color: 'text-indigo-600', delta: deltas.newClients, deltaGoodUp: true, subtitle: undefined },
         ]
         : []
 
-    const monthLabels = data ? data.monthlyRevenue.map((m) => monthLabel(m.month, locale)) : []
+    const monthLabels = monthlyRevenue.map((m) => monthLabel(m.month, locale))
 
     const typeItems = [
-        { label: t('orders.type_standard'), value: Number(data?.revenueByType.standard ?? 0), fill: 'fill-emerald-500', dot: 'bg-emerald-500' },
-        { label: t('orders.type_remounting'), value: Number(data?.revenueByType.remounting ?? 0), fill: 'fill-blue-500', dot: 'bg-blue-500' },
-        { label: t('orders.type_direct_sale'), value: Number(data?.revenueByType.direct_sale ?? 0), fill: 'fill-amber-500', dot: 'bg-amber-500' },
+        { label: t('orders.type_standard'), value: Number(data?.revenueByType?.standard ?? 0), fill: 'fill-emerald-500', dot: 'bg-emerald-500' },
+        { label: t('orders.type_remounting'), value: Number(data?.revenueByType?.remounting ?? 0), fill: 'fill-blue-500', dot: 'bg-blue-500' },
+        { label: t('orders.type_direct_sale'), value: Number(data?.revenueByType?.direct_sale ?? 0), fill: 'fill-amber-500', dot: 'bg-amber-500' },
     ]
 
     const payments = data?.salesByPaymentMethod
@@ -63,8 +84,8 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
 
     const pendingByBankTotals = data
         ? {
-            count: data.pendingByBank.reduce((s, b) => s + b.count, 0),
-            total: data.pendingByBank.reduce((s, b) => s + Number(b.total), 0),
+            count: pendingByBank.reduce((s, b) => s + b.count, 0),
+            total: pendingByBank.reduce((s, b) => s + Number(b.total), 0),
         }
         : null
 
@@ -98,15 +119,15 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
                                 <BarChart3 className="h-4 w-4 text-emerald-600" />
                             </CardHeader>
                             <CardContent>
-                                {data.monthlyRevenue.length === 0 ? (
+                                {monthlyRevenue.length === 0 ? (
                                     <EmptyState text={noData} />
                                 ) : (
                                     <LineChart
                                         labels={monthLabels}
                                         formatValue={(v) => formatCurrency(Math.round(v))}
                                         series={[
-                                            { label: t('reports.revenue'), strokeClass: 'stroke-emerald-500', dotClass: 'fill-emerald-500', bgClass: 'bg-emerald-500', points: data.monthlyRevenue.map((m) => m.revenue) },
-                                            { label: t('reports.profit'), strokeClass: 'stroke-blue-500', dotClass: 'fill-blue-500', bgClass: 'bg-blue-500', points: data.monthlyRevenue.map((m) => m.profit) },
+                                            { label: t('reports.revenue'), strokeClass: 'stroke-emerald-500', dotClass: 'fill-emerald-500', bgClass: 'bg-emerald-500', points: monthlyRevenue.map((m) => m.revenue) },
+                                            { label: t('reports.profit'), strokeClass: 'stroke-blue-500', dotClass: 'fill-blue-500', bgClass: 'bg-blue-500', points: monthlyRevenue.map((m) => m.profit) },
                                         ]}
                                     />
                                 )}
@@ -129,11 +150,11 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
                                 <ShoppingCart className="h-4 w-4 text-orange-600" />
                             </CardHeader>
                             <CardContent className="space-y-2">
-                                <StatRow label={t('common.pending')} value={data.ordersByStatus.pending} />
-                                <StatRow label={t('common.completed')} value={data.ordersByStatus.completed} />
+                                <StatRow label={t('common.pending')} value={ordersByStatus.pending} />
+                                <StatRow label={t('common.completed')} value={ordersByStatus.completed} />
                                 <div className="border-t pt-2" />
-                                <StatRow label={t('reports.cancellations')} value={data.cancellations.count} />
-                                <StatRow label={t('reports.revenueLost')} value={formatCurrency(data.cancellations.revenueLost)} valueClass="text-red-600" />
+                                <StatRow label={t('reports.cancellations')} value={cancellations.count} />
+                                <StatRow label={t('reports.revenueLost')} value={formatCurrency(cancellations.revenueLost)} valueClass="text-red-600" />
                             </CardContent>
                         </Card>
                     </div>
@@ -172,15 +193,15 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
                                 <Wallet className="h-4 w-4 text-teal-600" />
                             </CardHeader>
                             <CardContent className="space-y-2">
-                                <StatRow label={t('reports.avgDaysToCash')} value={`${data.collections.avgDaysToCash} ${t('orders.days')}`} />
-                                <StatRow label={t('reports.bounceRate')} value={`${data.collections.bounceRate} %`} valueClass={data.collections.bounceRate > 0 ? 'text-amber-600' : undefined} />
-                                <StatRow label={t('reports.cashedCount')} value={data.collections.cashedCount} />
-                                <StatRow label={t('reports.bouncedCount')} value={data.collections.bouncedCount} valueClass={data.collections.bouncedCount > 0 ? 'text-red-600' : undefined} />
+                                <StatRow label={t('reports.avgDaysToCash')} value={`${collections.avgDaysToCash} ${t('orders.days')}`} />
+                                <StatRow label={t('reports.bounceRate')} value={`${collections.bounceRate} %`} valueClass={collections.bounceRate > 0 ? 'text-amber-600' : undefined} />
+                                <StatRow label={t('reports.cashedCount')} value={collections.cashedCount} />
+                                <StatRow label={t('reports.bouncedCount')} value={collections.bouncedCount} valueClass={collections.bouncedCount > 0 ? 'text-red-600' : undefined} />
                             </CardContent>
                         </Card>
                     </div>
 
-                    {data.pendingByBank.length > 0 && pendingByBankTotals && (
+                    {pendingByBank.length > 0 && pendingByBankTotals && (
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-base">{t('reports.pendingByBank')}</CardTitle>
@@ -197,7 +218,7 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {data.pendingByBank.map((b) => (
+                                            {pendingByBank.map((b) => (
                                                 <tr key={b.bank ?? '__no_bank__'} className="border-b last:border-0">
                                                     <td className="py-2 pr-4">
                                                         {b.bank ? (
@@ -295,9 +316,9 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
                                 <Gauge className="h-4 w-4 text-indigo-600" />
                             </CardHeader>
                             <CardContent>
-                                <p className="text-3xl font-bold">{data.pareto.topDecileSharePct} %</p>
-                                <p className="mt-1 text-xs text-muted-foreground">{t('reports.paretoDesc', { pct: data.pareto.topDecileSharePct })}</p>
-                                <p className="mt-1 text-xs text-muted-foreground">{t('reports.activeClients', { count: data.pareto.activeClients })}</p>
+                                <p className="text-3xl font-bold">{pareto.topDecileSharePct} %</p>
+                                <p className="mt-1 text-xs text-muted-foreground">{t('reports.paretoDesc', { pct: pareto.topDecileSharePct })}</p>
+                                <p className="mt-1 text-xs text-muted-foreground">{t('reports.activeClients', { count: pareto.activeClients })}</p>
                             </CardContent>
                         </Card>
 
@@ -307,8 +328,8 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
                                 <Users className="h-4 w-4 text-blue-600" />
                             </CardHeader>
                             <CardContent className="space-y-2">
-                                <StatRow label={t('reports.newClients')} value={formatCurrency(data.revenueSplit.newClientsRevenue)} />
-                                <StatRow label={t('reports.returningClients')} value={formatCurrency(data.revenueSplit.returningClientsRevenue)} />
+                                <StatRow label={t('reports.newClients')} value={formatCurrency(revenueSplit.newClientsRevenue)} />
+                                <StatRow label={t('reports.returningClients')} value={formatCurrency(revenueSplit.returningClientsRevenue)} />
                             </CardContent>
                         </Card>
                     </div>
@@ -320,7 +341,7 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
                                 <Stethoscope className="h-4 w-4 text-cyan-600" />
                             </CardHeader>
                             <CardContent>
-                                {data.doctorRanking.length === 0 ? (
+                                {doctorRanking.length === 0 ? (
                                     <EmptyState text={noData} />
                                 ) : (
                                     <div className="overflow-x-auto overflow-y-auto max-h-[340px]">
@@ -333,7 +354,7 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {data.doctorRanking.map((d) => (
+                                                {doctorRanking.map((d) => (
                                                     <tr key={d.doctorId} className="border-b last:border-0">
                                                         <td className="py-2 pr-4 font-medium">{d.name}</td>
                                                         <td className="text-right py-2 px-4 tabular-nums">{d.orders}</td>
@@ -356,14 +377,14 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
                                 <div>
                                     <p className="mb-1.5 text-xs text-muted-foreground">{t('reports.sphBands')}</p>
                                     <MiniBars
-                                        items={data.powerDemand.sphBands.map((b) => ({ label: b.band, value: b.count }))}
+                                        items={powerDemand.sphBands.map((b) => ({ label: b.band, value: b.count }))}
                                         formatValue={(v) => String(v)}
                                     />
                                 </div>
                                 <div>
                                     <p className="mb-1.5 text-xs text-muted-foreground">{t('reports.cylBands')}</p>
                                     <MiniBars
-                                        items={data.powerDemand.cylBands.map((b) => ({ label: b.band, value: b.count }))}
+                                        items={powerDemand.cylBands.map((b) => ({ label: b.band, value: b.count }))}
                                         formatValue={(v) => String(v)}
                                     />
                                 </div>
@@ -378,7 +399,7 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
                                 <Truck className="h-4 w-4 text-orange-600" />
                             </CardHeader>
                             <CardContent>
-                                {data.supplierBalances.length === 0 ? (
+                                {supplierBalances.length === 0 ? (
                                     <EmptyState text={noData} />
                                 ) : (
                                     <div className="overflow-x-auto overflow-y-auto max-h-[340px]">
@@ -391,7 +412,7 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {data.supplierBalances.map((s) => (
+                                                {supplierBalances.map((s) => (
                                                     <tr key={s.fournisseurId} className="border-b last:border-0">
                                                         <td className="py-2 pr-4 font-medium">{s.name}</td>
                                                         <td className="text-right py-2 px-4 tabular-nums">{formatCurrency(s.purchases)}</td>
@@ -411,12 +432,12 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
                                 <AlertTriangle className="h-4 w-4 text-red-600" />
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                <StatRow label={t('reports.cancellations')} value={data.cancellations.count} />
-                                <StatRow label={t('reports.revenueLost')} value={formatCurrency(data.cancellations.revenueLost)} valueClass="text-red-600" />
+                                <StatRow label={t('reports.cancellations')} value={cancellations.count} />
+                                <StatRow label={t('reports.revenueLost')} value={formatCurrency(cancellations.revenueLost)} valueClass="text-red-600" />
                                 <div className="border-t pt-3">
                                     <p className="mb-2 text-xs text-muted-foreground">{t('reports.weeksOfCover')}</p>
                                     <MiniBars
-                                        items={data.weeksOfCover.map((w) => ({
+                                        items={weeksOfCover.map((w) => ({
                                             label: catLabel(w.category),
                                             value: w.weeks ?? 0,
                                             display: w.weeks === null ? '∞' : String(w.weeks),
@@ -435,7 +456,7 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
                                 <PackageX className="h-4 w-4 text-red-600" />
                             </CardHeader>
                             <CardContent>
-                                {data.restockList.length === 0 ? (
+                                {restockList.length === 0 ? (
                                     <EmptyState text={noData} />
                                 ) : (
                                     <div className="overflow-x-auto overflow-y-auto max-h-[340px]">
@@ -448,7 +469,7 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {data.restockList.map((p) => (
+                                                {restockList.map((p) => (
                                                     <tr key={p.productId} className="border-b last:border-0">
                                                         <td className="py-2 pr-4">
                                                             <span className="font-medium">{p.name}</span>
@@ -484,7 +505,7 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
                                 <div className="border-t pt-3">
                                     <p className="mb-2 text-xs text-muted-foreground">{t('reports.marginByCat')}</p>
                                     <MiniBars
-                                        items={data.marginByCategory.map((m) => ({ label: catLabel(m.category), value: m.marginPct }))}
+                                        items={marginByCategory.map((m) => ({ label: catLabel(m.category), value: m.marginPct }))}
                                         formatValue={(v) => `${v} %`}
                                     />
                                 </div>
@@ -492,10 +513,10 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
                         </Card>
                     </div>
 
-                    {Object.keys(data.topProductsByCategory).length > 0 && (
+                    {Object.keys(topProductsByCategory).length > 0 && (
                         <div className="space-y-4">
                             <h2 className="flex items-center gap-2 text-lg font-medium"><Award className="h-5 w-5" />{t('reports.topProducts')}</h2>
-                            {Object.entries(data.topProductsByCategory).map(([category, products]) => (
+                            {Object.entries(topProductsByCategory).map(([category, products]) => (
                                 <Card key={category}>
                                     <CardHeader><CardTitle className="text-base">{catLabel(category)}</CardTitle></CardHeader>
                                     <CardContent>
@@ -543,7 +564,7 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
                             </CardHeader>
                             <CardContent>
                                 <MiniBars
-                                    items={data.salesHeatmap.byWeekday.map((v, d) => ({ label: weekdayLabel(d, locale), value: v }))}
+                                    items={salesHeatmap.byWeekday.map((v, d) => ({ label: weekdayLabel(d, locale), value: v }))}
                                     formatValue={(v) => String(v)}
                                 />
                             </CardContent>
@@ -556,7 +577,7 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
                             </CardHeader>
                             <CardContent>
                                 <MiniBars
-                                    items={data.salesHeatmap.byHour.slice(8, 24).map((v, i) => ({ label: `${i + 8}h`, value: v }))}
+                                    items={salesHeatmap.byHour.slice(8, 24).map((v, i) => ({ label: `${i + 8}h`, value: v }))}
                                     formatValue={(v) => String(v)}
                                 />
                             </CardContent>
@@ -569,7 +590,7 @@ export function ShopReports({ data, period, setPeriod }: { data: ShopReportData 
                             </CardHeader>
                             <CardContent>
                                 <BucketBars
-                                    items={data.orderValueBuckets.map((b) => ({ label: bucketLabels[b.bucket] ?? b.bucket, count: b.count }))}
+                                    items={orderValueBuckets.map((b) => ({ label: bucketLabels[b.bucket] ?? b.bucket, count: b.count }))}
                                 />
                             </CardContent>
                         </Card>
