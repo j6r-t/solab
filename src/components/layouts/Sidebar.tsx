@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { NotificationBell } from '@/modules/system/notifications/NotificationBell'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/hooks/useTranslation'
-import { useViewStore } from '@/stores/view-store'
+import { useViewStore, type ViewName } from '@/stores/view-store'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils/cn'
 import {
@@ -55,8 +55,10 @@ export function Sidebar() {
         saveCollapsed(collapsed)
     }, [collapsed])
 
-    // Auto-expand group containing active view (render-phase state adjustment)
-    const [prevView, setPrevView] = useState(currentView)
+    // Auto-expand group containing active view (render-phase state adjustment).
+    // Starts from null so the group holding a deep-linked view (?view=…, notifications)
+    // expands on first render too, not just on in-app navigation.
+    const [prevView, setPrevView] = useState<ViewName | null>(null)
     if (currentView !== prevView) {
         setPrevView(currentView)
         const activeGroup = findGroupForView(currentView)
@@ -68,7 +70,7 @@ export function Sidebar() {
     return (
         <aside className="hidden md:flex w-64 flex-col border-r bg-card h-screen sticky top-0 z-30">
             <div className="px-6 py-4 border-b">
-                <img src="/logo.png" alt="Logo" className="h-10 w-auto object-contain" />
+                <img src="/logo.png" alt="Sofiene Optic" className="h-10 w-auto object-contain" />
             </div>
 
             <nav className="flex-1 p-3 space-y-1 overflow-y-auto">

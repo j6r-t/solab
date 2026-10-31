@@ -18,6 +18,7 @@ import { useCheques, useUpdateChequeStatus } from './useCheques'
 import type { Cheque } from './cheques.api'
 import { formatDate } from '@/lib/utils/dates'
 import { toast } from 'sonner'
+import { formatCurrency, formatAmount } from '@/lib/utils/currency'
 
 const statusStyles: Record<string, string> = {
     pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
@@ -176,15 +177,15 @@ export function ChequesPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="rounded-lg border bg-card p-4">
                     <p className="text-xs text-muted-foreground">{t('cheques.totalPending')}</p>
-                    <p className="text-xl font-semibold mt-1 text-yellow-600">{pendingTotal.toFixed(3)} TND</p>
+                    <p className="text-xl font-semibold mt-1 text-yellow-600">{formatCurrency(pendingTotal)}</p>
                 </div>
                 <div className="rounded-lg border bg-card p-4">
                     <p className="text-xs text-muted-foreground">{t('cheques.totalCollected')}</p>
-                    <p className="text-xl font-semibold mt-1 text-green-600">{collectedTotal.toFixed(3)} TND</p>
+                    <p className="text-xl font-semibold mt-1 text-green-600">{formatCurrency(collectedTotal)}</p>
                 </div>
                 <div className="rounded-lg border bg-card p-4">
                     <p className="text-xs text-muted-foreground">{t('cheques.totalBounced')}</p>
-                    <p className="text-xl font-semibold mt-1 text-destructive">{bouncedTotal.toFixed(3)} TND</p>
+                    <p className="text-xl font-semibold mt-1 text-destructive">{formatCurrency(bouncedTotal)}</p>
                 </div>
             </div>
 
@@ -219,7 +220,7 @@ export function ChequesPage() {
                         {t('cheques.selected', { n: selected.size })}
                         {' · '}
                         <span className="text-muted-foreground font-normal">
-                            {cheques.filter((c) => selected.has(c.id)).reduce((s, c) => s + parseFloat(c.amount), 0).toFixed(3)} TND
+                            {formatCurrency(cheques.filter((c) => selected.has(c.id)).reduce((s, c) => s + parseFloat(c.amount), 0))}
                         </span>
                     </p>
                     <div className="flex gap-2 sm:ml-auto">
@@ -300,7 +301,7 @@ export function ChequesPage() {
                                     <td className="py-3 px-4 font-medium">{cheque.number}</td>
                                     <td className="py-3 px-4">{cheque.type === 'traite' ? t('cheques.traite') : t('cheques.standard')}</td>
                                     <td className="py-3 px-4">{cheque.bankName || '—'}</td>
-                                    <td className="py-3 px-4 text-right">{parseFloat(cheque.amount).toFixed(3)}</td>
+                                    <td className="py-3 px-4 text-right">{formatCurrency(cheque.amount)}</td>
                                     <td className="py-3 px-4 text-sm">{formatDate(cheque.dueDate)}</td>
                                     <td className="py-3 px-4 text-sm">
                                         {cheque.order ? (
@@ -329,22 +330,23 @@ export function ChequesPage() {
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
                                                     disabled={updateStatus.isPending}
                                                     onClick={() => setConfirmTarget({ cheque, action: cheque.entityType === 'supplier_payment' ? 'paid' : 'cashed' })}
                                                     title={cheque.entityType === 'supplier_payment' ? t('cheques.markPaid') : t('cheques.markCashed')}
+                                                    aria-label={cheque.entityType === 'supplier_payment' ? t('cheques.markPaid') : t('cheques.markCashed')}
                                                 >
                                                     <CheckCircle className="h-4 w-4" />
                                                 </Button>
                                             </td>
                                             <td className="py-3 px-4 text-center">
                                                 <Button
-                                                    variant="ghost"
+                                                    variant="destructive"
                                                     size="icon"
-                                                    className="h-8 w-8 text-destructive hover:bg-destructive/10"
                                                     disabled={updateStatus.isPending}
                                                     onClick={() => setConfirmTarget({ cheque, action: 'bounced' })}
                                                     title={t('cheques.markBounced')}
+                                                    aria-label={t('cheques.markBounced')}
                                                 >
                                                     <XCircle className="h-4 w-4" />
                                                 </Button>
@@ -369,7 +371,7 @@ export function ChequesPage() {
                 description={(() => {
                     if (!bulkConfirm) return ''
                     const targets = pendingCheques.filter((c) => selected.has(c.id))
-                    const total = targets.reduce((s, c) => s + parseFloat(c.amount), 0).toFixed(3)
+                    const total = formatAmount(targets.reduce((s, c) => s + parseFloat(c.amount), 0))
                     const early = targets.filter(traiteNotYetDue).length
                     const base = t(bulkConfirm === 'bounced' ? 'cheques.bulkBouncedDesc' : 'cheques.bulkConfirmDesc', { n: targets.length, total })
                     if (bulkConfirm !== 'bounced' && early > 0) return base + ' ' + t('cheques.bulkEarlyTraites', { n: early })

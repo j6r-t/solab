@@ -87,16 +87,16 @@ export function StockTable({ products, onEdit, onDelete, onShowQr, categoryLabel
                                     )}
                                 </td>
                                 <td className="py-3 px-4 text-center">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onShowQr(product)} title={t('stock.qrCode')}>
+                                    <Button variant="ghost" size="icon" onClick={() => onShowQr(product)} title={t('stock.qrCode')} aria-label={t('stock.qrCode')}>
                                         <QrCode className="h-4 w-4" />
                                     </Button>
                                 </td>
                                 <td className="py-3 px-4 text-right">
                                     <div className="flex items-center justify-end gap-1">
-                                        <Button variant="ghost" size="icon" onClick={() => onEdit(product)} title={t('common.edit')}>
+                                        <Button variant="ghost" size="icon" onClick={() => onEdit(product)} title={t('common.edit')} aria-label={t('common.edit')}>
                                             <Pencil className="h-4 w-4" />
                                         </Button>
-                                        <Button variant="ghost" size="icon" onClick={() => onDelete(product)} title={t('common.delete')}>
+                                        <Button variant="ghost" size="icon" onClick={() => onDelete(product)} title={t('common.delete')} aria-label={t('common.delete')}>
                                             <Trash2 className="h-4 w-4 text-destructive" />
                                         </Button>
                                     </div>

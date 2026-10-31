@@ -9,6 +9,7 @@ import {
     Wrench,
     PackageOpen,
     ClipboardList,
+    Wallet,
     ChevronDown,
 } from 'lucide-react'
 import { useState } from 'react'
@@ -37,13 +38,29 @@ const primaryItems: MobileNavItem[] = [
     { icon: Users, view: 'clients', labelKey: 'clients', roles: ['admin', 'shop'] },
     { icon: Package, view: 'stock', labelKey: 'stock', roles: ['admin', 'shop'] },
     { icon: ShoppingCart, view: 'orders', labelKey: 'orders', roles: ['admin', 'shop'] },
+    { icon: Wallet, view: 'cheques', labelKey: 'cheques', roles: ['admin', 'shop'] },
     { icon: Wrench, view: 'atelier-work-orders', labelKey: 'atelierWorkOrders', roles: ['admin', 'atelier'] },
     { icon: PackageOpen, view: 'lens-blanks', labelKey: 'lensBlanks', roles: ['admin', 'atelier'] },
     { icon: ClipboardList, view: 'purchase-invoices', labelKey: 'purchaseInvoices', roles: ['admin'] },
 ]
 
+// The primary bar is capped at 4 items + "More" so it fits a 390px phone.
+// Picks follow the counter workflow (docs/USER_WORKFLOW.md): the owner's day is
+// taking orders (W7/W8), chasing cheques (W11), checking stock (W21) and the
+// dashboard pulse; clients, billing, reports etc. live in the "More" sheet.
+const primaryByRole: Record<string, ViewName[]> = {
+    admin: ['dashboard', 'orders', 'cheques', 'stock'],
+    shop: ['dashboard', 'clients', 'stock', 'orders'],
+    atelier: ['dashboard', 'atelier-work-orders', 'lens-blanks'],
+}
+
+const MAX_PRIMARY = 4
+
 function filterByRole(items: MobileNavItem[], role: string): MobileNavItem[] {
-    return items.filter((item) => item.roles.includes(role))
+    return (primaryByRole[role] || [])
+        .map((view) => items.find((item) => item.view === view && item.roles.includes(role)))
+        .filter((item): item is MobileNavItem => Boolean(item))
+        .slice(0, MAX_PRIMARY)
 }
 
 export function MobileNav() {
@@ -92,93 +109,91 @@ export function MobileNav() {
                     )
                 })}
 
-                {secondaryEntries.length > 0 && (
-                    <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-                        <SheetTrigger asChild>
-                            <button className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg min-w-[56px] text-muted-foreground">
-                                <MoreHorizontal className="h-5 w-5" />
-                                <span className="text-[10px] font-medium">{t('common.more')}</span>
-                            </button>
-                        </SheetTrigger>
-                        <SheetContent side="bottom" className="rounded-t-xl max-h-[80vh] overflow-y-auto">
-                            <SheetHeader>
-                                <SheetTitle>{t('common.more')}</SheetTitle>
-                            </SheetHeader>
-                            <div className="mt-4 space-y-4">
-                                {secondaryEntries.map((entry) => {
-                                    if (entry.type === 'item') {
-                                        const item = entry.item
-                                        const isActive = currentView === item.view
-                                        return (
-                                            <button
-                                                key={item.view}
-                                                onClick={() => {
-                                                    setView(item.view)
-                                                    setSheetOpen(false)
-                                                }}
-                                                className={cn(
-                                                    'flex items-center gap-3 w-full p-3 rounded-lg transition-colors',
-                                                    isActive
-                                                        ? 'bg-accent text-primary'
-                                                        : 'hover:bg-muted'
-                                                )}
-                                            >
-                                                <item.icon className="h-5 w-5" />
-                                                <span className="text-sm font-medium">{t(`nav.${item.labelKey}`)}</span>
-                                            </button>
-                                        )
-                                    }
-
-                                    const group = entry.group
-                                    const isExpanded = expandedGroups[group.labelKey] !== false
-                                    const visibleItems = group.items.filter((i) => i.roles.includes(role))
+                <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+                    <SheetTrigger asChild>
+                        <button className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg min-w-[56px] text-muted-foreground">
+                            <MoreHorizontal className="h-5 w-5" />
+                            <span className="text-[10px] font-medium">{t('common.more')}</span>
+                        </button>
+                    </SheetTrigger>
+                    <SheetContent side="bottom" className="rounded-t-xl max-h-[80vh] overflow-y-auto">
+                        <SheetHeader>
+                            <SheetTitle>{t('common.more')}</SheetTitle>
+                        </SheetHeader>
+                        <div className="mt-4 space-y-4">
+                            {secondaryEntries.map((entry) => {
+                                if (entry.type === 'item') {
+                                    const item = entry.item
+                                    const isActive = currentView === item.view
                                     return (
-                                        <div key={group.labelKey}>
-                                            <button
-                                                onClick={() => toggleGroup(group.labelKey)}
-                                                className="w-full flex items-center gap-2 px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-                                            >
-                                                <group.icon className="h-3.5 w-3.5" />
-                                                <span className="flex-1 text-left">{t(group.labelKey)}</span>
-                                                <ChevronDown
-                                                    className={cn(
-                                                        'h-3.5 w-3.5 transition-transform duration-200',
-                                                        !isExpanded && '-rotate-90'
-                                                    )}
-                                                />
-                                            </button>
-                                            {isExpanded && (
-                                                <div className="grid grid-cols-3 gap-2 mt-1">
-                                                    {visibleItems.map((item) => {
-                                                        const isActive = currentView === item.view
-                                                        return (
-                                                            <button
-                                                                key={item.view}
-                                                                onClick={() => {
-                                                                    setView(item.view)
-                                                                    setSheetOpen(false)
-                                                                }}
-                                                                className={cn(
-                                                                    'flex flex-col items-center gap-2 p-3 rounded-lg transition-colors',
-                                                                    isActive
-                                                                        ? 'bg-accent text-primary'
-                                                                        : 'hover:bg-muted'
-                                                                )}
-                                                            >
-                                                                <item.icon className="h-5 w-5" />
-                                                                <span className="text-[10px] font-medium text-center">{t(`nav.${item.labelKey}`)}</span>
-                                                            </button>
-                                                        )
-                                                    })}
-                                                </div>
+                                        <button
+                                            key={item.view}
+                                            onClick={() => {
+                                                setView(item.view)
+                                                setSheetOpen(false)
+                                            }}
+                                            className={cn(
+                                                'flex items-center gap-3 w-full p-3 rounded-lg transition-colors',
+                                                isActive
+                                                    ? 'bg-accent text-primary'
+                                                    : 'hover:bg-muted'
                                             )}
-                                        </div>
+                                        >
+                                            <item.icon className="h-5 w-5" />
+                                            <span className="text-sm font-medium">{t(`nav.${item.labelKey}`)}</span>
+                                        </button>
                                     )
-                                })}
-                            </div>
-                        </SheetContent>
-                    </Sheet>
-                )}
+                                }
+
+                                const group = entry.group
+                                const isExpanded = expandedGroups[group.labelKey] !== false
+                                const visibleItems = group.items.filter((i) => i.roles.includes(role))
+                                return (
+                                    <div key={group.labelKey}>
+                                        <button
+                                            onClick={() => toggleGroup(group.labelKey)}
+                                            className="w-full flex items-center gap-2 px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                                        >
+                                            <group.icon className="h-3.5 w-3.5" />
+                                            <span className="flex-1 text-left">{t(group.labelKey)}</span>
+                                            <ChevronDown
+                                                className={cn(
+                                                    'h-3.5 w-3.5 transition-transform duration-200',
+                                                    !isExpanded && '-rotate-90'
+                                                )}
+                                            />
+                                        </button>
+                                        {isExpanded && (
+                                            <div className="grid grid-cols-3 gap-2 mt-1">
+                                                {visibleItems.map((item) => {
+                                                    const isActive = currentView === item.view
+                                                    return (
+                                                        <button
+                                                            key={item.view}
+                                                            onClick={() => {
+                                                                setView(item.view)
+                                                                setSheetOpen(false)
+                                                            }}
+                                                            className={cn(
+                                                                'flex flex-col items-center gap-2 p-3 rounded-lg transition-colors',
+                                                                isActive
+                                                                    ? 'bg-accent text-primary'
+                                                                    : 'hover:bg-muted'
+                                                            )}
+                                                        >
+                                                            <item.icon className="h-5 w-5" />
+                                                            <span className="text-[10px] font-medium text-center">{t(`nav.${item.labelKey}`)}</span>
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </SheetContent>
+                </Sheet>
             </div>
         </nav>
     )

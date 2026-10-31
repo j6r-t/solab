@@ -224,6 +224,7 @@ export function ClientsPage() {
                                                         size="icon"
                                                         onClick={() => setView('client-detail', { id: client.id })}
                                                         title={t('clients.viewOrders')}
+                                                        aria-label={t('clients.viewOrders')}
                                                     >
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
@@ -232,6 +233,7 @@ export function ClientsPage() {
                                                         size="icon"
                                                         onClick={() => { setEditClient(client); setDialogOpen(true) }}
                                                         title={t('common.edit')}
+                                                        aria-label={t('common.edit')}
                                                     >
                                                         <Pencil className="h-4 w-4" />
                                                     </Button>
@@ -240,6 +242,7 @@ export function ClientsPage() {
                                                         size="icon"
                                                         onClick={() => setDeleteTarget(client)}
                                                         title={t('common.delete')}
+                                                        aria-label={t('common.delete')}
                                                     >
                                                         <Trash2 className="h-4 w-4 text-destructive" />
                                                     </Button>
