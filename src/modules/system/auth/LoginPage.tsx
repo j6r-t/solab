@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useTranslation } from '@/lib/hooks/useTranslation'
+import { ApiError } from '@/lib/api/client'
 import { useAuthStore } from '@/stores/auth-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -57,8 +58,15 @@ export function LoginPage() {
             if (pathname !== '/') {
                 router.push('/')
             }
-        } catch {
-            setError(t('auth.loginFailed'))
+        } catch (error) {
+            // The login endpoint returns 401 with errorCode UNAUTHORIZED for
+            // wrong credentials (and 400 for a malformed request) — anything
+            // else is a network/server problem, not a credentials problem.
+            if (error instanceof ApiError && (error.status === 401 || error.status === 400)) {
+                setError(t('auth.loginFailed'))
+            } else {
+                setError(t('auth.connectionError'))
+            }
         } finally {
             setLoading(false)
         }

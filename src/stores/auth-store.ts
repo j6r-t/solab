@@ -36,6 +36,25 @@ const getInitialState = () => {
     return { isAuthenticated: false, user: null }
 }
 
+// Module-level single-flight guard: when the JWT expires, several requests can
+// 401 at once — only the first one may run the logout/redirect sequence.
+let isForcedLogout = false
+
+/**
+ * Forced logout after the server rejected the session (401).
+ * Reuses the same primitives as the manual logout button (view-store reset,
+ * localStorage clear, auth-store reset, server cookie deletion), then does a
+ * full page load of '/' which also drops the react-query cache.
+ */
+export function forceLogout(): void {
+    if (isForcedLogout) return
+    isForcedLogout = true
+    useAuthStore.getState().logout()
+    if (typeof window !== 'undefined') {
+        window.location.replace('/')
+    }
+}
+
 export const useAuthStore = create<AuthState>()((set) => ({
     ...getInitialState(),
     setAuth: (token: string, user: User) => {

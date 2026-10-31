@@ -1,10 +1,30 @@
 import type { PaginatedResponse } from '@/lib/api/pagination'
+import { forceLogout } from '@/stores/auth-store'
 
 interface RequestOptions extends RequestInit {
     keepEnvelope?: boolean
 }
 
 const CONNECTION_ERROR_MESSAGE = 'Connection lost — check that the server is running, then try again'
+
+/** Error thrown for non-2xx API responses; carries status and the server's errorCode. */
+export class ApiError extends Error {
+    status: number
+    errorCode?: string
+    fields?: unknown
+
+    constructor(message: string, status: number, errorCode?: string, fields?: unknown) {
+        super(message)
+        this.name = 'ApiError'
+        this.status = status
+        this.errorCode = errorCode
+        this.fields = fields
+    }
+}
+
+// Endpoints whose own 401 means "bad credentials", not "session expired" —
+// they must never trigger the auto-logout redirect.
+const PUBLIC_AUTH_ENDPOINTS = ['/api/auth/login', '/api/auth/setup']
 
 async function fetchWithRetry(url: string, init?: RequestInit, retries = 2): Promise<Response> {
     const isGet = !init?.method || init.method === 'GET'
@@ -32,7 +52,14 @@ async function request<T>(url: string, init?: RequestOptions): Promise<T> {
 
     if (!res.ok) {
         const message = body?.message || (body?.fields ? JSON.stringify(body.fields) : `Request failed (${res.status})`)
-        throw new Error(message)
+
+        // Expired/invalid JWT: log out exactly once and land on the login page.
+        // forceLogout() is single-flight, so concurrent 401s are no-ops.
+        if (res.status === 401 && !PUBLIC_AUTH_ENDPOINTS.some((ep) => url.startsWith(ep))) {
+            forceLogout()
+        }
+
+        throw new ApiError(message, res.status, body?.errorCode, body?.fields)
     }
 
     if (!init?.keepEnvelope && body && typeof body === 'object' && 'data' in body && 'pagination' in body) {
