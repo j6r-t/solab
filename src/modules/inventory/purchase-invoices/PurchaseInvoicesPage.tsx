@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useDebounce } from '@/lib/hooks/useDebounce'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Search, FileText, Download, Eye } from 'lucide-react'
@@ -28,11 +29,13 @@ export function PurchaseInvoicesPage() {
     const { user } = useAuthStore()
     const entity = user?.role === 'atelier' ? 'atelier' : 'shop'
     const [paymentFilter, setPaymentFilter] = useState('')
+    const [search, setSearch] = useState('')
+    const debouncedSearch = useDebounce(search, 300)
     const [dialogOpen, setDialogOpen] = useState(false)
     const [saving, setSaving] = useState(false)
     const [previewInvoice, setPreviewInvoice] = useState<PurchaseInvoice | null>(null)
 
-    const { data: invoicesData, isLoading: loading, refetch: reFetch } = usePurchaseInvoices({ entity, paymentStatus: paymentFilter || undefined })
+    const { data: invoicesData, isLoading: loading, refetch: reFetch } = usePurchaseInvoices({ entity, paymentStatus: paymentFilter || undefined, search: debouncedSearch || undefined })
     const invoices = invoicesData ?? []
 
     async function handleCreate(data: object) {
@@ -92,7 +95,7 @@ export function PurchaseInvoicesPage() {
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1 min-w-[200px]">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder={t('purchaseInvoice.searchPlaceholder')} className="pl-10 h-10" />
+                    <Input placeholder={t('purchaseInvoice.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 h-10" />
                 </div>
                 <Select value={paymentFilter} onValueChange={setPaymentFilter}>
                     <SelectTrigger className="w-[160px] h-10">

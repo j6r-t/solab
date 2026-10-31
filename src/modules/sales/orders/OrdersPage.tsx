@@ -16,7 +16,7 @@ import { OrderDetailDialog } from './OrderDetailDialog'
 import { formatCurrency } from '@/lib/utils/currency'
 import { formatDate } from '@/lib/utils/dates'
 import { fetchOrderById, createOrder, updateOrder, type Order } from './orders.api'
-import { useOrders, useDeleteOrder } from './useOrders'
+import { useOrders } from './useOrders'
 import { printFacture } from '@/modules/sales/billing/billing.print'
 import type { BillingRecord } from '@/modules/sales/billing/billing.types'
 import { toast } from 'sonner'
@@ -40,7 +40,6 @@ export function OrdersPage() {
     const [search, setSearch] = useState('')
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
     const [detailOpen, setDetailOpen] = useState(false)
-    const [deleteTarget, setDeleteTarget] = useState<Order | null>(null)
     const [createOpen, setCreateOpen] = useState(false)
     const [saving, setSaving] = useState(false)
     const [formDirty, setFormDirty] = useState(false)
@@ -63,7 +62,6 @@ export function OrdersPage() {
 
     const { data: ordersData, isLoading: loading, refetch: reFetch } = useOrders({ search: debouncedSearch || undefined })
     const orders = ordersData ?? []
-    const deleteOrderMutation = useDeleteOrder()
 
     async function handleCreate(data: OrderFormData) {
         setSaving(true)
@@ -121,17 +119,6 @@ export function OrdersPage() {
         }
         setPrintConfirmTarget(null)
         printFacture(record)
-    }
-
-    async function handleDelete(order: Order) {
-        try {
-            await deleteOrderMutation.mutateAsync(order.id)
-            toast.success(t('orders.deleted'))
-            setDeleteTarget(null)
-            await reFetch()
-        } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to delete order')
-        }
     }
 
     const UNDO_STATUS: Record<string, string> = { ready: 'pending', completed: 'ready' }
@@ -297,16 +284,6 @@ export function OrdersPage() {
                 confirmLabel={t('orders.update')}
                 cancelLabel={t('common.cancel')}
                 onConfirm={() => statusConfirmTarget && handleStatusUpdate(statusConfirmTarget.orderId, statusConfirmTarget.status)}
-            />
-
-            <ConfirmDialog
-                open={!!deleteTarget}
-                onOpenChange={() => setDeleteTarget(null)}
-                title={t('common.delete')}
-                description={deleteTarget ? `#${deleteTarget.orderNumber}` : ''}
-                confirmLabel={t('common.delete')}
-                cancelLabel={t('common.cancel')}
-                onConfirm={() => deleteTarget && handleDelete(deleteTarget)}
             />
 
             <ConfirmDialog

@@ -71,7 +71,7 @@ async function createSupplierInstrument(invoiceId: string, p: SupplierPaymentInp
     })
 }
 
-export async function listPurchaseInvoices(params?: { entity?: string; fournisseurId?: string; paymentStatus?: string }) {
+export async function listPurchaseInvoices(params?: { entity?: string; fournisseurId?: string; paymentStatus?: string; search?: string }) {
     const where: Prisma.PurchaseInvoiceWhereInput = {}
     if (params?.entity) where.entity = params.entity as InvoiceEntity
     if (params?.fournisseurId) where.fournisseurId = params.fournisseurId

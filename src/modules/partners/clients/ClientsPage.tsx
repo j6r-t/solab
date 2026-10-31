@@ -8,6 +8,13 @@ import { Input } from '@/components/ui/input'
 import { ClientForm } from '@/modules/partners/clients/ClientForm'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select'
+import {
     Dialog,
     DialogContent,
     DialogHeader,
@@ -29,7 +36,7 @@ export function ClientsPage() {
     const { t } = useTranslation()
     const { setView } = useViewStore()
     const [search, setSearch] = useState('')
-    const [genderFilter] = useState('')
+    const [genderFilter, setGenderFilter] = useState('')
     const [dialogOpen, setDialogOpen] = useState(false)
     const [editClient, setEditClient] = useState<Client | null>(null)
     const [deleteTarget, setDeleteTarget] = useState<Client | null>(null)
@@ -40,7 +47,7 @@ export function ClientsPage() {
     const [newClientName, setNewClientName] = useState('')
     const debouncedSearch = useDebounce(search, 300)
 
-    const { data: clientsData, isLoading: loading, refetch: reFetch } = useClients({ search: debouncedSearch, gender: genderFilter })
+    const { data: clientsData, isLoading: loading, refetch: reFetch } = useClients({ search: debouncedSearch, gender: genderFilter && genderFilter !== 'all' ? genderFilter : undefined })
     const clients = clientsData ?? []
 
     async function handleCreate(data: ClientFormData) {
@@ -145,6 +152,16 @@ export function ClientsPage() {
                             className="pl-10 h-10"
                         />
                     </div>
+                    <Select value={genderFilter} onValueChange={setGenderFilter}>
+                        <SelectTrigger className="w-[140px] h-10">
+                            <SelectValue placeholder={t('common.all')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">{t('common.all')}</SelectItem>
+                            <SelectItem value="male">{t('clients.male')}</SelectItem>
+                            <SelectItem value="female">{t('clients.female')}</SelectItem>
+                        </SelectContent>
+                    </Select>
                     <div className="flex flex-wrap items-center gap-2">
                         <ExportButton url="/api/export/clients" />
                         <Button variant="outline" onClick={() => { setWizardOpen(true); setWizardStep(1); setNewClientId(''); setNewClientName('') }}>

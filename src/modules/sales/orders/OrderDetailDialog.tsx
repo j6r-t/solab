@@ -5,12 +5,15 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { CheckCircle, XCircle, Loader2, Banknote } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { CheckCircle, XCircle, Loader2, Banknote, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { formatCurrency } from '@/lib/utils/currency'
+import { useAuthStore } from '@/stores/auth-store'
 import { PaymentDialog, type PaymentTarget } from '@/modules/sales/atelier-work-orders/PaymentDialog'
 import { fetchOrderById, type Order } from './orders.api'
+import { useDeleteOrder } from './useOrders'
 
 interface Props {
     order: Order | null
@@ -30,7 +33,11 @@ const paymentColors: Record<string, 'default' | 'secondary' | 'destructive'> = {
 export function OrderDetailDialog({ order, open, onOpenChange, onConfirmStatusUpdate, updatingOrders, onUpdated }: Props) {
     const { t } = useTranslation()
     const queryClient = useQueryClient()
+    const { user } = useAuthStore()
+    const isAdmin = user?.role === 'admin'
     const [paymentOpen, setPaymentOpen] = useState(false)
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+    const deleteOrderMutation = useDeleteOrder()
 
     if (!order) return null
 
@@ -62,6 +69,18 @@ export function OrderDetailDialog({ order, open, onOpenChange, onConfirmStatusUp
         }
         return { label: t('workOrders.status.pending'), variant: 'outline' as const }
     })()
+
+    async function handleDelete() {
+        if (!order) return
+        try {
+            await deleteOrderMutation.mutateAsync(order.id)
+            toast.success(t('orders.deleted'))
+            setDeleteConfirmOpen(false)
+            onOpenChange(false)
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : t('common.deleteFailed'))
+        }
+    }
 
     async function handlePaymentDone() {
         if (!order) return
@@ -189,9 +208,28 @@ export function OrderDetailDialog({ order, open, onOpenChange, onConfirmStatusUp
                             </div>
                         </div>
                     )}
+
+                    {isAdmin && (
+                        <div className="border-t pt-3">
+                            <Button size="sm" variant="destructive" onClick={() => setDeleteConfirmOpen(true)}>
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                {t('common.delete')}
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </DialogContent>
         </Dialog>
+
+        <ConfirmDialog
+            open={deleteConfirmOpen}
+            onOpenChange={setDeleteConfirmOpen}
+            title={t('orders.deleteTitle')}
+            description={order ? t('orders.deleteDesc', { number: order.orderNumber }) : ''}
+            confirmLabel={t('common.delete')}
+            cancelLabel={t('common.cancel')}
+            onConfirm={handleDelete}
+        />
 
         <PaymentDialog
             open={paymentOpen}

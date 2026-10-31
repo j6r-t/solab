@@ -14,13 +14,13 @@ const PURCHASE_INVOICE_ROLES = ['admin', 'shop', 'atelier']
 export async function GET(request: NextRequest) {
     try {
         requireRole(PURCHASE_INVOICE_ROLES)(request)
-        const { entity, fournisseurId, paymentStatus, generate } = parseQuery(request, 'entity', 'fournisseurId', 'paymentStatus', 'generate')
+        const { entity, fournisseurId, paymentStatus, search, generate } = parseQuery(request, 'entity', 'fournisseurId', 'paymentStatus', 'search', 'generate')
         if (generate === 'next-number' && fournisseurId) {
             const nextNumber = await getNextInvoiceNumber(fournisseurId, entity)
             return ok(nextNumber)
         }
         const { page, limit } = parsePagination(request)
-        const invoices = await listPurchaseInvoices({ entity, fournisseurId, paymentStatus })
+        const invoices = await listPurchaseInvoices({ entity, fournisseurId, paymentStatus, search })
         return ok(paginated(invoices.map(toPurchaseInvoiceResponse), page, limit))
     } catch (error) {
         return handleError(error)

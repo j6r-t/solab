@@ -33,9 +33,9 @@ export interface PurchaseInvoice {
     createdAt: string
 }
 
-export function usePurchaseInvoices(params: { entity: string; paymentStatus?: string }) {
+export function usePurchaseInvoices(params: { entity: string; paymentStatus?: string; search?: string }) {
     return useQuery({
         queryKey: ['purchase-invoices', params],
-        queryFn: () => api.get<PurchaseInvoice[]>('/api/purchase-invoices', { entity: params.entity, paymentStatus: params.paymentStatus }),
+        queryFn: () => api.get<PurchaseInvoice[]>('/api/purchase-invoices', { entity: params.entity, paymentStatus: params.paymentStatus, search: params.search }),
     })
 }
