@@ -24,7 +24,7 @@ export function OrderItemsSection({ products, items, user, onAddProduct, onUpdat
         .map((p) => ({
             value: p.id,
             label: `${p.name} (${p.brand})`,
-            secondary: `${Number(p.price).toFixed(3)} TND Â· ${p.quantity ?? 0} in stock`,
+            secondary: `${Number(p.price).toFixed(3)} TND · ${p.quantity ?? 0} ${t('common.inStockSuffix')}`,
         }))
 
     return (

@@ -297,7 +297,7 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                 {formData.items.map((item, index) => (
                     <div key={item.key} className="flex flex-col gap-2 p-3 bg-muted/20 rounded-lg border">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-muted-foreground">Item #{index + 1}</span>
+                            <span className="text-xs font-semibold text-muted-foreground">{t('purchaseInvoice.itemNumber', { n: index + 1 })}</span>
                             <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeItem(item.key)} disabled={formData.items.length === 1}>
                                 <Trash2 className="h-3 w-3" />
                             </Button>
@@ -347,7 +347,7 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                                         <SelectTrigger className="h-9"><SelectValue placeholder="--" /></SelectTrigger>
                                         <SelectContent>
                                             {LENS_TYPES.map((lt) => (
-                                                <SelectItem key={lt} value={lt}>{lt === 'color' ? 'Color' : 'Optic'}</SelectItem>
+                                                <SelectItem key={lt} value={lt}>{lt === 'color' ? t('purchaseInvoice.lensTypeColor') : t('purchaseInvoice.lensTypeOptic')}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
@@ -412,13 +412,13 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
 
                         {item.category && (
                             <p className="text-xs text-muted-foreground italic">
-                                Description: {buildDescription(item.category as Category, item.fields)}
+                                {t('purchaseInvoice.itemDescription')} {buildDescription(item.category as Category, item.fields)}
                             </p>
                         )}
                     </div>
                 ))}
                 <div className="text-right text-sm font-medium pt-1">
-                    Total: {totalAmount.toFixed(3)} TND
+                    {t('orders.total')}: {totalAmount.toFixed(3)} TND
                 </div>
             </div>
 
@@ -435,7 +435,7 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                 {formData.payments.map((pay, index) => (
                     <div key={pay.key} className="flex flex-col gap-2 p-3 bg-background rounded-lg border">
                         <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-medium text-muted-foreground">Payment #{index + 1}</span>
+                            <span className="text-xs font-medium text-muted-foreground">{t('purchaseInvoice.paymentNumber', { n: index + 1 })}</span>
                             <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removePayment(pay.key)}>
                                 <Trash2 className="h-3 w-3" />
                             </Button>
@@ -461,7 +461,7 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                 {(pay.method === 'cheque' || pay.method === 'traite') && (
                                     <div className="space-y-1">
-                                        <Label className="text-xs text-muted-foreground">{pay.method === 'traite' ? 'Traite' : 'Chèque'} # *</Label>
+                                        <Label className="text-xs text-muted-foreground">{pay.method === 'traite' ? t('payments.traite') : t('payments.cheque')} # *</Label>
                                         <Input value={pay.number} onChange={(e) => updatePayment(pay.key, 'number', e.target.value)} placeholder={pay.method === 'traite' ? 'TRT-001' : 'CHQ-001'} className="h-9" />
                                     </div>
                                 )}

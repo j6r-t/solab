@@ -110,6 +110,12 @@ export function WorkOrderDetailDialog({ workOrder, open, onOpenChange, onUpdated
     const [breakageReplLeft, setBreakageReplLeft] = useState('')
     const [breakageReplRight, setBreakageReplRight] = useState('')
 
+    function statusLabel(s: string): string {
+        const key = `workOrders.status.${s}`
+        const translated = t(key)
+        return translated === key ? s.replace('_', ' ') : translated
+    }
+
     const { data: blanksData } = useLensBlanks<LensBlank[]>({ lowStock: 'false' })
     const lensBlanks = blanksData ?? []
 

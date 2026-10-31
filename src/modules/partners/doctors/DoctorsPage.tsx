@@ -102,7 +102,7 @@ export function DoctorsPage() {
         setPatientsLoading(true)
         try {
             const res = await fetch(`/api/prescriptions?doctorId=${doctor.id}&includeClient=true`)
-            if (!res.ok) throw new Error('Failed to fetch patients')
+            if (!res.ok) throw new Error(t('doctors.patientsLoadFailed'))
             const json: PaginatedResponse<Patient> | Patient[] = await res.json()
             setPatients((Array.isArray(json) ? json : (json?.data ?? [])).map((p) => ({
                 id: p.id,

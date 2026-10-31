@@ -6,6 +6,7 @@ export const productSchema = z.object({
     model: z.string().optional(),
     category: z.enum(['lunette', 'lentille', 'verre', 'accessory', 'nettoyant_lentilles', 'nettoyant_monture']).optional(),
     price: z.coerce.number().min(0, 'Price must be positive'),
+    priceAfterTax: z.coerce.number().min(0).optional(),
     costPrice: z.coerce.number().optional(),
     quantity: z.coerce.number().int().min(0, 'Quantity must be 0 or more'),
     thickness: z.string().optional(),

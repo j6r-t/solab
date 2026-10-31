@@ -4,6 +4,7 @@ export interface CreateProductInput {
     model?: string
     category?: string
     price: number
+    priceAfterTax?: number
     costPrice?: number
     quantity: number
     thickness?: string
@@ -22,6 +23,7 @@ export interface UpdateProductInput {
     model?: string
     category?: string
     price?: number
+    priceAfterTax?: number
     costPrice?: number
     quantity?: number
     thickness?: string
@@ -42,6 +44,7 @@ export interface ProductResponse {
     category: string
     lensType: string | null
     price: number
+    priceAfterTax: number | null
     quantity: number
     fournisseurId: string | null
     createdAt: Date

@@ -162,7 +162,7 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
         } else {
             setItems((prev) => [...prev, { lensBlankId: blank.id, quantity: 1, unitPrice: price, name: displayName, sellingPrice: Number(blank.sellingPrice) || 0 }])
         }
-        toast.success(`${blank.brand} added to order`)
+        toast.success(t('orders.blankAdded', { brand: blank.brand }))
     }
 
     function handlePrescriptionCreated(created: Prescription) {
@@ -234,7 +234,7 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                     : undefined,
             })
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to create order')
+            toast.error(error instanceof Error ? error.message : t('orders.createFailed'))
         } finally {
             setInternalSaving(false)
         }
@@ -273,7 +273,7 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
             {forcedOrderType ? (
                 <div className="rounded-lg bg-muted/30 p-3 border text-sm">
                     <span className="font-medium">{t(`orders.type_${forcedOrderType}`)}</span>
-                    <span className="text-muted-foreground ml-2">â€” {t(`orders.type_${forcedOrderType}_desc`)}</span>
+                    <span className="text-muted-foreground ml-2">— {t(`orders.type_${forcedOrderType}_desc`)}</span>
                 </div>
             ) : (
                 <div className="space-y-2">

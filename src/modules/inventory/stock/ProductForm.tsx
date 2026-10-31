@@ -17,6 +17,7 @@ import type { ProductFormData } from './stock.schema'
 import { fetchFournisseurs } from '@/modules/partners/fournisseurs/fournisseurs.api'
 import { fetchNamedItems } from '@/modules/system/settings/settings.api'
 import { productSchema } from './stock.schema'
+import { computePriceAfterTax } from '@/lib/utils/pricing'
 
 interface ProductFormProps {
     defaultValues?: Partial<ProductFormData>
@@ -40,6 +41,7 @@ export function ProductForm({ defaultValues, onSubmit, onCancel, saving: externa
         model: defaultValues?.model || '',
         category: defaultValues?.category || undefined,
         price: defaultValues?.price || 0,
+        priceAfterTax: defaultValues?.priceAfterTax,
         costPrice: defaultValues?.costPrice,
         quantity: defaultValues?.quantity || 0,
         thickness: defaultValues?.thickness,
@@ -112,6 +114,12 @@ export function ProductForm({ defaultValues, onSubmit, onCancel, saving: externa
                 }))
             }
             setErrors((prev) => ({ ...prev, [field]: [], brand: [], model: [] }))
+            return
+        }
+        if (field === 'price') {
+            const price = typeof value === 'number' ? value : parseFloat(value ?? '') || 0
+            setFormData((prev) => ({ ...prev, price, priceAfterTax: computePriceAfterTax(price) }))
+            setErrors((prev) => ({ ...prev, price: [] }))
             return
         }
         setFormData((prev) => ({ ...prev, [field]: value }))
@@ -387,13 +395,17 @@ export function ProductForm({ defaultValues, onSubmit, onCancel, saving: externa
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="costPrice">{t('stock.costPrice')}</Label>
-                    <Input id="costPrice" type="number" step="0.001" min="0" value={formData.costPrice ?? ''} onChange={(e) => handleChange('costPrice', e.target.value ? parseFloat(e.target.value) : undefined)} />
-                </div>
-                <div className="space-y-2">
                     <Label htmlFor="price">{t('stock.sellingPrice')} *</Label>
                     <Input id="price" type="number" step="0.001" min="0" value={formData.price || ''} onChange={(e) => handleChange('price', parseFloat(e.target.value) || 0)} />
                     {errors.price && <p className="text-sm text-destructive">{errors.price[0]}</p>}
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="priceAfterTax">{t('stock.priceAfterTax')}</Label>
+                    <Input id="priceAfterTax" type="number" step="0.001" min="0" value={formData.priceAfterTax ?? ''} onChange={(e) => handleChange('priceAfterTax', e.target.value ? parseFloat(e.target.value) : undefined)} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="costPrice">{t('stock.costPrice')}</Label>
+                    <Input id="costPrice" type="number" step="0.001" min="0" value={formData.costPrice ?? ''} onChange={(e) => handleChange('costPrice', e.target.value ? parseFloat(e.target.value) : undefined)} />
                 </div>
             </div>
 

@@ -76,6 +76,12 @@ export function AtelierWorkOrdersPage() {
     const [detailOpen, setDetailOpen] = useState(false)
     const [newWOOpen, setNewWOOpen] = useState(false)
 
+    function statusLabel(s: string): string {
+        const key = `workOrders.status.${s}`
+        const translated = t(key)
+        return translated === key ? s.replace('_', ' ') : translated
+    }
+
     const debouncedSearch = useDebounce(search, 300)
 
     const { data: workOrdersData, isLoading: loading, refetch: reFetch } = useRepairs<WorkOrder[]>({
@@ -199,7 +205,7 @@ export function AtelierWorkOrdersPage() {
                                         onClick={() => { setSelectedWO(wo); setDetailOpen(true) }}
                                     >
                                         <td className="py-3 px-4 font-medium">{clientName}</td>
-                                        <td className="py-3 px-4 text-sm capitalize">{wo.source}</td>
+                                        <td className="py-3 px-4 text-sm capitalize">{wo.source === 'internal' ? t('workOrders.sourceInternal') : t('repairs.optician')}</td>
                                         <td className="py-3 px-4 text-sm text-muted-foreground">
                                             <div className="flex flex-wrap gap-1">
                                                 {wo.workOrderServices.map((s) => (

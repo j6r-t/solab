@@ -93,7 +93,7 @@ export function BillingPage() {
             setQuickSaleOpen(false)
             await reFetch()
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Quick sale failed')
+            toast.error(error instanceof Error ? error.message : t('billing.quickSaleFailed'))
         } finally {
             setSaving(false)
         }

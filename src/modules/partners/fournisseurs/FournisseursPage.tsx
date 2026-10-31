@@ -35,6 +35,7 @@ interface FournisseurProduct {
     model: string
     category: string | null
     price: string
+    priceAfterTax: string | null
     quantity: number
     _count: { orderItems: number }
 }
@@ -117,7 +118,7 @@ export function FournisseursPage() {
         setProductFilter('all')
         try {
             const res = await fetch(`/api/stock?fournisseurId=${supplier.id}`)
-            if (!res.ok) throw new Error('Failed to fetch products')
+            if (!res.ok) throw new Error(t('fournisseurs.productsLoadFailed'))
             const json: PaginatedResponse<FournisseurProduct> | FournisseurProduct[] = await res.json()
             setProducts(Array.isArray(json) ? json : (json?.data ?? []))
         } catch (error) {

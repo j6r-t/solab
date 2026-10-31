@@ -75,6 +75,7 @@ export async function createLensBlank(data: {
     cyl: number
     costPrice: number
     sellingPrice: number
+    priceAfterTax?: number | null
     quantity?: number
     fournisseurId?: string
 }) {
@@ -89,6 +90,7 @@ export async function createLensBlank(data: {
             cyl: data.cyl,
             costPrice: data.costPrice,
             sellingPrice: data.sellingPrice,
+            priceAfterTax: data.priceAfterTax ?? null,
             quantity: data.quantity || 0,
             fournisseurId: data.fournisseurId || null,
         },
@@ -106,6 +108,7 @@ export async function updateLensBlank(id: string, data: Partial<{
     cyl: number
     costPrice: number
     sellingPrice: number
+    priceAfterTax: number | null
     quantity: number
     fournisseurId: string | null
 }>) {
@@ -121,6 +124,7 @@ export async function updateLensBlank(id: string, data: Partial<{
     if (data.cyl !== undefined) updateData.cyl = data.cyl
     if (data.costPrice !== undefined) updateData.costPrice = data.costPrice
     if (data.sellingPrice !== undefined) updateData.sellingPrice = data.sellingPrice
+    if (data.priceAfterTax !== undefined) updateData.priceAfterTax = data.priceAfterTax
     if (data.quantity !== undefined) updateData.quantity = data.quantity
     if (data.fournisseurId !== undefined) updateData.fournisseurId = data.fournisseurId
     return lensBlankRepo.update({

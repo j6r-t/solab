@@ -191,6 +191,7 @@ export function StockPage() {
                             name: editProduct.name, brand: editProduct.brand, model: editProduct.model,
                             category: (editProduct.category || undefined) as ProductFormData['category'],
                             price: parseFloat(editProduct.price),
+                            priceAfterTax: editProduct.priceAfterTax != null ? parseFloat(editProduct.priceAfterTax) : undefined,
                             costPrice: editProduct.costPrice != null ? parseFloat(editProduct.costPrice) : undefined,
                             quantity: editProduct.quantity,
                             thickness: editProduct.thickness || undefined,

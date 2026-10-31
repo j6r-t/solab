@@ -11,6 +11,7 @@ interface ProductInput {
     category: string | null
     lensType: string | null
     price: Numeric
+    priceAfterTax: Numeric | null
     quantity: number
     fournisseurId: string | null
     createdAt: Date
@@ -41,6 +42,7 @@ export function toProductResponse(product: ProductInput): ProductResponse {
         category: product.category || '',
         lensType: product.lensType,
         price: toNumber(product.price),
+        priceAfterTax: product.priceAfterTax != null ? toNumber(product.priceAfterTax) : null,
         quantity: product.quantity,
         fournisseurId: product.fournisseurId,
         createdAt: product.createdAt,

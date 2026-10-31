@@ -8,5 +8,6 @@ export interface QRCodeResponse {
         model: string
         category: string
         price: number
+        priceAfterTax: number | null
     } | null
 }

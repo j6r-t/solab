@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      # Build-time dummies only: route modules are imported during `next build`
+      # (auth.service.ts throws without JWT_SECRET at module scope; the Prisma
+      # client constructor requires a DATABASE_URL). No real values needed —
+      # nothing is queried or signed during build.
+      JWT_SECRET: ci-dummy-secret-build-only
+      DATABASE_URL: file:./ci-dummy.db
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Node 24 / npm 11 matches the toolchain that generates package-lock.json
+          # (npm 10 on Node 22 rejects it: "Missing: @emnapi/core@1.11.3 from lock file")
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        # `npm ci` (not `npm install`) on any runner whose bundled npm differs from
+        # the one that generated package-lock.json rejects the lockfile
+        # ("Missing: @emnapi/core@1.11.3 from lock file" — observed on npm 10.9.8
+        # and on the runner's bundled npm 11.x). npm install self-heals that drift.
+        run: npm install --no-audit --no-fund
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Typecheck (blocking)
+        run: npx tsc --noEmit
+
+      - name: Lint (non-blocking)
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Build (blocking)
+        run: npm run build

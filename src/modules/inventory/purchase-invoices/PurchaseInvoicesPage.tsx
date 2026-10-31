@@ -116,7 +116,7 @@ export function PurchaseInvoicesPage() {
                     <p className="text-sm text-muted-foreground mb-6 max-w-sm leading-relaxed">{t('purchaseInvoice.noInvoicesDesc')}</p>
                     <Button onClick={() => setDialogOpen(true)}>
                         <Plus className="h-4 w-4 mr-2" />
-                        Create Invoice
+                        {t('purchaseInvoice.create')}
                     </Button>
                 </div>
             ) : (

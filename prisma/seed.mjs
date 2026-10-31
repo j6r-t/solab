@@ -213,6 +213,8 @@ console.log('── Products')
         const product = await prisma.product.create({
             data: {
                 ...rest,
+                // keep in sync with TAX_RATE (src/lib/constants/index.ts) and the migration backfill
+                priceAfterTax: Math.round(rest.price * 1.19 * 1000) / 1000,
                 quantity: initial,
                 fournisseurId: fournisseurs[f].id,
                 qrcode: { create: { code: `SO-P${String(i + 1).padStart(4, '0')}` } },
@@ -309,7 +311,10 @@ console.log('── Prescriptions')
             data: {
                 brand: b.brand, lensType: b.lensType, material: b.material, coating: b.coating,
                 thickness: b.thickness, sph: b.sph, cyl: b.cyl,
-                costPrice: b.cost, sellingPrice: b.sell, quantity: initial,
+                costPrice: b.cost, sellingPrice: b.sell,
+                // keep in sync with TAX_RATE (src/lib/constants/index.ts) and the migration backfill
+                priceAfterTax: Math.round(b.sell * 1.19 * 1000) / 1000,
+                quantity: initial,
                 fournisseurId: fournisseurs[b.f].id,
             },
         })

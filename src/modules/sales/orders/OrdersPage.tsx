@@ -74,7 +74,7 @@ export function OrdersPage() {
             await reFetch()
             setPrintConfirmTarget(order)
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Failed to create order')
+            toast.error(error instanceof Error ? error.message : t('orders.createFailed'))
         } finally {
             setSaving(false)
         }

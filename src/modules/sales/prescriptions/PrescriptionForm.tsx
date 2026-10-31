@@ -137,7 +137,7 @@ export function PrescriptionForm({ defaultValues, onSubmit, onCancel, saving: ex
             const base64 = await new Promise<string>((resolve, reject) => {
                 const reader = new FileReader()
                 reader.onload = () => resolve(reader.result as string)
-                reader.onerror = () => reject(new Error('Failed to read file'))
+                reader.onerror = () => reject(new Error(t('common.fileReadFailed')))
                 reader.readAsDataURL(file)
             })
 
@@ -154,7 +154,7 @@ export function PrescriptionForm({ defaultValues, onSubmit, onCancel, saving: ex
 
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}))
-                throw new Error(err.error || 'Erreur lors de la lecture de l\'ordonnance. Veuillez réessayer.')
+                throw new Error(err.error || t('common.ocrError'))
             }
 
             const data = await res.json()
@@ -186,7 +186,7 @@ export function PrescriptionForm({ defaultValues, onSubmit, onCancel, saving: ex
 
             toast.success(t('common.ocrSuccess'))
         } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : 'Erreur lors de la lecture de l\'ordonnance. Veuillez réessayer.'
+            const message = error instanceof Error ? error.message : t('common.ocrError')
             toast.error(message)
         } finally {
             setOcrLoading(false)
