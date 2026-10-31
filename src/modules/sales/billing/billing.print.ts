@@ -78,6 +78,8 @@ export function printFacture(selected: BillingRecord) {
 
         <div class="totals">
             <div class="grand-total-row"><span>Total g&eacute;n&eacute;ral:</span><span>${formatCurrency(grandTotal.toFixed(3))}</span></div>
+            ${parseFloat(selected.discount) > 0 ? `<div class="grand-total-row"><span>Remise:</span><span>&minus; ${formatCurrency(selected.discount)}</span></div>
+            <div class="grand-total-row"><span>Net &agrave; payer:</span><span>${formatCurrency(totalAmount)}</span></div>` : ''}
         </div>
 
         <div class="footer">
@@ -118,7 +120,8 @@ export function printRecu(selected: BillingRecord) {
             '<div class="field-row"><span class="label">Date d\'achat:</span><span class="dots"></span><span class="value">' + purchaseDate + '</span></div>' +
             '<div class="field-row des-field"><span class="label">Designation:</span></div>'
         const desField = '<div class="des-value">' + (designation || '&mdash;') + '</div>'
-        const finRows = '<div class="field-row"><span class="label">Prix:</span><span class="dots"></span><span class="value">' + formatCurrency(totalAmount) + '</span></div>' +
+        const finRows = '<div class="field-row"><span class="label">Prix:</span><span class="dots"></span><span class="value">' + formatCurrency((parseFloat(totalAmount) + parseFloat(selected.discount || '0')).toFixed(3)) + '</span></div>' +
+            (parseFloat(selected.discount || '0') > 0 ? '<div class="field-row"><span class="label">Remise:</span><span class="dots"></span><span class="value">&minus; ' + formatCurrency(selected.discount) + '</span></div>' : '') +
             '<div class="field-row"><span class="label">Acompte:</span><span class="dots"></span><span class="value">' + (paidTotal > 0 ? formatCurrency(paidTotal.toFixed(3)) : '&mdash;') + '</span></div>' +
             (pendingTotal > 0 ? '<div class="field-row"><span class="label">En attente (ch&egrave;que/traite):</span><span class="dots"></span><span class="value">' + formatCurrency(pendingTotal.toFixed(3)) + '</span></div>' : '') +
             '<div class="field-row"><span class="label">Reste:</span><span class="dots"></span><span class="value">' + formatCurrency(reste.toFixed(3)) + '</span></div>' +

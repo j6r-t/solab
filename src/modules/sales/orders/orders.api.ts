@@ -55,6 +55,7 @@ interface Order {
     orderNumber: number
     client: { id: string; name: string; familyName: string; phone: string }
     totalAmount: string
+    discount: string
     totalPaid: string
     orderType: string
     status: string

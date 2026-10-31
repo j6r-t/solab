@@ -301,6 +301,7 @@ model Order {
   clientId    String
   client      Client      @relation(fields: [clientId], references: [id], onDelete: Restrict)
   totalAmount Decimal
+  discount    Decimal     @default(0)
   orderType   OrderType   @default(standard)
   status      OrderStatus @default(pending)
   items       OrderItem[]

@@ -92,6 +92,7 @@ export function OrdersPage() {
             orderNumber: order.orderNumber,
             client: { ...order.client, address: null },
             totalAmount: invoiceGrandTotal.toFixed(3),
+            discount: order.discount ?? '0',
             totalPaid: totalPaid.toFixed(3),
             balance: (invoiceGrandTotal - totalPaid).toFixed(3),
             paymentStatus: order.paymentStatus,

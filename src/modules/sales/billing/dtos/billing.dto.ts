@@ -45,6 +45,7 @@ export interface BillingResponse {
     orderNumber: number
     client: { name: string; familyName: string; phone: string; address: string | null }
     totalAmount: string
+    discount: string
     totalPaid: string
     pendingAmount?: string
     balance: string

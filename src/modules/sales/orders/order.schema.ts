@@ -47,6 +47,8 @@ export const createOrderSchema = z.object({
     repairs: z.array(orderRepairSchema).optional(),
     prescriptionId: z.string().optional(),
     turnaroundDays: z.number().int().nonnegative().optional(),
+    /** Whole-order discount as an amount in TND (client converts % to amount). */
+    discount: z.number().nonnegative().optional(),
 }).refine(
     (data) => data.items?.length || data.repairs?.length,
     { message: 'Order must have at least one item or repair', path: ['items'] }

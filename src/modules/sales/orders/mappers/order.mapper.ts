@@ -76,6 +76,7 @@ interface OrderInput {
     orderNumber: number
     clientId: string
     totalAmount: Numeric
+    discount?: Numeric | null
     status: string
     orderType: string
     createdAt: Date
@@ -87,14 +88,14 @@ interface OrderInput {
     prescription?: PrescriptionInput | null
 }
 
-function toStr(val: Numeric): string {
+function toStr(val: Numeric | null | undefined): string {
     if (val == null) return '0'
     if (typeof val === 'string') return val
     if (typeof val === 'number') return val.toString()
     return String(val)
 }
 
-function toNumber(val: Numeric): number {
+function toNumber(val: Numeric | null | undefined): number {
     return parseFloat(toStr(val)) || 0
 }
 
@@ -112,6 +113,7 @@ export function toOrderListItem(order: OrderInput): OrderListItemDto {
         orderNumber: order.orderNumber,
         clientId: order.clientId,
         totalAmount: total.toString(),
+        discount: toNumber(order.discount).toString(),
         totalPaid: totalPaid.toString(),
         pendingAmount: pendingAmount.toString(),
         paymentStatus: totalPaid >= total ? 'fullyPaid' : totalPaid > 0 ? 'partiallyPaid' : 'unpaid',
@@ -132,6 +134,7 @@ export function toOrderDetail(order: OrderInput): OrderDetailDto {
         orderNumber: order.orderNumber,
         clientId: order.clientId,
         totalAmount: total.toString(),
+        discount: toNumber(order.discount).toString(),
         totalPaid: totalPaid.toString(),
         pendingAmount: pendingAmount.toString(),
         paymentStatus: totalPaid >= total ? 'fullyPaid' : totalPaid > 0 ? 'partiallyPaid' : 'unpaid',

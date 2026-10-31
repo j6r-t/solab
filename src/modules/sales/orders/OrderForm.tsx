@@ -52,6 +52,8 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
     const [repairs, setRepairs] = useState<OrderRepairInput[]>(defaultValues?.repairs || [])
     const [paymentType, setPaymentType] = useState<'full' | 'deposit'>('full')
     const [paymentRows, setPaymentRows] = useState<PaymentRow[]>([newPaymentRow()])
+    const [discountValue, setDiscountValue] = useState('')
+    const [discountUnit, setDiscountUnit] = useState<'tnd' | 'pct'>('tnd')
     const [internalSaving, setInternalSaving] = useState(false)
     const saving = internalSaving || externalSaving
     const [selectedPrescriptionId, setSelectedPrescriptionId] = useState(defaultValues?.prescriptionId || '')
@@ -238,6 +240,7 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                 turnaroundDays: expectedCompletionDate
                     ? Math.max(0, Math.round((new Date(expectedCompletionDate + 'T00:00:00').getTime() - new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00').getTime()) / 86400000))
                     : undefined,
+                discount: discountAmount > 0 ? Math.round(discountAmount * 1000) / 1000 : undefined,
             })
         } catch (error) {
             toast.error(error instanceof Error ? error.message : t('orders.createFailed'))
@@ -273,7 +276,12 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
 
     const totalItemsPrice = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0)
     const totalRepairsPrice = repairs.reduce((s, r) => s + r.price, 0)
-    const grandTotal = totalItemsPrice + totalRepairsPrice
+    const subtotal = totalItemsPrice + totalRepairsPrice
+    const discountAmount = Math.min(
+        Math.max(discountUnit === 'pct' ? (subtotal * (parseFloat(discountValue) || 0)) / 100 : parseFloat(discountValue) || 0, 0),
+        subtotal
+    )
+    const grandTotal = Math.max(0, subtotal - discountAmount)
 
     return (
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -417,6 +425,40 @@ export function OrderForm({ defaultValues, onSubmit, onCancel, saving: externalS
                     <div className="flex justify-between px-3 py-2 text-sm">
                         <span>{t('nav.repairs')}</span>
                         <span className="font-medium">{totalRepairsPrice.toFixed(3)} TND</span>
+                    </div>
+                )}
+                <div className="flex justify-between items-center gap-2 px-3 py-2 text-sm">
+                    <span>{t('orders.discount')}</span>
+                    <div className="flex items-center gap-1.5">
+                        <Input
+                            value={discountValue}
+                            onChange={(e) => setDiscountValue(e.target.value)}
+                            inputMode="decimal"
+                            placeholder="0"
+                            className="w-24 h-8 text-right"
+                        />
+                        <div className="flex rounded-md border overflow-hidden">
+                            <button
+                                type="button"
+                                onClick={() => setDiscountUnit('tnd')}
+                                className={`px-2 h-8 text-xs ${discountUnit === 'tnd' ? 'bg-primary text-primary-foreground' : 'bg-muted/50'}`}
+                            >
+                                TND
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setDiscountUnit('pct')}
+                                className={`px-2 h-8 text-xs ${discountUnit === 'pct' ? 'bg-primary text-primary-foreground' : 'bg-muted/50'}`}
+                            >
+                                %
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {discountAmount > 0 && (
+                    <div className="flex justify-between px-3 py-2 text-sm text-destructive">
+                        <span>{t('orders.discountApplied')}</span>
+                        <span className="font-medium">− {discountAmount.toFixed(3)} TND</span>
                     </div>
                 )}
                 <div className="flex justify-between px-3 py-2.5 text-sm font-semibold text-base">

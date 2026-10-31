@@ -61,6 +61,7 @@ interface BillingOrderInput {
     id: string
     orderNumber: number
     totalAmount: Numeric
+    discount?: Numeric | null
     status: string
     orderType: string
     createdAt: Date
@@ -72,7 +73,7 @@ interface BillingOrderInput {
     prescription?: BillingPrescriptionInput | null
 }
 
-function toStr(val: Numeric): string {
+function toStr(val: Numeric | null | undefined): string {
     if (val == null) return '0'
     if (typeof val === 'string') return val
     if (typeof val === 'number') return val.toString()
@@ -94,6 +95,7 @@ export function toBillingResponse(order: BillingOrderInput): BillingResponse {
             address: order.client?.address || null,
         },
         totalAmount: total.toString(),
+        discount: parseFloat(toStr(order.discount)).toString(),
         totalPaid: totalPaid.toString(),
         pendingAmount: pendingAmount.toString(),
         balance: (total - totalPaid).toFixed(3),

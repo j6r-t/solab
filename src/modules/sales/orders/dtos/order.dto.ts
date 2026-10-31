@@ -59,6 +59,7 @@ export interface OrderListItemDto {
     orderNumber: number
     clientId: string
     totalAmount: string
+    discount: string
     totalPaid: string
     pendingAmount?: string
     paymentStatus: 'unpaid' | 'partiallyPaid' | 'fullyPaid'
@@ -123,6 +124,7 @@ export interface OrderDetailDto {
     orderNumber: number
     clientId: string
     totalAmount: string
+    discount: string
     totalPaid: string
     pendingAmount?: string
     paymentStatus: 'unpaid' | 'partiallyPaid' | 'fullyPaid'

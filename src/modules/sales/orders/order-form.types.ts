@@ -33,6 +33,8 @@ export interface OrderFormData {
     repairs: OrderRepairInput[]
     prescriptionId?: string
     turnaroundDays?: number
+    /** Whole-order discount as an amount in TND. */
+    discount?: number
 }
 
 export interface Client {

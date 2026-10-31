@@ -177,6 +177,13 @@ export function OrderDetailDialog({ order, open, onOpenChange, onConfirmStatusUp
                         </div>
                     )}
 
+                    {parseFloat(order.discount) > 0 && (
+                        <div className="flex justify-between text-sm text-destructive">
+                            <span>{t('orders.discount')}</span>
+                            <span>− {formatCurrency(order.discount)}</span>
+                        </div>
+                    )}
+
                     <div className="border-t pt-3 flex justify-between font-semibold">
                         <span>{t('orders.total')}</span>
                         <span>{formatCurrency(order.totalAmount)}</span>

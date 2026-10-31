@@ -111,6 +111,7 @@ export async function createOrder(data: {
     repairs?: { type: string; price: number; expectedCompletionDate?: string; repairServiceId?: string }[]
     prescriptionId?: string
     turnaroundDays?: number
+    discount?: number
 }) {
     const { clientId, orderType, items, payments, repairs, prescriptionId, turnaroundDays } = data
 
@@ -162,6 +163,10 @@ export async function createOrder(data: {
     }
     totalAmount += repairTotal
 
+    // Whole-order discount is clamped to [0, subtotal] and stored as an amount.
+    const discountAmount = Math.min(Math.max(data.discount ?? 0, 0), totalAmount)
+    totalAmount = Math.max(0, totalAmount - discountAmount)
+
     const isFullPayment = orderType === 'direct_sale' || payments?.some((p) => p.type === 'full' && isCashMethod(p.method))
 
     const order = await orderRepo.create({
@@ -169,6 +174,7 @@ export async function createOrder(data: {
             orderNumber,
             clientId,
             totalAmount,
+            discount: discountAmount,
             orderType: (orderType || 'standard') as OrderType,
             status: isFullPayment ? 'completed' : 'pending',
             prescriptionId: prescriptionId || null,
