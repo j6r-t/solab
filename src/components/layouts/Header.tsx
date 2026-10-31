@@ -33,7 +33,7 @@ export function Header() {
                 )}
 
                 <div className="flex items-center">
-                    <img src="/logo.png" alt="Logo" className="h-6 w-auto object-contain" />
+                    <img src="/logo.png" alt="Sofiene Optic" className="h-6 w-auto object-contain" />
                 </div>
 
                 <div className="flex gap-1">

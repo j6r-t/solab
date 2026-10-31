@@ -14,6 +14,19 @@ const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000 // 10 minutes
 const RATE_LIMIT_MAX_REQUESTS = 100
 
 /**
+ * FNV-1a over a string — small, deterministic, dependency-free. Used only for
+ * the last-resort bucket key when no proxy exposes the client IP.
+ */
+function hashKey(input: string): string {
+    let hash = 0x811c9dc5
+    for (let i = 0; i < input.length; i++) {
+        hash ^= input.charCodeAt(i)
+        hash = Math.imul(hash, 0x01000193)
+    }
+    return (hash >>> 0).toString(16)
+}
+
+/**
  * Simple rate limiter using in-memory storage
  * WARNING: Not suitable for production with multiple instances
  * For production with multiple instances, use a distributed store like Redis
@@ -51,12 +64,23 @@ export async function rateLimitMiddleware(request: NextRequest) {
         return NextResponse.next()
     }
 
-    // Get client IP
-    // In Next.js 16, request.ip was removed. We use a default IP.
-    // For production with proper IP detection, use request.headers.get('x-forwarded-for')
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1'
+    // Production concern: every client behind a proxy that strips these
+    // headers must NOT collapse into a single shared bucket (the old
+    // '127.0.0.1' fallback silently rate-limited the whole user base as one
+    // identity). So: first x-forwarded-for entry, then x-real-ip, then
+    // cf-connecting-ip, and only as a last resort a hash of stable request
+    // attributes — which spreads traffic across buckets instead of pooling
+    // every unknown client into one.
+    const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    const realIp = request.headers.get('x-real-ip')?.trim()
+    const cfIp = request.headers.get('cf-connecting-ip')?.trim()
+    const bucketKey =
+        forwarded ||
+        realIp ||
+        cfIp ||
+        `anon:${hashKey(`${request.headers.get('user-agent') ?? ''}|${new URL(request.url).pathname}`)}`
 
-    const { allowed, remaining, resetAt } = isInRateLimit(ip)
+    const { allowed, remaining, resetAt } = isInRateLimit(bucketKey)
 
     const response = NextResponse.next()
 

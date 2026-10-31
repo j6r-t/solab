@@ -60,10 +60,13 @@ export function LoginPage() {
             }
         } catch (error) {
             // The login endpoint returns 401 with errorCode UNAUTHORIZED for
-            // wrong credentials (and 400 for a malformed request) — anything
-            // else is a network/server problem, not a credentials problem.
+            // wrong credentials (and 400 for a malformed request), 429 once
+            // the rate limiter trips; anything else is a network/server
+            // problem, not a credentials problem.
             if (error instanceof ApiError && (error.status === 401 || error.status === 400)) {
                 setError(t('auth.loginFailed'))
+            } else if (error instanceof ApiError && error.status === 429) {
+                setError(t('auth.rateLimited'))
             } else {
                 setError(t('auth.connectionError'))
             }
