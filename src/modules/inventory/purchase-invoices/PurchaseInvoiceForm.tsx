@@ -388,8 +388,8 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                     <div key={item.key} className="flex flex-col gap-2 p-3 bg-muted/20 rounded-lg border">
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-muted-foreground">{t('purchaseInvoice.itemNumber', { n: index + 1 })}</span>
-                            <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeItem(item.key)} disabled={formData.items.length === 1}>
-                                <Trash2 className="h-3 w-3" />
+                            <Button type="button" variant="ghost" size="icon" className="text-destructive" aria-label={t('common.delete')} onClick={() => removeItem(item.key)} disabled={formData.items.length === 1}>
+                                <Trash2 className="h-4 w-4" />
                             </Button>
                         </div>
 
@@ -602,8 +602,8 @@ export function PurchaseInvoiceForm({ onSubmit, onCancel, saving: externalSaving
                     <div key={pay.key} className="flex flex-col gap-2 p-3 bg-background rounded-lg border">
                         <div className="flex items-center justify-between mb-1">
                             <span className="text-xs font-medium text-muted-foreground">{t('purchaseInvoice.paymentNumber', { n: index + 1 })}</span>
-                            <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removePayment(pay.key)}>
-                                <Trash2 className="h-3 w-3" />
+                            <Button type="button" variant="ghost" size="icon" className="text-destructive" aria-label={t('common.delete')} onClick={() => removePayment(pay.key)}>
+                                <Trash2 className="h-4 w-4" />
                             </Button>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

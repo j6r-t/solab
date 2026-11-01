@@ -287,7 +287,7 @@ export function OpticiensTab() {
                     >
                         {t('invoices.opticiens.groupCta')}
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedIds([])} title={t('common.cancel')}>
+                    <Button variant="ghost" size="icon" onClick={() => setSelectedIds([])} title={t('common.cancel')} aria-label={t('common.cancel')}>
                         <X className="h-4 w-4" />
                     </Button>
                 </div>
@@ -473,6 +473,7 @@ export function OpticiensTab() {
                                         size="icon"
                                         onClick={() => (isBillRow ? setPreviewBill(bill!) : setPreviewGroup(invoice!))}
                                         title={t('invoices.opticiens.preview')}
+                                        aria-label={t('invoices.opticiens.preview')}
                                     >
                                         <Eye className="h-4 w-4" />
                                     </Button>
@@ -483,6 +484,7 @@ export function OpticiensTab() {
                                         disabled={remaining <= EPSILON}
                                         onClick={() => (isBillRow ? openBillPayment(bill!) : openGroupPayment(invoice!))}
                                         title={t('payments.recordPayment')}
+                                        aria-label={t('payments.recordPayment')}
                                     >
                                         <Wallet className="h-4 w-4" />
                                     </Button>
@@ -491,6 +493,7 @@ export function OpticiensTab() {
                                         size="icon"
                                         onClick={() => (isBillRow ? downloadOpticianBill(bill!) : downloadGroupedInvoice(invoice!))}
                                         title={t('invoices.opticiens.print')}
+                                        aria-label={t('invoices.opticiens.print')}
                                     >
                                         <Printer className="h-4 w-4" />
                                     </Button>

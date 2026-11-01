@@ -181,10 +181,10 @@ function NamedItemCard({ title, icon: Icon, description, apiPath, deleteNote }: 
                                 <div key={item.id} className="flex items-center justify-between px-4 py-3">
                                     <span className="text-sm font-medium">{item.name}</span>
                                     <div className="flex gap-1">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
+                                        <Button variant="ghost" size="icon" aria-label={t('common.edit')} onClick={() => openEdit(item)}>
                                             <Pencil className="h-4 w-4" />
                                         </Button>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteTarget(item)}>
+                                        <Button variant="ghost" size="icon" className="text-destructive" aria-label={t('common.delete')} onClick={() => setDeleteTarget(item)}>
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </div>
@@ -450,8 +450,8 @@ export function SettingsPage() {
                                                 <span className="text-sm text-muted-foreground">{formatCurrency(service.defaultPrice)}</span>
                                             </div>
                                             <div className="flex gap-1">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditService(service)}><Pencil className="h-4 w-4" /></Button>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteTarget(service)}><Trash2 className="h-4 w-4" /></Button>
+                                                <Button variant="ghost" size="icon" aria-label={t('common.edit')} onClick={() => openEditService(service)}><Pencil className="h-4 w-4" /></Button>
+                                                <Button variant="ghost" size="icon" className="text-destructive" aria-label={t('common.delete')} onClick={() => setDeleteTarget(service)}><Trash2 className="h-4 w-4" /></Button>
                                             </div>
                                         </div>
                                     ))}

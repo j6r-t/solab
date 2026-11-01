@@ -197,7 +197,7 @@ export function EcheancesTab() {
                     <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">{t('invoices.echeances.noInstrumentsDesc')}</p>
                 </div>
             ) : (
-                <div className="border rounded-xl bg-card overflow-x-auto overflow-y-auto max-h-[340px]">
+                <div className="hidden md:block border rounded-xl bg-card overflow-x-auto">
                     <table className="w-full min-w-[720px]">
                         <thead>
                             <tr className="bg-muted border-b sticky top-0 z-10">
@@ -241,22 +241,23 @@ export function EcheancesTab() {
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
                                                         disabled={submitting}
                                                         onClick={() => setConfirmTarget({ cheque, action: isSupplier ? 'paid' : 'cashed' })}
                                                         title={isSupplier ? t('invoices.echeances.markPaid') : t('invoices.echeances.markCashed')}
+                                                        aria-label={isSupplier ? t('invoices.echeances.markPaid') : t('invoices.echeances.markCashed')}
                                                     >
                                                         <CheckCircle className="h-4 w-4" />
                                                     </Button>
                                                 </td>
                                                 <td className="py-3 px-4 text-center">
                                                     <Button
-                                                        variant="ghost"
+                                                        variant="destructive"
                                                         size="icon"
-                                                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
                                                         disabled={submitting}
                                                         onClick={() => setConfirmTarget({ cheque, action: 'bounced' })}
                                                         title={t('invoices.echeances.markBounced')}
+                                                        aria-label={t('invoices.echeances.markBounced')}
                                                     >
                                                         <XCircle className="h-4 w-4" />
                                                     </Button>
@@ -270,6 +271,77 @@ export function EcheancesTab() {
                             })}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {/* Mobile (below md): one card per instrument instead of the horizontally scrolling table */}
+            {!loading && visible.length > 0 && (
+                <div className="md:hidden space-y-3">
+                    {visible.map((cheque) => {
+                        const pending = cheque.status === 'pending'
+                        const overdue = isOverdue(cheque, todayTs)
+                        const isSupplier = cheque.entityType === 'supplier_payment'
+                        const badge = statusBadge(cheque)
+                        const overdueDays = Math.max(1, Math.round((todayTs - dayTs(cheque.dueDate)) / 86400000))
+                        const typeLabel = cheque.type === 'traite' ? t('invoices.echeances.typeTraite') : t('invoices.echeances.typeCheque')
+                        const settleLabel = isSupplier ? t('invoices.echeances.markPaid') : t('invoices.echeances.markCashed')
+                        return (
+                            <div key={cheque.id} className={`rounded-lg border bg-card p-3 ${overdue ? 'border-destructive/40 bg-red-50/40' : ''}`}>
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-semibold truncate">
+                                            {typeLabel} <span className="tabular-nums">{cheque.number}</span>
+                                        </p>
+                                        <p className="text-xs text-muted-foreground truncate mt-0.5">
+                                            {party(cheque)} · {sourceLabel(cheque)}
+                                        </p>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1 shrink-0">
+                                        <p className="text-sm font-semibold tabular-nums whitespace-nowrap">{formatCurrency(cheque.amount)}</p>
+                                        <Badge variant="outline" className={`${badge.cls} text-xs`}>{badge.label}</Badge>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between gap-2 mt-2.5">
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('cheques.dueDate')} :{' '}
+                                        <span className={`font-medium tabular-nums ${overdue ? 'text-destructive' : 'text-foreground'}`}>
+                                            {formatDate(cheque.dueDate)}
+                                        </span>
+                                    </p>
+                                    {overdue && (
+                                        <Badge variant="outline" className="border-destructive/40 text-destructive text-xs shrink-0">
+                                            {t('invoices.echeances.overdueDays', { n: overdueDays })}
+                                        </Badge>
+                                    )}
+                                </div>
+                                {pending && (
+                                    <div className="flex justify-end gap-2 mt-3">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                            disabled={submitting}
+                                            onClick={() => setConfirmTarget({ cheque, action: isSupplier ? 'paid' : 'cashed' })}
+                                            title={settleLabel}
+                                            aria-label={settleLabel}
+                                        >
+                                            <CheckCircle className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="destructive"
+                                            size="icon"
+                                            disabled={submitting}
+                                            onClick={() => setConfirmTarget({ cheque, action: 'bounced' })}
+                                            title={t('invoices.echeances.markBounced')}
+                                            aria-label={t('invoices.echeances.markBounced')}
+                                        >
+                                            <XCircle className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })}
                 </div>
             )}
 

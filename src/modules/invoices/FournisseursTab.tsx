@@ -186,7 +186,7 @@ export function FournisseursTab() {
                     >
                         {t('invoices.fournisseurs.groupCta')}
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedIds([])} title={t('common.cancel')}>
+                    <Button variant="ghost" size="icon" onClick={() => setSelectedIds([])} title={t('common.cancel')} aria-label={t('common.cancel')}>
                         <X className="h-4 w-4" />
                     </Button>
                 </div>

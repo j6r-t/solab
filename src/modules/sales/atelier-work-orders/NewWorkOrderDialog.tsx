@@ -419,9 +419,10 @@ export function NewWorkOrderDialog({ open, onOpenChange, onCreated }: NewWorkOrd
                                 <div className="relative rounded-md overflow-hidden border">
                                     {/* eslint-disable-next-line @next/next/no-img-element -- local object/data URL preview */}
                             <img src={ocrPreviewUrl} alt={t('workOrders.importedRxAlt')} className="w-full max-h-48 object-contain bg-white" />
-                                    <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6"
+                                    <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1"
+                                        aria-label={t('common.delete')}
                                         onClick={() => { setOcrPreviewUrl(null); if (fileInputRef.current) fileInputRef.current.value = '' }}>
-                                        <X className="h-3.5 w-3.5" />
+                                        <X className="h-4 w-4" />
                                     </Button>
                                 </div>
                             )}
