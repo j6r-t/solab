@@ -1,3 +1,5 @@
+import { DAY_MS } from '@/lib/constants/kpi'
+
 export interface PeriodWindow {
     start: Date
     end: Date | null
@@ -74,6 +76,23 @@ export function inWindow(date: Date, range: PeriodWindow | null): boolean {
 export function changePct(value: number, previous: number): number | null {
     if (!previous) return null
     return round1(((value - previous) / previous) * 100)
+}
+
+/**
+ * Atelier turnaround definition: average started → completed span over the given
+ * work orders (callers pick the window, e.g. "completed this month").
+ * Shared by the atelier reports and the atelier dashboard.
+ */
+export function avgTurnaroundDays(rows: { startedAt: Date | null; completedAt: Date | null }[]): number {
+    let ms = 0
+    let count = 0
+    for (const wo of rows) {
+        if (wo.startedAt && wo.completedAt) {
+            ms += wo.completedAt.getTime() - wo.startedAt.getTime()
+            count++
+        }
+    }
+    return count > 0 ? round1(ms / count / DAY_MS) : 0
 }
 
 export function lastNMonthStarts(n: number, now: Date): Date[] {

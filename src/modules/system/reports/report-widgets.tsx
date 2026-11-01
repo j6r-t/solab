@@ -1,6 +1,6 @@
 'use client'
 
-import type { ComponentType } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -85,6 +85,31 @@ export function KpiCard({ label, value, icon: Icon, color, delta, deltaGoodUp = 
                 {subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}
             </CardContent>
         </Card>
+    )
+}
+
+/**
+ * Groups report cards by what the period selector actually does to them.
+ * The label is the section voice; the note explains the clock in one breath.
+ */
+export function SectionHeader({ icon: Icon, label, note }: { icon: IconType; label: string; note: string }) {
+    return (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <Icon className="h-4 w-4" aria-hidden="true" />
+                {label}
+            </h2>
+            <p className="text-xs text-muted-foreground">{note}</p>
+        </div>
+    )
+}
+
+/** Marks a card whose window is fixed (e.g. the last 12 months), not the selector's period. */
+export function TrendBadge({ children }: { children: ReactNode }) {
+    return (
+        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+            {children}
+        </span>
     )
 }
 

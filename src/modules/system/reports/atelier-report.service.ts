@@ -14,6 +14,7 @@ import {
 } from '@/lib/constants/kpi'
 import {
     addDays,
+    avgTurnaroundDays,
     changePct,
     getPeriodRange,
     inWindow,
@@ -66,8 +67,6 @@ export async function getAtelierDecisionStats(
     lowStockBlanks: LowStockBlankRow[],
     lowStockBlanksCount: number,
 ) {
-    const dateFilter: Prisma.AtelierWorkOrderWhereInput = current ? { createdAt: { gte: current.start } } : {}
-
     const [
         backlogOrders,
         completedTurnaround,
@@ -75,8 +74,12 @@ export async function getAtelierDecisionStats(
         adjustmentGroups,
         prevAdjustmentGroups,
     ] = await Promise.all([
+        // Workload is a current-state figure: every live pending / in-progress
+        // work order counts, regardless of the selected period. Filtering by
+        // period here would make "Aujourd'hui" shrink the backlog to orders
+        // created today, as if older work had vanished.
         db.atelierWorkOrder.findMany({
-            where: { status: { in: ['pending', 'in_progress'] }, ...dateFilter },
+            where: { status: { in: ['pending', 'in_progress'] } },
             select: { status: true, createdAt: true },
         }),
         db.atelierWorkOrder.findMany({
@@ -148,19 +151,8 @@ export async function getAtelierDecisionStats(
         { bucket: 'gt14' as const, count: agingCounts.gt14 },
     ]
 
-    const avgTurnaround = (rows: { startedAt: Date | null; completedAt: Date | null }[]) => {
-        let ms = 0
-        let count = 0
-        for (const wo of rows) {
-            if (wo.startedAt && wo.completedAt) {
-                ms += wo.completedAt.getTime() - wo.startedAt.getTime()
-                count++
-            }
-        }
-        return count > 0 ? round1(ms / count / DAY_MS) : 0
-    }
-    const avgTurnaroundDays = avgTurnaround(completedTurnaround)
-    const prevAvgTurnaroundDays = avgTurnaround(prevCompletedTurnaround)
+    const avgTurnaround = avgTurnaroundDays(completedTurnaround)
+    const prevAvgTurnaroundDays = avgTurnaroundDays(prevCompletedTurnaround)
 
     const countReason = (groups: { reason: string; _sum: { quantity: number | null } | null }[], reason: string) =>
         Math.abs(Number(groups.find((g) => g.reason === reason)?._sum?.quantity ?? 0))
@@ -195,7 +187,7 @@ export async function getAtelierDecisionStats(
     return {
         workload,
         agingBuckets,
-        avgTurnaroundDays,
+        avgTurnaroundDays: avgTurnaround,
         prevAvgTurnaroundDays,
         breakageRate: breakageRate(usedInMounting, brokenDuringMounting),
         prevBreakageRate: breakageRate(countReason(prevAdjustmentGroups, 'used_in_mounting'), countReason(prevAdjustmentGroups, 'broken_during_mounting')),
