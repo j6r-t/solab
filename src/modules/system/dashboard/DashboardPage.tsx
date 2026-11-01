@@ -28,6 +28,7 @@ import { formatCurrency, formatCurrencyShort } from '@/lib/utils/currency'
 import { formatDate } from '@/lib/utils/dates'
 import { toast } from 'sonner'
 import { useReports, type ShopReportData, type AtelierReportData } from '@/modules/system/reports/useReports'
+import { AtelierDashboard } from './AtelierDashboard'
 import { useOrders } from '@/modules/sales/orders/useOrders'
 import { fetchOrderById, updateOrder, type Order } from '@/modules/sales/orders/orders.api'
 import { OrderDetailDialog } from '@/modules/sales/orders/OrderDetailDialog'
@@ -123,6 +124,18 @@ export function DashboardPage() {
         }
     }
 
+    // Atelier gets the dedicated atelier widget set — the shop KPI grid below
+    // is not their dashboard. Admin sees both: shop KPIs first, then the
+    // atelier panel (the atelier's "what should I work on now").
+    if (role === 'atelier') {
+        return (
+            <div className="space-y-6">
+                <h1 className="text-2xl font-bold tracking-tight">{t('dashboard.title')}</h1>
+                <AtelierDashboard />
+            </div>
+        )
+    }
+
     if (isLoading || !data) {
         return (
             <div className="flex items-center justify-center py-20 text-muted-foreground">
@@ -161,6 +174,8 @@ export function DashboardPage() {
                     </Card>
                 ))}
             </div>
+
+            {canAtelier && <AtelierDashboard />}
 
             <div className="flex flex-wrap gap-2">
                 {canAtelier && (

@@ -173,12 +173,12 @@ export function PurchaseInvoicesPage() {
                                             </Badge>
                                         </td>
                                         <td className="py-3 px-4 text-center">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewInvoice(inv)} title={t('invoices.opticiens.preview')}>
+                                            <Button variant="ghost" size="icon" onClick={() => setPreviewInvoice(inv)} title={t('invoices.opticiens.preview')} aria-label={t('invoices.opticiens.preview')}>
                                                 <Eye className="h-4 w-4" />
                                             </Button>
                                         </td>
                                         <td className="py-3 px-4 text-center">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => downloadPurchaseInvoice(inv)} title={t('purchaseInvoice.downloadInvoice')}>
+                                            <Button variant="ghost" size="icon" onClick={() => downloadPurchaseInvoice(inv)} title={t('purchaseInvoice.downloadInvoice')} aria-label={t('purchaseInvoice.downloadInvoice')}>
                                                 <Download className="h-4 w-4" />
                                             </Button>
                                         </td>

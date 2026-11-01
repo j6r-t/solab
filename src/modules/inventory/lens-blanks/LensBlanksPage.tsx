@@ -20,6 +20,7 @@ import {
 import { LensBlankForm } from './LensBlankForm'
 import { toast } from 'sonner'
 import { useLensBlanks } from './useLensBlanks'
+import { useViewStore } from '@/stores/view-store'
 import { LOW_STOCK_MAX_QTY } from '@/lib/constants/kpi'
 import { formatCurrency } from '@/lib/utils/currency'
 
@@ -57,10 +58,12 @@ const LENS_TYPES = ['singleVision', 'progressive', 'bifocal', 'office', 'photoch
 
 export function LensBlanksPage() {
     const { t } = useTranslation()
+    // Deep links (e.g. the dashboard low-stock widget) land pre-filtered via ?view=lens-blanks&lowStock=true
+    const viewLowStock = useViewStore((s) => s.viewParams.lowStock)
     const [search, setSearch] = useState('')
     const [brandFilter, setBrandFilter] = useState('')
     const [lensTypeFilter, setLensTypeFilter] = useState('')
-    const [lowStockOnly, setLowStockOnly] = useState(false)
+    const [lowStockOnly, setLowStockOnly] = useState(() => viewLowStock === 'true')
     const [dialogOpen, setDialogOpen] = useState(false)
     const [editBlank, setEditBlank] = useState<LensBlank | null>(null)
     const [deleteTarget, setDeleteTarget] = useState<LensBlank | null>(null)

@@ -18,6 +18,7 @@ import {
 import { WorkOrderDetailDialog } from './WorkOrderDetailDialog'
 import { NewWorkOrderDialog } from './NewWorkOrderDialog'
 import { useRepairs } from '../repairs/useRepairs'
+import { useViewStore } from '@/stores/view-store'
 import { formatDate } from '@/lib/utils/dates'
 import { formatCurrency } from '@/lib/utils/currency'
 
@@ -70,8 +71,12 @@ function daysUntil(dateStr: string): number {
 
 export function AtelierWorkOrdersPage() {
     const { t } = useTranslation()
+    // Deep links (e.g. the dashboard queue) land pre-filtered via ?view=atelier-work-orders&status=...
+    const viewStatus = useViewStore((s) => s.viewParams.status)
     const [search, setSearch] = useState('')
-    const [statusTab, setStatusTab] = useState<string>('all')
+    const [statusTab, setStatusTab] = useState<string>(() =>
+        (TABS as readonly string[]).includes(viewStatus ?? '') ? (viewStatus as string) : 'all'
+    )
     const [sourceFilter, setSourceFilter] = useState('')
     const [selectedWO, setSelectedWO] = useState<WorkOrder | null>(null)
     const [detailOpen, setDetailOpen] = useState(false)
