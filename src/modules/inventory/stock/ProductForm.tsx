@@ -1,5 +1,6 @@
 'use client'
 
+import { flattenError } from 'zod'
 import { useState, useEffect } from 'react'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { Button } from '@/components/ui/button'
@@ -137,7 +138,7 @@ export function ProductForm({ defaultValues, onSubmit, onCancel, saving: externa
 
         const result = productSchema.safeParse(payload)
         if (!result.success) {
-            setErrors(result.error.flatten().fieldErrors)
+            setErrors(flattenError(result.error).fieldErrors)
             return
         }
 

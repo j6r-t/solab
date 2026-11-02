@@ -1,5 +1,6 @@
 'use client'
 
+import { flattenError } from 'zod'
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from '@/lib/hooks/useTranslation'
 import { Button } from '@/components/ui/button'
@@ -111,7 +112,7 @@ export function PrescriptionForm({ defaultValues, onSubmit, onCancel, saving: ex
 
         const result = prescriptionSchema.safeParse(formData)
         if (!result.success) {
-            setErrors(result.error.flatten().fieldErrors)
+            setErrors(flattenError(result.error).fieldErrors)
             return
         }
 
