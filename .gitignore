@@ -50,3 +50,7 @@ prisma/db/
 
 # impeccable/impeccable-adjacent scratch
 .pw-review/
+
+# Personal data — imported into dev.db via prisma/seed-import.mjs, never committed
+clients_*.csv
+fournisseurs_*.csv
