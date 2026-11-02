@@ -16,7 +16,9 @@ const chequeInputSchema = z.object({
 })
 
 const orderPaymentSchema = z.object({
-    amount: z.number().positive('Amount must be positive'),
+    // direct_sale sends amount 0 as a convention: the service replaces it with
+    // the order total (order.service.ts creates the full cash payment itself).
+    amount: z.number().nonnegative('Amount must be positive'),
     type: z.enum(['deposit', 'balance', 'full'], {
         message: 'Payment type must be deposit, balance, or full',
     }),
@@ -52,6 +54,9 @@ export const createOrderSchema = z.object({
 }).refine(
     (data) => data.items?.length || data.repairs?.length,
     { message: 'Order must have at least one item or repair', path: ['items'] }
+).refine(
+    (data) => data.orderType === 'direct_sale' || (data.payments ?? []).every((p) => p.amount > 0),
+    { message: 'Amount must be positive', path: ['payments'] }
 )
 
 export const updateOrderStatusSchema = z.object({
